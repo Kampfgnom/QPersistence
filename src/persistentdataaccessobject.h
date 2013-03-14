@@ -3,6 +3,7 @@
 
 #include <QPersistenceAbstractDataAccessObject.h>
 
+#include <QPersistence.h>
 #include <QtCore/QSharedDataPointer>
 #include <QtSql/QSqlDatabase>
 
@@ -46,13 +47,7 @@ public:
     {
     }
 
-    QList<T *> readAll() const
-    {
-        QList<T *> result;
-        Q_FOREACH(QObject *object, readAllObjects()) result.append(static_cast<T *>(object));
-        return result;
-    }
-
+    QList<T *> readAll() const { return QPersistence::castList<T>(readAllObjects()); }
     QObject *createObject() const Q_DECL_OVERRIDE { return new T; }
     T *create() const { return static_cast<T *>(createObject()); }
     T *read(const QVariant &key) const { return static_cast<T *>(readObject(key)); }

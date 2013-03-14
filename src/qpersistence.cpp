@@ -1,6 +1,7 @@
 #include "qpersistence.h"
 
 #include "metaobject.h"
+#include "abstractdataaccessobject.h"
 
 #include <QDebug>
 
@@ -36,6 +37,21 @@ QPersistenceAbstractDataAccessObject *dataAccessObject(const QMetaObject &metaOb
         return dao;
 
     return Private::daoPerConnectionAndMetaObject[QString()].value(metaObject.className());
+}
+
+bool insert(QObject *object, const QString &connectionName)
+{
+    return dataAccessObject(*object->metaObject(), connectionName)->insertObject(object);
+}
+
+bool update(QObject *object, const QString &connectionName)
+{
+    return dataAccessObject(*object->metaObject(), connectionName)->updateObject(object);
+}
+
+bool remove(QObject *object, const QString &connectionName)
+{
+    return dataAccessObject(*object->metaObject(), connectionName)->removeObject(object);
 }
 
 namespace Private {

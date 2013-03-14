@@ -19,6 +19,12 @@ QPersistenceCachedDataAccessObject<T>::QPersistenceCachedDataAccessObject(QPersi
 }
 
 template<class T>
+QPersistenceCachedDataAccessObject<T>::~QPersistenceCachedDataAccessObject()
+{
+    qDebug() << "~QPersistenceCachedDataAccessObject<" << T::staticMetaObject.className() << ">";
+}
+
+template<class T>
 T *QPersistenceCachedDataAccessObject<T>::getFromCache(const QVariant &key) const
 {
     if(m_cache.contains(key)) {

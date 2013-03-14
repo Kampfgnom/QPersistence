@@ -4,6 +4,8 @@
 #include <QtCore/QHash>
 #include <QtCore/QVariant>
 
+#include <QPersistenceAbstractDataAccessObject.h>
+
 #define QPERSISTENCE_PRIMARYKEY "QPERSISTENCE_PRIMARYKEY"
 #define QPERSISTENCE_SQL_TABLENAME "QPERSISTENCE_SQL_TABLENAME"
 #define QPERSISTENCE_REST_COLLECTIONNAME "QPERSISTENCE_REST_COLLECTIONNAME"
@@ -33,7 +35,23 @@ QPersistenceAbstractDataAccessObject *dataAccessObject(const QString &connection
 QPersistenceAbstractDataAccessObject *dataAccessObject(const QMetaObject &metaObject, const QString &connectionName = QString());
 QList<QPersistenceAbstractDataAccessObject *> dataAccessObjects(const QString connectionName = QString());
 
+template<class T>
+QList<T *> readAll(const QString &connectionName = QString());
+template<class T>
+int count(const QString &connectionName = QString());
+template<class T>
+T *create(const QString &connectionName = QString());
+bool insert(QObject *object, const QString &connectionName = QString());
+bool update(QObject *object, const QString &connectionName = QString());
+bool remove(QObject *object, const QString &connectionName = QString());
 
+template<class T>
+QList<T *> castList(const QList<QObject *>& list)
+{
+    QList<T *> result;
+    Q_FOREACH(QObject *object, list) result.append(static_cast<T *>(object));
+    return result;
+}
 
 // Private
 namespace Private {
@@ -102,6 +120,25 @@ void registerDataAccessObject(QPersistenceAbstractDataAccessObject *dataAccessOb
 
 } // namespace Private
 
+
+template<class T>
+QList<T *> readAll(const QString &connectionName)
+{
+    return castList<T>(dataAccessObject<T>(connectionName)->readAllObjects());
+}
+
+template<class T>
+int count(const QString &connectionName)
+{
+    return dataAccessObject<T>(connectionName)->count();
+}
+
+template<class T>
+T *create(const QString &connectionName)
+{
+    return static_cast<T *>(dataAccessObject<T>(connectionName)->createObject());
+}
+
 template<class T>
 void registerDataAccessObject(QPersistenceAbstractDataAccessObject *dataAccessObject, const QString &connectionName)
 {
@@ -129,7 +166,7 @@ void registerDataAccessObject(QPersistenceAbstractDataAccessObject *dataAccessOb
 template<class T>
 QPersistenceAbstractDataAccessObject *dataAccessObject(const QString &connectionName)
 {
-    return dataAccessObject(T::staticMetaObject.className(), connectionName);
+    return dataAccessObject(T::staticMetaObject, connectionName);
 }
 
 } // namespace QPersistence

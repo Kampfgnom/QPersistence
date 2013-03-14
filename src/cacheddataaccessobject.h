@@ -10,6 +10,7 @@ class QPersistenceCachedDataAccessObject : public QPersistenceAbstractDataAccess
 {
 public:
     explicit QPersistenceCachedDataAccessObject(QPersistenceAbstractDataAccessObject *source, QObject *parent = 0);
+    ~QPersistenceCachedDataAccessObject();
 
     QPersistenceMetaObject dataSuiteMetaObject() const Q_DECL_OVERRIDE;
 
