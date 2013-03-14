@@ -1,0 +1,6 @@
+[submodule "QRestServer/lib/qhttpserver/src"]
+	path = QRestServer/lib/qhttpserver/src
+	url = git@github.com:Kampfgnom/qhttpserver.git
+[submodule "QRestServer/lib/QHal"]
+	path = QRestServer/lib/QHal
+	url = git@github.com:Kampfgnom/QHal.git
