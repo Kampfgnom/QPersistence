@@ -221,6 +221,11 @@ void QPersistenceSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery 
     for (int i = 0; i < fieldCount; ++i) {
         QString fieldName = record.fieldName(i);
         QVariant value = query.value(i);
+
+        if(value.type() == QMetaType::QStringList) {
+            value = value.toString().split(',');
+        }
+
         object->setProperty(fieldName.toLatin1(), value);
     }
 }

@@ -44,6 +44,8 @@ public:
     void prepareInsert();
     void prepareDelete();
 
+    void addBindValue(const QVariant &val);
+
 private:
     QExplicitlySharedDataPointer<QPersistenceSqlQueryPrivate> d;
 };

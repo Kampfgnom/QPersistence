@@ -210,7 +210,7 @@ void QPersistenceSqlQuery::prepareSelect()
     QSqlQuery::prepare(query);
 
     foreach(const QVariant value, d->whereCondition.bindValues()) {
-        QSqlQuery::addBindValue(value);
+        addBindValue(value);
     }
 }
 
@@ -236,10 +236,10 @@ bool QPersistenceSqlQuery::prepareUpdate()
     QSqlQuery::prepare(query);
 
     foreach(const QVariant value, d->fields.values()) {
-        QSqlQuery::addBindValue(value);
+        addBindValue(value);
     }
     foreach(const QVariant value, d->whereCondition.bindValues()) {
-        QSqlQuery::addBindValue(value);
+        addBindValue(value);
     }
 
     return true;
@@ -266,7 +266,7 @@ void QPersistenceSqlQuery::prepareInsert()
     QSqlQuery::prepare(query);
 
     foreach(const QVariant value, d->fields.values()) {
-        QSqlQuery::addBindValue(value);
+        addBindValue(value);
     }
 }
 
@@ -283,8 +283,18 @@ void QPersistenceSqlQuery::prepareDelete()
     QSqlQuery::prepare(query);
 
     foreach(const QVariant value, d->whereCondition.bindValues()) {
-        QSqlQuery::addBindValue(value);
+        addBindValue(value);
     }
+}
+
+void QPersistenceSqlQuery::addBindValue(const QVariant &val)
+{
+    QVariant value = val;
+    if(static_cast<QMetaType::Type>(val.type()) == QMetaType::QStringList) {
+        value = QVariant::fromValue<QString>(val.toStringList().join(','));
+    }
+
+    QSqlQuery::addBindValue(value);
 }
 
 
