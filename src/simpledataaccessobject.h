@@ -1,9 +1,9 @@
 #ifndef QPERSISTENCE_SIMPLEDATAACCESSOBJECT_H
 #define QPERSISTENCE_SIMPLEDATAACCESSOBJECT_H
 
-#include <QDataSuite/abstractdataaccessobject.h>
+#include <QPersistenceAbstractDataAccessObject.h>
 
-#include <QDataSuite/metaobject.h>
+#include "metaobject.h"
 #include <QtCore/QHash>
 #include <QtCore/QVariant>
 
@@ -34,6 +34,7 @@ public:
 private:
     QHash<QVariant, T *> m_objects;
     QPersistenceMetaObject m_metaObject;
+    int m_lastPrimaryKey;
 };
 
 #include "simpledataaccessobject.cpp"

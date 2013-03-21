@@ -1,8 +1,8 @@
-#include <QDataSuite/simpledataaccessobject.h>
+#include <QPersistenceSimpleDataAccessObject.h>
 
-#include <QDataSuite/metaproperty.h>
-#include <QDataSuite/metaobject.h>
-#include <QDataSuite/error.h>
+#include "metaobject.h"
+#include "metaproperty.h"
+#include <QPersistenceError.h>
 
 #include <QDebug>
 
@@ -11,8 +11,10 @@
 template<class T>
 QPersistenceSimpleDataAccessObject<T>::QPersistenceSimpleDataAccessObject(QObject *parent) :
     QPersistenceAbstractDataAccessObject(parent),
-    m_metaObject(QPersistenceMetaObject::metaObject(T::staticMetaObject))
-{}
+    m_lastPrimaryKey(0)
+{
+    m_metaObject = QPersistenceMetaObject(T::staticMetaObject);
+}
 
 template<class T>
 QPersistenceMetaObject QPersistenceSimpleDataAccessObject<T>::dataSuiteMetaObject() const
@@ -84,11 +86,21 @@ template<class T>
 bool QPersistenceSimpleDataAccessObject<T>::insert(T * const object)
 {
     resetLastError();
-    QVariant key = m_metaObject.primaryKeyProperty().read(object);
-    if(m_objects.contains(key)) {
-        setLastError(QPersistenceError("An object with this key already exists.",
-                                       QPersistenceError::StorageError));
-        return false;
+    QPersistenceMetaProperty primaryKeyProperty = m_metaObject.primaryKeyProperty();
+
+    QVariant key;
+    if(primaryKeyProperty.isAutoIncremented()) {
+        ++m_lastPrimaryKey;
+        key = m_lastPrimaryKey;
+        primaryKeyProperty.write(object, key);
+    }
+    else {
+        QVariant key = m_metaObject.primaryKeyProperty().read(object);
+        if(m_objects.contains(key)) {
+            setLastError(QPersistenceError("An object with this key already exists.",
+                                           QPersistenceError::StorageError));
+            return false;
+        }
     }
 
     m_objects.insert(key, object);
