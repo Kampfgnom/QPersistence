@@ -12,6 +12,7 @@
 #include <QStringList>
 #include <QDebug>
 #include <QSqlRecord>
+#include <QFile>
 
 class QPersistenceDatabaseSchemaPrivate : public QSharedData
 {
@@ -187,9 +188,15 @@ void QPersistenceDatabaseSchema::addColumn(const QPersistenceMetaProperty &metaP
 
 void QPersistenceDatabaseSchema::createCleanSchema()
 {
+    QFile file(d->database.databaseName());
+    if(file.exists()) {
+        if(!file.remove())
+            qCritical() << Q_FUNC_INFO << "Could not remove database file"<< file.fileName();
+        if(!d->database.open())
+            qCritical() << Q_FUNC_INFO << "Could not re-open database file"<< file.fileName();
+    }
+
     foreach(const QPersistenceMetaObject &metaObject, QPersistence::metaObjects()) {
-        if(existsTable(metaObject))
-            dropTable(metaObject);
         createTable(metaObject);
     }
 }
