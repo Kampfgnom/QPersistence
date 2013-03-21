@@ -1,1 +1,1 @@
-#include "../../src/simpledataaccessobject.h"
+#include "../src/simpledataaccessobject.h"
