@@ -222,7 +222,7 @@ void QPersistenceSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery 
         QString fieldName = record.fieldName(i);
         QVariant value = query.value(i);
 
-        if(value.type() == QMetaType::QStringList) {
+        if(static_cast<QMetaType::Type>(value.type()) == QMetaType::QStringList) {
             value = value.toString().split(',');
         }
 
