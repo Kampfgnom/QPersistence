@@ -8,6 +8,9 @@
 #include <QStringList>
 #include <QDebug>
 
+static const QRegularExpression TOMANYRELATIONREGEXP("QList\\<(\\w+)\\*\\>");
+static const QRegularExpression MAPPINGRELATIONREGEXP("QMap\\<(.+),(.+)\\>");
+
 class QPersistenceMetaPropertyPrivate : public QSharedData
 {
 public:
@@ -135,8 +138,7 @@ bool QPersistenceMetaProperty::isToOneRelationProperty() const
 
 bool QPersistenceMetaProperty::isToManyRelationProperty() const
 {
-    static QRegularExpression regExp("QList<(\\w+)\\*>");
-    return regExp.match(QLatin1String(typeName())).hasMatch();
+    return TOMANYRELATIONREGEXP.match(typeName()).hasMatch();
 }
 
 QPersistenceMetaProperty::Cardinality QPersistenceMetaProperty::cardinality() const
@@ -191,8 +193,11 @@ QString QPersistenceMetaProperty::reverseClassName() const
         return name.left(name.length() - 1);
     }
 
-    static QRegularExpression regExp("QList\\<(\\w*)\\*\\>");
-    return regExp.match(name).captured(1);
+    QRegularExpressionMatch match = TOMANYRELATIONREGEXP.match(name);
+    if(!match.hasMatch())
+        return QString();
+
+    return match.captured(1);
 }
 
 QPersistenceMetaObject QPersistenceMetaProperty::reverseMetaObject() const
@@ -270,6 +275,29 @@ QVariant::Type QPersistenceMetaProperty::foreignKeyType() const
     }
 
     return QVariant::Invalid;
+}
+
+bool QPersistenceMetaProperty::isMappingProperty() const
+{
+    return QString(typeName()).startsWith("QMap");
+}
+
+QString QPersistenceMetaProperty::mappingFromTypeName() const
+{
+    QRegularExpressionMatch match = MAPPINGRELATIONREGEXP.match(typeName());
+    if(!match.hasMatch())
+        return QString();
+
+    return match.captured(1);
+}
+
+QString QPersistenceMetaProperty::mappingToTypeName() const
+{
+    QRegularExpressionMatch match = MAPPINGRELATIONREGEXP.match(typeName());
+    if(!match.hasMatch())
+        return QString();
+
+    return match.captured(2);
 }
 
 bool QPersistenceMetaProperty::write(QObject *obj, const QVariant &value) const

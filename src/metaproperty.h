@@ -30,6 +30,8 @@ public:
 
     QPersistenceMetaObject metaObject() const;
 
+    bool write(QObject *obj, const QVariant &value) const;
+
     QString columnName() const;
     bool isAutoIncremented() const;
     bool isReadOnly() const;
@@ -49,7 +51,10 @@ public:
     QString tableName() const;
     QVariant::Type foreignKeyType() const;
 
-    bool write(QObject *obj, const QVariant &value) const;
+    // Maps
+    bool isMappingProperty() const;
+    QString mappingFromTypeName() const;
+    QString mappingToTypeName() const;
 
 private:
     QSharedDataPointer<QPersistenceMetaPropertyPrivate> d;

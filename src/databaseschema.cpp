@@ -80,21 +80,7 @@ void QPersistenceDatabaseSchema::createTable(const QMetaObject &metaObject)
         if (!metaProperty.isStored())
             continue;
 
-        if(!metaProperty.isRelationProperty()) {
-            QString columnName = metaProperty.columnName();
-            QString columnType = QPersistenceDatabaseSchema::variantTypeToSqlType(metaProperty.type());
-
-            if (metaProperty.isPrimaryKey()) {
-                columnType.append(QLatin1String(" PRIMARY KEY"));
-            }
-
-            if(metaProperty.isAutoIncremented()) {
-                columnType.append(QLatin1String(" AUTOINCREMENT"));
-            }
-
-            d->query.addField(columnName, columnType);
-        }
-        else {
+        if(metaProperty.isRelationProperty()) {
             if(metaProperty.tableName() == meta.tableName()) {
                 QPersistenceMetaProperty reverseRelation = metaProperty.reverseRelation();
                 if(reverseRelation.isValid()) {
@@ -108,6 +94,20 @@ void QPersistenceDatabaseSchema::createTable(const QMetaObject &metaObject)
                                            reverseMetaObject.tableName());
                 }
             }
+        }
+        else {
+            QString columnName = metaProperty.columnName();
+            QString columnType = QPersistenceDatabaseSchema::variantTypeToSqlType(metaProperty.type());
+
+            if (metaProperty.isPrimaryKey()) {
+                columnType.append(QLatin1String(" PRIMARY KEY"));
+            }
+
+            if(metaProperty.isAutoIncremented()) {
+                columnType.append(QLatin1String(" AUTOINCREMENT"));
+            }
+
+            d->query.addField(columnName, columnType);
         }
     }
 
@@ -232,6 +232,7 @@ QString QPersistenceDatabaseSchema::variantTypeToSqlType(QVariant::Type type)
         return QLatin1String("TEXT");
     case QVariant::Double:
         return QLatin1String("REAL");
+    case QVariant::UserType:
     default:
         return QLatin1String("BLOB");
     }

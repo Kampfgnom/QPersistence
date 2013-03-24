@@ -1,6 +1,7 @@
 #include "sqlquery.h"
 
 #include "sqlcondition.h"
+#include "qpersistence.h"
 
 #include <QSharedData>
 #include <QStringList>
@@ -289,12 +290,20 @@ void QPersistenceSqlQuery::prepareDelete()
 
 void QPersistenceSqlQuery::addBindValue(const QVariant &val)
 {
+    QSqlQuery::addBindValue(variantToSqlStorableVariant(val));
+}
+
+QVariant QPersistenceSqlQuery::variantToSqlStorableVariant(const QVariant &val)
+{
     QVariant value = val;
     if(static_cast<QMetaType::Type>(val.type()) == QMetaType::QStringList) {
         value = QVariant::fromValue<QString>(val.toStringList().join(','));
     }
+    else if(QPersistence::Private::canConvertToSqlStorableVariant(val)) {
+        value = QPersistence::Private::convertToSqlStorableVariant(val);
+    }
 
-    QSqlQuery::addBindValue(value);
+    return value;
 }
 
 

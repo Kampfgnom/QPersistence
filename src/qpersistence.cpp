@@ -55,6 +55,28 @@ bool remove(QObject *object, const QString &connectionName)
 }
 
 namespace Private {
+
+bool canConvertToSqlStorableVariant(const QVariant &variant)
+{
+    return Private::convertersByUserType.contains(variant.userType());
+}
+
+QString convertToSqlStorableVariant(const QVariant &variant)
+{
+    return Private::convertersByUserType.value(variant.userType())->convertToSqlStorableValue(variant);
+}
+
+bool canConvertFromSqlStoredVariant(QMetaType::Type type)
+{
+    return Private::convertersByUserType.contains(type);
+}
+
+QVariant convertFromSqlStoredVariant(const QString &variant, QMetaType::Type type)
+{
+    return Private::convertersByUserType.value(type)->convertFromSqlStorableValue(variant);
+}
+
+
 void registerDataAccessObject(QPersistenceAbstractDataAccessObject *dataAccessObject,
                               const QMetaObject &metaObject,
                               const QString &connectionName)

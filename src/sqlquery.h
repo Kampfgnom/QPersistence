@@ -48,6 +48,8 @@ public:
 
 private:
     QExplicitlySharedDataPointer<QPersistenceSqlQueryPrivate> d;
+
+    QVariant variantToSqlStorableVariant(const QVariant &val);
 };
 
 #endif // QPERSISTENCE_SQLQUERY_H
