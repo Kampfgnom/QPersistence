@@ -10,6 +10,7 @@
 
 static const QRegularExpression TOMANYRELATIONREGEXP("QList\\<(\\w+)\\*\\>");
 static const QRegularExpression MAPPINGRELATIONREGEXP("QMap\\<(.+),(.+)\\>");
+static const QRegularExpression SETTYPEREGEXP("QSet<(.+)\\>");
 
 class QPersistenceMetaPropertyPrivate : public QSharedData
 {
@@ -294,6 +295,20 @@ QString QPersistenceMetaProperty::mappingFromTypeName() const
 QString QPersistenceMetaProperty::mappingToTypeName() const
 {
     QRegularExpressionMatch match = MAPPINGRELATIONREGEXP.match(typeName());
+    if(!match.hasMatch())
+        return QString();
+
+    return match.captured(2);
+}
+
+bool QPersistenceMetaProperty::isSetProperty() const
+{
+    return QString(typeName()).startsWith("QSet");
+}
+
+QString QPersistenceMetaProperty::setType() const
+{
+    QRegularExpressionMatch match = SETTYPEREGEXP.match(typeName());
     if(!match.hasMatch())
         return QString();
 

@@ -56,6 +56,10 @@ public:
     QString mappingFromTypeName() const;
     QString mappingToTypeName() const;
 
+    // Sets
+    bool isSetProperty() const;
+    QString setType() const;
+
 private:
     QSharedDataPointer<QPersistenceMetaPropertyPrivate> d;
 };

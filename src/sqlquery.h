@@ -46,10 +46,12 @@ public:
 
     void addBindValue(const QVariant &val);
 
+    static QVariant variantToSqlStorableVariant(const QVariant &val);
+    static QVariant variantFromSqlStorableVariant(const QVariant &val, QMetaType::Type type);
+
 private:
     QExplicitlySharedDataPointer<QPersistenceSqlQueryPrivate> d;
 
-    QVariant variantToSqlStorableVariant(const QVariant &val);
 };
 
 #endif // QPERSISTENCE_SQLQUERY_H

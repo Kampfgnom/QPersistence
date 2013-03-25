@@ -63,6 +63,9 @@ bool canConvertToSqlStorableVariant(const QVariant &variant)
 
 QString convertToSqlStorableVariant(const QVariant &variant)
 {
+    if(!Private::convertersByUserType.contains(variant.userType()))
+        return variant.toString();
+
     return Private::convertersByUserType.value(variant.userType())->convertToSqlStorableValue(variant);
 }
 
@@ -73,6 +76,9 @@ bool canConvertFromSqlStoredVariant(QMetaType::Type type)
 
 QVariant convertFromSqlStoredVariant(const QString &variant, QMetaType::Type type)
 {
+    if(!Private::convertersByUserType.contains(type))
+        return variant;
+
     return Private::convertersByUserType.value(type)->convertFromSqlStorableValue(variant);
 }
 

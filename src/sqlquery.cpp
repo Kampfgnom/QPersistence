@@ -306,6 +306,18 @@ QVariant QPersistenceSqlQuery::variantToSqlStorableVariant(const QVariant &val)
     return value;
 }
 
+QVariant QPersistenceSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaType::Type type)
+{
+    QVariant value = val;
+    if(type == QMetaType::QStringList) {
+        value = QVariant::fromValue<QStringList>(val.toString().split(','));
+    }
+    else if(QPersistence::Private::canConvertFromSqlStoredVariant(type)) {
+        value = QPersistence::Private::convertFromSqlStoredVariant(val.toString(), type);
+    }
+    return value;
+}
+
 
 
 #undef COMMA

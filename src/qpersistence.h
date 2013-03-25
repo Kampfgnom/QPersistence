@@ -52,12 +52,19 @@ bool insert(QObject *object, const QString &connectionName = QString());
 bool update(QObject *object, const QString &connectionName = QString());
 bool remove(QObject *object, const QString &connectionName = QString());
 
+template<class Source, class Target>
+QList<Target> castList(const QList<Source>& list)
+{
+    QList<Target> result;
+    Q_FOREACH(Source s, list) result.append(static_cast<Target>(s));
+    return result;
+}
+
+
 template<class T>
 QList<T *> castList(const QList<QObject *>& list)
 {
-    QList<T *> result;
-    Q_FOREACH(QObject *object, list) result.append(static_cast<T *>(object));
-    return result;
+    return castList<QObject *, T *>(list);
 }
 
 // Private
@@ -221,6 +228,47 @@ public:
     }
 };
 
+
+template<typename T>
+class SetConverter : public ConverterBase
+{
+public:
+    SetConverter(QObject *parent = 0) : ConverterBase(parent) {}
+    QString convertToSqlStorableValue(const QVariant &variant) const
+    {
+        QVariant v = QVariant::fromValue<T>(T());
+        if(static_cast<QMetaType::Type>(v.type()) == QMetaType::User) {
+            Q_ASSERT(canConvertToSqlStorableVariant<T>());
+        }
+
+        QSet<T> set = variant.value<QSet<T> >();
+        QSetIterator<T> it(set);
+        QStringList result;
+        while(it.hasNext()) {
+            result.append(Private::convertToSqlStorableVariant(QVariant::fromValue<T>(it.next())));
+        }
+        return result.join(';');
+    }
+
+    QVariant convertFromSqlStorableValue(const QString &value) const
+    {
+        QVariant v = QVariant::fromValue<T>(T());
+        if(static_cast<QMetaType::Type>(v.type()) == QMetaType::User) {
+            Q_ASSERT(canConvertToSqlStorableVariant<T>());
+        }
+
+        QStringList list = value.split(';');
+        QSet<T> result;
+        QMetaType::Type type = static_cast<QMetaType::Type>(QVariant::fromValue<T>(T()).userType());
+
+        foreach(QString string, list) {
+            QVariant variant = Private::convertFromSqlStoredVariant(string, type);
+            result.insert(variant.value<T>());
+        }
+        return QVariant::fromValue<QSet<T> >(result);
+    }
+};
+
 template<typename K, typename V>
 const QRegularExpression MapConverter<K,V>::KEYVALUEREGEXP("(\\w+)=(\\w+)");
 
@@ -236,7 +284,9 @@ template<typename T>
 void registerConverter(Private::ConverterBase *converter)
 {
     QVariant v = QVariant::fromValue<T>(T());
-    Private::registerConverter(v.userType(), converter);
+    if(static_cast<QMetaType::Type>(v.type()) == QMetaType::User) {
+        Private::registerConverter(v.userType(), converter);
+    }
 }
 
 template<class T>
@@ -300,6 +350,20 @@ void registerMappableTypes()
         registerConverter<K>(new Private::SqlConverter<K>(&guard));
     if(!Private::canConvertFromSqlStoredVariant<V>())
         registerConverter<V>(new Private::SqlConverter<V>(&guard));
+}
+
+template<class T>
+void registerSetType()
+{
+    qRegisterMetaType<T>();
+    qRegisterMetaType<QSet<T> >();
+
+    // Create converter
+    static QObject guard;
+    registerConverter<QSet<T> >(new Private::SetConverter<T>(&guard));
+
+    if(!Private::canConvertFromSqlStoredVariant<T>())
+        registerConverter<T>(new Private::SqlConverter<T>(&guard));
 }
 
 } // namespace QPersistence
