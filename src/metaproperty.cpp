@@ -8,26 +8,26 @@
 #include <QStringList>
 #include <QDebug>
 
-static const QRegularExpression TOMANYRELATIONREGEXP("QList\\<(\\w+)\\*\\>");
+static const QRegularExpression TOMANYRELATIONREGEXP("QList\\<QSharedPointer\\<(\\w+)\\> \\>");
 static const QRegularExpression MAPPINGRELATIONREGEXP("QMap\\<(.+),(.+)\\>");
 static const QRegularExpression SETTYPEREGEXP("QSet<(.+)\\>");
 
-class QPersistenceMetaPropertyPrivate : public QSharedData
+class QpMetaPropertyPrivate : public QSharedData
 {
 public:
-    QPersistenceMetaPropertyPrivate() :
+    QpMetaPropertyPrivate() :
         QSharedData()
     {}
 
-    QPersistenceMetaObject metaObject;
+    QpMetaObject metaObject;
     QHash<QString, QString> attributes;
 
-    QPersistenceMetaProperty *q;
+    QpMetaProperty *q;
 
     void parseClassInfo();
 };
 
-void QPersistenceMetaPropertyPrivate::parseClassInfo()
+void QpMetaPropertyPrivate::parseClassInfo()
 {
     QString classInfoName = QString(QPERSISTENCE_PROPERTYMETADATA).append(":").append(q->name());
     QString classInfoRawValue = metaObject.classInformation(classInfoName.toLatin1(), QString());
@@ -44,35 +44,35 @@ void QPersistenceMetaPropertyPrivate::parseClassInfo()
     }
 }
 
-QPersistenceMetaProperty::QPersistenceMetaProperty(const QString &propertyName, const QPersistenceMetaObject &metaObject) :
+QpMetaProperty::QpMetaProperty(const QString &propertyName, const QpMetaObject &metaObject) :
     QMetaProperty(metaObject.property(metaObject.indexOfProperty(propertyName.toLatin1()))),
-    d(new QPersistenceMetaPropertyPrivate)
+    d(new QpMetaPropertyPrivate)
 {
     d->q = this;
     d->metaObject = metaObject;
     d->parseClassInfo();
 }
 
-QPersistenceMetaProperty::QPersistenceMetaProperty(const QMetaProperty &property, const QPersistenceMetaObject &metaObject) :
+QpMetaProperty::QpMetaProperty(const QMetaProperty &property, const QpMetaObject &metaObject) :
     QMetaProperty(property),
-    d(new QPersistenceMetaPropertyPrivate)
+    d(new QpMetaPropertyPrivate)
 {
     d->q = this;
     d->metaObject = metaObject;
     d->parseClassInfo();
 }
 
-QPersistenceMetaProperty::~QPersistenceMetaProperty()
+QpMetaProperty::~QpMetaProperty()
 {
 }
 
-QPersistenceMetaProperty::QPersistenceMetaProperty(const QPersistenceMetaProperty &other) :
+QpMetaProperty::QpMetaProperty(const QpMetaProperty &other) :
     QMetaProperty(other),
     d(other.d)
 {
 }
 
-QPersistenceMetaProperty &QPersistenceMetaProperty::operator =(const QPersistenceMetaProperty &other)
+QpMetaProperty &QpMetaProperty::operator =(const QpMetaProperty &other)
 {
     QMetaProperty::operator=(other);
 
@@ -82,67 +82,75 @@ QPersistenceMetaProperty &QPersistenceMetaProperty::operator =(const QPersistenc
     return *this;
 }
 
-QPersistenceMetaObject QPersistenceMetaProperty::metaObject() const
+QpMetaObject QpMetaProperty::metaObject() const
 {
     return d->metaObject;
 }
 
-bool QPersistenceMetaProperty::isAutoIncremented() const
+QString QpMetaProperty::columnName() const
 {
-    return d->attributes.value(QPERSISTENCE_PROPERTYMETADATA_AUTOINCREMENTED) == QLatin1String(QPERSISTENCE_TRUE);
-}
-
-QString QPersistenceMetaProperty::columnName() const
-{
-    if(d->attributes.contains(QPERSISTENCE_PROPERTYMETADATA_SQL_COLUMNNAME))
-        return d->attributes.value(QPERSISTENCE_PROPERTYMETADATA_SQL_COLUMNNAME);
-
-    if(isToManyRelationProperty()) {
+    if(isToManyRelationProperty()
+            || (isToOneRelationProperty()
+                && !hasTableForeignKey())) {
         QString result = QString(name());
 
-        QPersistenceMetaProperty reverse(reverseRelation());
+        QpMetaProperty reverse(reverseRelation());
         if(reverse.isValid()) {
             result = QString(reverse.name());
         }
 
-        result.append("_fk_").append(reverseMetaObject().primaryKeyPropertyName());
+        result.prepend("_Qp_FK_");
         return result;
     }
     else if(isToOneRelationProperty()) {
-        return QString(name())
-                .append("_fk_")
-                .append(reverseMetaObject().primaryKeyPropertyName());
+        return QString(name()).prepend("_Qp_FK_");
     }
 
     return QString(name());
 }
 
-bool QPersistenceMetaProperty::isReadOnly() const
-{
-    return d->attributes.value(QPERSISTENCE_PROPERTYMETADATA_READONLY) == QLatin1String(QPERSISTENCE_TRUE);
-}
-
-bool QPersistenceMetaProperty::isPrimaryKey() const
-{
-    return d->metaObject.primaryKeyPropertyName() == QLatin1String(name());
-}
-
-bool QPersistenceMetaProperty::isRelationProperty() const
+bool QpMetaProperty::isRelationProperty() const
 {
     return isToOneRelationProperty() || isToManyRelationProperty();
 }
 
-bool QPersistenceMetaProperty::isToOneRelationProperty() const
+bool QpMetaProperty::isToOneRelationProperty() const
 {
-    return QString(typeName()).endsWith('*');
+    return QString(typeName()).startsWith("QSharedPointer<");
 }
 
-bool QPersistenceMetaProperty::isToManyRelationProperty() const
+bool QpMetaProperty::isToManyRelationProperty() const
 {
     return TOMANYRELATIONREGEXP.match(typeName()).hasMatch();
 }
 
-QPersistenceMetaProperty::Cardinality QPersistenceMetaProperty::cardinality() const
+bool QpMetaProperty::hasTableForeignKey() const
+{
+    switch(cardinality()) {
+    case QpMetaProperty::ToOneCardinality:
+    case QpMetaProperty::ManyToOneCardinality:
+        return true;
+
+    case QpMetaProperty::ToManyCardinality:
+    case QpMetaProperty::OneToManyCardinality:
+        return false;
+
+    case QpMetaProperty::OneToOneCardinality:
+        return  metaObject().tableName() < reverseMetaObject().tableName();
+
+    case QpMetaProperty::ManyToManyCardinality:
+        Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
+
+    case QpMetaProperty::NoCardinality:
+    default:
+        // This is BAD and should have asserted in cardinality()
+        Q_ASSERT(false);
+    }
+
+    Q_ASSERT(false);
+}
+
+QpMetaProperty::Cardinality QpMetaProperty::cardinality() const
 {
     QString reverseName = reverseRelationName();
     if(reverseName.isEmpty()) {
@@ -152,7 +160,7 @@ QPersistenceMetaProperty::Cardinality QPersistenceMetaProperty::cardinality() co
             return ToManyCardinality;
     }
     else {
-        QPersistenceMetaProperty reverse = reverseMetaObject().metaProperty(reverseName);
+        QpMetaProperty reverse = reverseMetaObject().metaProperty(reverseName);
 
         if(isToOneRelationProperty()) {
             if(!reverse.isValid() ||
@@ -187,11 +195,12 @@ QPersistenceMetaProperty::Cardinality QPersistenceMetaProperty::cardinality() co
     return NoCardinality;
 }
 
-QString QPersistenceMetaProperty::reverseClassName() const
+QString QpMetaProperty::reverseClassName() const
 {
     QString name(typeName());
     if(isToOneRelationProperty()) {
-        return name.left(name.length() - 1);
+        int l = name.length();
+        return name.left(l - 1).right(l - 16);
     }
 
     QRegularExpressionMatch match = TOMANYRELATIONREGEXP.match(name);
@@ -201,44 +210,47 @@ QString QPersistenceMetaProperty::reverseClassName() const
     return match.captured(1);
 }
 
-QPersistenceMetaObject QPersistenceMetaProperty::reverseMetaObject() const
+QpMetaObject QpMetaProperty::reverseMetaObject() const
 {
-    return QPersistence::metaObject(reverseClassName());
+    return Qp::Private::metaObject(reverseClassName());
 }
 
-QString QPersistenceMetaProperty::reverseRelationName() const
+QString QpMetaProperty::reverseRelationName() const
 {
     return d->attributes.value(QPERSISTENCE_PROPERTYMETADATA_REVERSERELATION);
 }
 
-QPersistenceMetaProperty QPersistenceMetaProperty::reverseRelation() const
+QpMetaProperty QpMetaProperty::reverseRelation() const
 {
     return reverseMetaObject().metaProperty(reverseRelationName());
 }
 
-QString QPersistenceMetaProperty::tableName() const
+QString QpMetaProperty::tableName() const
 {
     if(!isRelationProperty())
         return metaObject().tableName();
 
+    QString table = metaObject().tableName();
+    QString reverseTable = reverseMetaObject().tableName();
+
     switch(cardinality()) {
-    case QPersistenceMetaProperty::ToOneCardinality:
-    case QPersistenceMetaProperty::ManyToOneCardinality:
+    case QpMetaProperty::ToOneCardinality:
+    case QpMetaProperty::ManyToOneCardinality:
         // My table gets a foreign key column
-        return metaObject().tableName();
+        return table;
 
-    case QPersistenceMetaProperty::ToManyCardinality:
-    case QPersistenceMetaProperty::OneToManyCardinality:
+    case QpMetaProperty::ToManyCardinality:
+    case QpMetaProperty::OneToManyCardinality:
         // The related table gets a foreign key column
-        return reverseMetaObject().tableName();
+        return reverseTable;
 
-    case QPersistenceMetaProperty::OneToOneCardinality:
-        Q_ASSERT_X(false, Q_FUNC_INFO, "OneToOneCardinality relations are not supported yet.");
+    case QpMetaProperty::OneToOneCardinality:
+        return table < reverseTable ? table : reverseTable;
 
-    case QPersistenceMetaProperty::ManyToManyCardinality:
+    case QpMetaProperty::ManyToManyCardinality:
         Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
 
-    case QPersistenceMetaProperty::NoCardinality:
+    case QpMetaProperty::NoCardinality:
     default:
         // This is BAD and should have asserted in cardinality()
         Q_ASSERT(false);
@@ -247,43 +259,12 @@ QString QPersistenceMetaProperty::tableName() const
     return QString();
 }
 
-QVariant::Type QPersistenceMetaProperty::foreignKeyType() const
-{
-    if(!isRelationProperty())
-        return QVariant::Invalid;
-
-    switch(cardinality()) {
-    case QPersistenceMetaProperty::ToOneCardinality:
-    case QPersistenceMetaProperty::ManyToOneCardinality:
-        // My table gets a foreign key column: I.e. the foreign key type is the type of the related primary key
-        return reverseMetaObject().primaryKeyProperty().type();
-
-    case QPersistenceMetaProperty::ToManyCardinality:
-    case QPersistenceMetaProperty::OneToManyCardinality:
-        // The related table gets a foreign key column: I.e. the foreign key type is the type of my primary key
-        return metaObject().primaryKeyProperty().type();
-
-    case QPersistenceMetaProperty::OneToOneCardinality:
-        Q_ASSERT_X(false, Q_FUNC_INFO, "OneToOneCardinality relations are not supported yet.");
-
-    case QPersistenceMetaProperty::ManyToManyCardinality:
-        Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
-
-    case QPersistenceMetaProperty::NoCardinality:
-    default:
-        // This is BAD and should have asserted in cardinality()
-        Q_ASSERT(false);
-    }
-
-    return QVariant::Invalid;
-}
-
-bool QPersistenceMetaProperty::isMappingProperty() const
+bool QpMetaProperty::isMappingProperty() const
 {
     return QString(typeName()).startsWith("QMap");
 }
 
-QString QPersistenceMetaProperty::mappingFromTypeName() const
+QString QpMetaProperty::mappingFromTypeName() const
 {
     QRegularExpressionMatch match = MAPPINGRELATIONREGEXP.match(typeName());
     if(!match.hasMatch())
@@ -292,7 +273,7 @@ QString QPersistenceMetaProperty::mappingFromTypeName() const
     return match.captured(1);
 }
 
-QString QPersistenceMetaProperty::mappingToTypeName() const
+QString QpMetaProperty::mappingToTypeName() const
 {
     QRegularExpressionMatch match = MAPPINGRELATIONREGEXP.match(typeName());
     if(!match.hasMatch())
@@ -301,12 +282,12 @@ QString QPersistenceMetaProperty::mappingToTypeName() const
     return match.captured(2);
 }
 
-bool QPersistenceMetaProperty::isSetProperty() const
+bool QpMetaProperty::isSetProperty() const
 {
     return QString(typeName()).startsWith("QSet");
 }
 
-QString QPersistenceMetaProperty::setType() const
+QString QpMetaProperty::setType() const
 {
     QRegularExpressionMatch match = SETTYPEREGEXP.match(typeName());
     if(!match.hasMatch())
@@ -315,7 +296,7 @@ QString QPersistenceMetaProperty::setType() const
     return match.captured(2);
 }
 
-bool QPersistenceMetaProperty::write(QObject *obj, const QVariant &value) const
+bool QpMetaProperty::write(QObject *obj, const QVariant &value) const
 {
     if (!isWritable())
         return false;

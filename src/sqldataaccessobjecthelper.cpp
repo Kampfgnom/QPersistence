@@ -3,7 +3,7 @@
 #include "databaseschema.h"
 #include "sqlquery.h"
 #include "sqlcondition.h"
-#include "persistentdataaccessobject.h"
+#include "dataaccessobject.h"
 #include "metaproperty.h"
 #include "error.h"
 #include "metaobject.h"
@@ -20,54 +20,48 @@
 
 
 
-class QPersistenceSqlDataAccessObjectHelperPrivate : public QSharedData
+class QpSqlDataAccessObjectHelperPrivate : public QSharedData
 {
 public:
-    QPersistenceSqlDataAccessObjectHelperPrivate() :
+    QpSqlDataAccessObjectHelperPrivate() :
         QSharedData()
     {}
 
     QSqlDatabase database;
-    mutable QPersistenceError lastError;
+    mutable QpError lastError;
 
-    static QHash<QString, QPersistenceSqlDataAccessObjectHelper *> helpersForConnection;
+    static QHash<QString, QpSqlDataAccessObjectHelper *> helpersForConnection;
 };
 
-QHash<QString, QPersistenceSqlDataAccessObjectHelper *> QPersistenceSqlDataAccessObjectHelperPrivate::helpersForConnection;
+QHash<QString, QpSqlDataAccessObjectHelper *> QpSqlDataAccessObjectHelperPrivate::helpersForConnection;
 
-QPersistenceSqlDataAccessObjectHelper::QPersistenceSqlDataAccessObjectHelper(const QSqlDatabase &database, QObject *parent) :
+QpSqlDataAccessObjectHelper::QpSqlDataAccessObjectHelper(const QSqlDatabase &database, QObject *parent) :
     QObject(parent),
-    d(new QPersistenceSqlDataAccessObjectHelperPrivate)
+    d(new QpSqlDataAccessObjectHelperPrivate)
 {
     d->database = database;
-    QPersistenceSqlQuery query(database);
-    query.prepare("PRAGMA foreign_keys = 1;");
-    if ( !query.exec()
-         || query.lastError().isValid()) {
-        setLastError(query);
-    }
 }
 
-QPersistenceSqlDataAccessObjectHelper::~QPersistenceSqlDataAccessObjectHelper()
+QpSqlDataAccessObjectHelper::~QpSqlDataAccessObjectHelper()
 {
 }
 
-QPersistenceSqlDataAccessObjectHelper *QPersistenceSqlDataAccessObjectHelper::forDatabase(const QSqlDatabase &database)
+QpSqlDataAccessObjectHelper *QpSqlDataAccessObjectHelper::forDatabase(const QSqlDatabase &database)
 {
     static QObject guard;
 
-    QPersistenceSqlDataAccessObjectHelper* asd = new QPersistenceSqlDataAccessObjectHelper(database, &guard);
+    QpSqlDataAccessObjectHelper* asd = new QpSqlDataAccessObjectHelper(database, &guard);
 
-    if(!QPersistenceSqlDataAccessObjectHelperPrivate::helpersForConnection.contains(database.connectionName()))
-        QPersistenceSqlDataAccessObjectHelperPrivate::helpersForConnection.insert(database.connectionName(),
-                                                                      asd);
+    if(!QpSqlDataAccessObjectHelperPrivate::helpersForConnection.contains(database.connectionName()))
+        QpSqlDataAccessObjectHelperPrivate::helpersForConnection.insert(database.connectionName(),
+                                                                        asd);
 
-    return QPersistenceSqlDataAccessObjectHelperPrivate::helpersForConnection.value(database.connectionName());
+    return QpSqlDataAccessObjectHelperPrivate::helpersForConnection.value(database.connectionName());
 }
 
-int QPersistenceSqlDataAccessObjectHelper::count(const QPersistenceMetaObject &metaObject) const
+int QpSqlDataAccessObjectHelper::count(const QpMetaObject &metaObject) const
 {
-    QPersistenceSqlQuery query(d->database);
+    QpSqlQuery query(d->database);
     query.prepare(QString("SELECT COUNT(*) FROM %1")
                   .arg(metaObject.tableName()));
 
@@ -81,16 +75,16 @@ int QPersistenceSqlDataAccessObjectHelper::count(const QPersistenceMetaObject &m
     return query.value(0).toInt();
 }
 
-QList<QVariant> QPersistenceSqlDataAccessObjectHelper::allKeys(const QPersistenceMetaObject &metaObject) const
+QList<int> QpSqlDataAccessObjectHelper::allKeys(const QpMetaObject &metaObject) const
 {
     qDebug("\n\nallKeys<%s>", qPrintable(metaObject.tableName()));
-    QPersistenceSqlQuery query(d->database);
+    QpSqlQuery query(d->database);
     query.clear();
     query.setTable(metaObject.tableName());
-    query.addField(metaObject.primaryKeyPropertyName());
+    query.addField(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME);
     query.prepareSelect();
 
-    QList<QVariant> result;
+    QList<int> result;
     if ( !query.exec()
          || query.lastError().isValid()) {
         setLastError(query);
@@ -98,26 +92,26 @@ QList<QVariant> QPersistenceSqlDataAccessObjectHelper::allKeys(const QPersistenc
     }
 
     while (query.next()) {
-        result.append(query.value(0));
+        result.append(query.value(0).toInt());
     }
 
     return result;
 }
 
-bool QPersistenceSqlDataAccessObjectHelper::readObject(const QPersistenceMetaObject &metaObject,
-                                           const QVariant &key,
-                                           QObject *object)
+bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
+                                             const QVariant &key,
+                                             QObject *object)
 {
     qDebug("\n\nreadObject<%s>(%s)", qPrintable(metaObject.tableName()), qPrintable(key.toString()));
     Q_ASSERT(object);
     Q_ASSERT(!key.isNull());
 
-    QPersistenceSqlQuery query(d->database);
+    QpSqlQuery query(d->database);
     query.setTable(metaObject.tableName());
     query.setLimit(1);
-    query.setWhereCondition(QPersistenceSqlCondition(metaObject.primaryKeyProperty().columnName(),
-                                         QPersistenceSqlCondition::EqualTo,
-                                         key));
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+                                           QpSqlCondition::EqualTo,
+                                           key));
     query.prepareSelect();
 
     if ( !query.exec()
@@ -128,16 +122,16 @@ bool QPersistenceSqlDataAccessObjectHelper::readObject(const QPersistenceMetaObj
     }
 
     readQueryIntoObject(query, object);
-    return readRelatedObjects(metaObject, object);
+    return object;
 }
 
-bool QPersistenceSqlDataAccessObjectHelper::insertObject(const QPersistenceMetaObject &metaObject, QObject *object)
+bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, QObject *object)
 {
     qDebug("\n\ninsertObject<%s>", qPrintable(metaObject.tableName()));
     Q_ASSERT(object);
 
     // Create main INSERT query
-    QPersistenceSqlQuery query(d->database);
+    QpSqlQuery query(d->database);
     query.setTable(metaObject.tableName());
     fillValuesIntoQuery(metaObject, object, query);
 
@@ -149,25 +143,22 @@ bool QPersistenceSqlDataAccessObjectHelper::insertObject(const QPersistenceMetaO
         return false;
     }
 
-    if(metaObject.primaryKeyProperty().isAutoIncremented()) {
-        metaObject.primaryKeyProperty().write(object, query.lastInsertId());
-    }
+    Qp::Private::setPrimaryKey(object, query.lastInsertId().toInt());
 
-    // Update related objects
-    return adjustRelations(metaObject, object);
+    return true;
 }
 
-bool QPersistenceSqlDataAccessObjectHelper::updateObject(const QPersistenceMetaObject &metaObject, const QObject *object)
+bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, QObject *object)
 {
     qDebug("\n\nupdateObject<%s>", qPrintable(metaObject.tableName()));
     Q_ASSERT(object);
 
     // Create main UPDATE query
-    QPersistenceSqlQuery query(d->database);
+    QpSqlQuery query(d->database);
     query.setTable(metaObject.tableName());
-    query.setWhereCondition(QPersistenceSqlCondition(metaObject.primaryKeyProperty().columnName(),
-                                         QPersistenceSqlCondition::EqualTo,
-                                         metaObject.primaryKeyProperty().read(object)));
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+                                           QpSqlCondition::EqualTo,
+                                           Qp::Private::primaryKey(object)));
     fillValuesIntoQuery(metaObject, object, query);
 
     // Insert the object itself
@@ -179,42 +170,39 @@ bool QPersistenceSqlDataAccessObjectHelper::updateObject(const QPersistenceMetaO
     }
 
     // Update related objects
-    return adjustRelations(metaObject, object);
+    return adjustRelationsInDatabase(metaObject, object);
 }
 
-void QPersistenceSqlDataAccessObjectHelper::fillValuesIntoQuery(const QPersistenceMetaObject &metaObject,
-                                                    const QObject *object,
-                                                    QPersistenceSqlQuery &query)
+void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaObject,
+                                                      const QObject *object,
+                                                      QpSqlQuery &query)
 {
     // Add simple properties
-    foreach(const QPersistenceMetaProperty property, metaObject.simpleProperties()) {
-        if(!property.isAutoIncremented()) {
-            query.addField(property.columnName(), property.read(object));
-        }
+    foreach(const QpMetaProperty property, metaObject.simpleProperties()) {
+        query.addField(property.columnName(), property.read(object));
     }
 
     // Add relation properties
-    foreach(const QPersistenceMetaProperty property, metaObject.relationProperties()) {
-        QPersistenceMetaProperty::Cardinality cardinality = property.cardinality();
+    foreach(const QpMetaProperty property, metaObject.relationProperties()) {
+        QpMetaProperty::Cardinality cardinality = property.cardinality();
 
         // Only care for "XtoOne" relations, since only they have to be inserted into our table
-        if(cardinality == QPersistenceMetaProperty::ToOneCardinality
-                || cardinality == QPersistenceMetaProperty::ManyToOneCardinality) {
-            QObject *relatedObject = QPersistence::Private::objectCast(property.read(object));
+        if(cardinality == QpMetaProperty::ToOneCardinality
+                || cardinality == QpMetaProperty::ManyToOneCardinality
+                || (QpMetaProperty::OneToOneCardinality
+                    && property.hasTableForeignKey())) {
+            QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.read(object));
 
             if(!relatedObject)
                 continue;
 
-            QVariant foreignKey = property.reverseMetaObject().primaryKeyProperty().read(relatedObject);
+            QVariant foreignKey = Qp::Private::primaryKey(relatedObject.data());
             query.addField(property.columnName(), foreignKey);
-        }
-        else if(cardinality == QPersistenceMetaProperty::OneToOneCardinality) {
-            Q_ASSERT_X(false, Q_FUNC_INFO, "OneToOneCardinality relations are not supported yet.");
         }
     }
 }
 
-void QPersistenceSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery &query, QObject *object)
+void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery &query, QObject *object)
 {
     QSqlRecord record = query.record();
     int fieldCount = record.count();
@@ -222,66 +210,84 @@ void QPersistenceSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery 
         QString fieldName = record.fieldName(i);
         QVariant value = query.value(i);
 
-        value = QPersistenceSqlQuery::variantFromSqlStorableVariant(value, static_cast<QMetaType::Type>(object->property(fieldName.toLatin1()).userType()));
+        value = QpSqlQuery::variantFromSqlStorableVariant(value, static_cast<QMetaType::Type>(object->property(fieldName.toLatin1()).userType()));
         object->setProperty(fieldName.toLatin1(), value);
     }
 }
 
-bool QPersistenceSqlDataAccessObjectHelper::adjustRelations(const QPersistenceMetaObject &metaObject, const QObject *object)
+bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object)
 {
-    QVariant primaryKey = metaObject.primaryKeyProperty().read(object);
+    int primaryKey = Qp::Private::primaryKey(object);
 
-    QList<QPersistenceSqlQuery> queries;
+    QList<QpSqlQuery> queries;
 
-    foreach(const QPersistenceMetaProperty property, metaObject.relationProperties()) {
-        QPersistenceMetaProperty::Cardinality cardinality = property.cardinality();
+    foreach(const QpMetaProperty property, metaObject.relationProperties()) {
+        QpMetaProperty::Cardinality cardinality = property.cardinality();
 
         // Only care for "XtoMany" relations, because these reside in other tables
-        if(cardinality == QPersistenceMetaProperty::ToManyCardinality
-                || cardinality == QPersistenceMetaProperty::OneToManyCardinality) {
-            QPersistenceMetaProperty reversePrimaryKey = property.reverseMetaObject().primaryKeyProperty();
+        if(cardinality == QpMetaProperty::ToManyCardinality
+                || cardinality == QpMetaProperty::OneToManyCardinality) {
 
             // Prepare a query, which resets the relation (set all foreign keys to NULL)
-            QPersistenceSqlQuery resetRelationQuery(d->database);
+            QpSqlQuery resetRelationQuery(d->database);
             resetRelationQuery.setTable(property.tableName());
             resetRelationQuery.addField(property.columnName(), QVariant());
-            resetRelationQuery.setWhereCondition(QPersistenceSqlCondition(property.columnName(),
-                                                              QPersistenceSqlCondition::EqualTo,
-                                                              primaryKey));
+            resetRelationQuery.setWhereCondition(QpSqlCondition(property.columnName(),
+                                                                QpSqlCondition::EqualTo,
+                                                                primaryKey));
             resetRelationQuery.prepareUpdate();
             queries.append(resetRelationQuery);
 
             // Check if there are related objects
-            QList<QObject *> relatedObjects = QPersistence::Private::objectListCast(property.read(object));
+            QList<QSharedPointer<QObject> > relatedObjects = Qp::Private::objectListCast(property.read(object));
             if(relatedObjects.isEmpty())
                 continue;
 
             // Build an OR'd where clause, which matches all related objects
-            QList<QPersistenceSqlCondition> relatedObjectsWhereClauses;
-            foreach(QObject *relatedObject, relatedObjects) {
-                relatedObjectsWhereClauses.append(QPersistenceSqlCondition(reversePrimaryKey.columnName(),
-                                                               QPersistenceSqlCondition::EqualTo,
-                                                               reversePrimaryKey.read(relatedObject)));
+            QList<QpSqlCondition> relatedObjectsWhereClauses;
+            foreach(QSharedPointer<QObject> relatedObject, relatedObjects) {
+                relatedObjectsWhereClauses.append(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+                                                                 QpSqlCondition::EqualTo,
+                                                                 Qp::Private::primaryKey(relatedObject.data())));
+
+                relatedObject->setProperty(property.columnName().toLatin1(), primaryKey);
             }
-            QPersistenceSqlCondition relatedObjectsWhereClause(QPersistenceSqlCondition::Or, relatedObjectsWhereClauses);
+            QpSqlCondition relatedObjectsWhereClause(QpSqlCondition::Or, relatedObjectsWhereClauses);
 
             // Prepare a query, which sets the foreign keys of the related objects to our objects key
-            QPersistenceSqlQuery setForeignKeysQuery(d->database);
+            QpSqlQuery setForeignKeysQuery(d->database);
             setForeignKeysQuery.setTable(property.tableName());
             setForeignKeysQuery.addField(property.columnName(), primaryKey);
             setForeignKeysQuery.setWhereCondition(relatedObjectsWhereClause);
             setForeignKeysQuery.prepareUpdate();
             queries.append(setForeignKeysQuery);
         }
-        else if(cardinality == QPersistenceMetaProperty::ManyToManyCardinality) {
-            Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
+        else if(cardinality == QpMetaProperty::OneToOneCardinality
+                && !property.hasTableForeignKey()) {
+            QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.read(object));
+            if(!relatedObject)
+                continue;
+
+            relatedObject->setProperty(property.columnName().toLatin1(), primaryKey);
+
+            QVariant primary = Qp::Private::primaryKey(relatedObject.data());
+            QVariant foreign = primaryKey;
+
+            QpSqlQuery setForeignKeysQuery(d->database);
+            setForeignKeysQuery.setTable(property.tableName());
+            setForeignKeysQuery.addField(property.columnName(), primary);
+            setForeignKeysQuery.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+                                                                 QpSqlCondition::EqualTo,
+                                                                 foreign));
+            setForeignKeysQuery.prepareUpdate();
+            queries.append(setForeignKeysQuery);
         }
-        else if(cardinality == QPersistenceMetaProperty::OneToOneCardinality) {
-            Q_ASSERT_X(false, Q_FUNC_INFO, "OneToOneCardinality relations are not supported yet.");
+        else if(cardinality == QpMetaProperty::ManyToManyCardinality) {
+            Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
         }
     }
 
-    foreach(QPersistenceSqlQuery query, queries) {
+    foreach(QpSqlQuery query, queries) {
         if ( !query.exec()
              || query.lastError().isValid()) {
             setLastError(query);
@@ -292,114 +298,114 @@ bool QPersistenceSqlDataAccessObjectHelper::adjustRelations(const QPersistenceMe
     return true;
 }
 
-bool QPersistenceSqlDataAccessObjectHelper::readRelatedObjects(const QPersistenceMetaObject &metaObject,
-                                                   QObject *object)
-{
-    // This static cache makes this method non-re-entrant!
-    // If we want some kind of thread safety someday, we have to do something about this
-    static QHash<QString, QHash<QVariant, QObject *> > alreadyReadObjectsPerTable;
-    static QObject *objectGraphRoot = 0;
-    if(!objectGraphRoot)
-        objectGraphRoot = object;
+//bool QpSqlDataAccessObjectHelper::readRelatedObjects(const QpMetaObject &metaObject,
+//                                                   QObject *object)
+//{
+//    // This static cache makes this method non-re-entrant!
+//    // If we want some kind of thread safety someday, we have to do something about this
+//    static QHash<QString, QHash<QVariant, QObject *> > alreadyReadObjectsPerTable;
+//    static QObject *objectGraphRoot = 0;
+//    if(!objectGraphRoot)
+//        objectGraphRoot = object;
 
-    // Insert the current object into the cache
-    {
-        QHash<QVariant, QObject *> alreadyReadObjects = alreadyReadObjectsPerTable.value(metaObject.tableName());
-        alreadyReadObjects.insert(metaObject.primaryKeyProperty().read(object), object);
-        alreadyReadObjectsPerTable.insert(metaObject.tableName(), alreadyReadObjects);
-    }
+//    // Insert the current object into the cache
+//    {
+//        QHash<QVariant, QObject *> alreadyReadObjects = alreadyReadObjectsPerTable.value(metaObject.tableName());
+//        alreadyReadObjects.insert(metaObject.primaryKey(object), object);
+//        alreadyReadObjectsPerTable.insert(metaObject.tableName(), alreadyReadObjects);
+//    }
 
-    foreach(const QPersistenceMetaProperty property, metaObject.relationProperties()) {
-        QPersistenceMetaProperty::Cardinality cardinality = property.cardinality();
+//    foreach(const QpMetaProperty property, metaObject.relationProperties()) {
+//        QpMetaProperty::Cardinality cardinality = property.cardinality();
 
-        QString className = property.reverseClassName();
-        QPersistenceAbstractDataAccessObject *dao = QPersistence::dataAccessObject(property.reverseMetaObject(), d->database.connectionName());
-        if(!dao)
-            continue;
+//        QString className = property.reverseClassName();
+//        QpDaoBase *dao = Qp::Private::dataAccessObject(property.reverseMetaObject());
+//        if(!dao)
+//            continue;
 
-        // Get the already read objects of the related table
-        QHash<QVariant, QObject *> alreadyReadRelatedObjects = alreadyReadObjectsPerTable.value(
-                    property.reverseMetaObject().className());
+//        // Get the already read objects of the related table
+//        QHash<QVariant, QObject *> alreadyReadRelatedObjects = alreadyReadObjectsPerTable.value(
+//                    property.reverseMetaObject().className());
 
-        if(cardinality == QPersistenceMetaProperty::ToOneCardinality
-                || cardinality == QPersistenceMetaProperty::ManyToOneCardinality) {
-            QVariant foreignKey = object->property(property.columnName().toLatin1());
-            if(foreignKey.isNull())
-                continue;
+//        if(cardinality == QpMetaProperty::ToOneCardinality
+//                || cardinality == QpMetaProperty::ManyToOneCardinality) {
+//            QVariant foreignKey = object->property(property.columnName().toLatin1());
+//            if(foreignKey.isNull())
+//                continue;
 
-            QObject *relatedObject = 0;
-            if(alreadyReadRelatedObjects.contains(foreignKey)) {
-                relatedObject = alreadyReadRelatedObjects.value(foreignKey);
-            }
-            else {
-                relatedObject = dao->readObject(foreignKey);
-            }
+//            QObject *relatedObject = 0;
+//            if(alreadyReadRelatedObjects.contains(foreignKey)) {
+//                relatedObject = alreadyReadRelatedObjects.value(foreignKey);
+//            }
+//            else {
+//                relatedObject = dao->readObject(foreignKey);
+//            }
 
-            QVariant value = QPersistence::Private::variantCast(relatedObject, className);
+//            QVariant value = Qp::Private::variantCast(relatedObject, className);
 
-            // Write the value even if it is NULL
-            object->setProperty(property.name(), value);
-        }
-        else if(cardinality == QPersistenceMetaProperty::ToManyCardinality
-                || cardinality == QPersistenceMetaProperty::OneToManyCardinality) {
-            // Construct a query, which selects all rows,
-            // which have our primary key as foreign
-            QPersistenceSqlQuery selectForeignKeysQuery(d->database);
-            selectForeignKeysQuery.setTable(property.tableName()); // select from foreign table
-            selectForeignKeysQuery.addField(property.reverseMetaObject().primaryKeyProperty().columnName());
-            selectForeignKeysQuery.setWhereCondition(QPersistenceSqlCondition(property.columnName(),
-                                                                  QPersistenceSqlCondition::EqualTo,
-                                                                  metaObject.primaryKeyProperty().read(object)));
-            selectForeignKeysQuery.prepareSelect();
+//            // Write the value even if it is NULL
+//            object->setProperty(property.name(), value);
+//        }
+//        else if(cardinality == QpMetaProperty::ToManyCardinality
+//                || cardinality == QpMetaProperty::OneToManyCardinality) {
+//            // Construct a query, which selects all rows,
+//            // which have our primary key as foreign
+//            QpSqlQuery selectForeignKeysQuery(d->database);
+//            selectForeignKeysQuery.setTable(property.tableName()); // select from foreign table
+//            selectForeignKeysQuery.addField(property.reverseMetaObject().primaryKeyProperty().columnName());
+//            selectForeignKeysQuery.setWhereCondition(QpSqlCondition(property.columnName(),
+//                                                                  QpSqlCondition::EqualTo,
+//                                                                  metaObject.primaryKey(object));
+//            selectForeignKeysQuery.prepareSelect();
 
-            if ( !selectForeignKeysQuery.exec()
-                 || selectForeignKeysQuery.lastError().isValid()) {
-                setLastError(selectForeignKeysQuery);
-                return false;
-            }
+//            if ( !selectForeignKeysQuery.exec()
+//                 || selectForeignKeysQuery.lastError().isValid()) {
+//                setLastError(selectForeignKeysQuery);
+//                return false;
+//            }
 
-            QList<QObject *> relatedObjects;
-            while(selectForeignKeysQuery.next()) {
-                QVariant foreignKey = selectForeignKeysQuery.value(0);
-                QObject *relatedObject = 0;
-                if(alreadyReadRelatedObjects.contains(foreignKey)) {
-                    relatedObject = alreadyReadRelatedObjects.value(foreignKey);
-                }
-                else {
-                    relatedObject = dao->readObject(foreignKey);
-                }
-                relatedObjects.append(relatedObject);
-            }
-            QVariant value = QPersistence::Private::variantListCast(relatedObjects, className);
-            object->setProperty(property.name(), value);
-        }
-        else if(cardinality == QPersistenceMetaProperty::ManyToManyCardinality) {
-            Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
-        }
-        else if(cardinality == QPersistenceMetaProperty::OneToOneCardinality) {
-            Q_ASSERT_X(false, Q_FUNC_INFO, "OneToOneCardinality relations are not supported yet.");
-        }
-    }
+//            QList<QObject *> relatedObjects;
+//            while(selectForeignKeysQuery.next()) {
+//                QVariant foreignKey = selectForeignKeysQuery.value(0);
+//                QObject *relatedObject = 0;
+//                if(alreadyReadRelatedObjects.contains(foreignKey)) {
+//                    relatedObject = alreadyReadRelatedObjects.value(foreignKey);
+//                }
+//                else {
+//                    relatedObject = dao->readObject(foreignKey);
+//                }
+//                relatedObjects.append(relatedObject);
+//            }
+//            QVariant value = Qp::Private::variantListCast(relatedObjects, className);
+//            object->setProperty(property.name(), value);
+//        }
+//        else if(cardinality == QpMetaProperty::ManyToManyCardinality) {
+//            Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
+//        }
+//        else if(cardinality == QpMetaProperty::OneToOneCardinality) {
+//            Q_ASSERT_X(false, Q_FUNC_INFO, "OneToOneCardinality relations are not supported yet.");
+//        }
+//    }
 
-    // clear the caches
-    if(object == objectGraphRoot) {
-        alreadyReadObjectsPerTable.clear();
-        objectGraphRoot = 0;
-    }
+//    // clear the caches
+//    if(object == objectGraphRoot) {
+//        alreadyReadObjectsPerTable.clear();
+//        objectGraphRoot = 0;
+//    }
 
-    return true;
-}
+//    return true;
+//}
 
-bool QPersistenceSqlDataAccessObjectHelper::removeObject(const QPersistenceMetaObject &metaObject, const QObject *object)
+bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, QObject *object)
 {
     qDebug("\n\nremoveObject<%s>", qPrintable(metaObject.tableName()));
     Q_ASSERT(object);
 
-    QPersistenceSqlQuery query(d->database);
+    QpSqlQuery query(d->database);
     query.setTable(metaObject.tableName());
-    query.setWhereCondition(QPersistenceSqlCondition(metaObject.primaryKeyProperty().columnName(),
-                                         QPersistenceSqlCondition::EqualTo,
-                                         metaObject.primaryKeyProperty().read(object)));
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+                                           QpSqlCondition::EqualTo,
+                                           Qp::Private::primaryKey(object)));
     query.prepareDelete();
 
     if ( !query.exec()
@@ -411,20 +417,66 @@ bool QPersistenceSqlDataAccessObjectHelper::removeObject(const QPersistenceMetaO
     return true;
 }
 
-QPersistenceError QPersistenceSqlDataAccessObjectHelper::lastError() const
+QpError QpSqlDataAccessObjectHelper::lastError() const
 {
     return d->lastError;
 }
 
-void QPersistenceSqlDataAccessObjectHelper::setLastError(const QPersistenceError &error) const
+int QpSqlDataAccessObjectHelper::foreignKey(const QpMetaProperty relation, QObject *object)
+{
+    QList<int> keys = foreignKeys(relation, object);
+    if(keys.isEmpty())
+        return 0;
+
+    Q_ASSERT(keys.size() == 1);
+
+    return keys.first();
+}
+
+QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relation, QObject *object)
+{
+    QString foreignColumn = QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME;
+    QString keyColumn = relation.columnName();
+
+    if(!relation.hasTableForeignKey()) {
+        qSwap(foreignColumn, keyColumn);
+    }
+
+    QpSqlQuery query(d->database);
+    query.setTable(relation.tableName());
+    query.setWhereCondition(QpSqlCondition(keyColumn,
+                                           QpSqlCondition::EqualTo,
+                                           Qp::Private::primaryKey(object)));
+    query.addField(foreignColumn);
+    query.prepareSelect();
+
+    if ( !query.exec()
+         || query.lastError().isValid()) {
+        setLastError(query);
+        return QList<int>();
+    }
+
+    bool ok = true;
+    QList<int> keys;
+    keys.reserve(query.size());
+    while(query.next()) {
+        int key = query.value(0).toInt(&ok);
+        Q_ASSERT(ok);
+        keys.append(key);
+    }
+
+    return keys;
+}
+
+void QpSqlDataAccessObjectHelper::setLastError(const QpError &error) const
 {
     qDebug() << error;
     d->lastError = error;
 }
 
-void QPersistenceSqlDataAccessObjectHelper::setLastError(const QSqlQuery &query) const
+void QpSqlDataAccessObjectHelper::setLastError(const QSqlQuery &query) const
 {
-    setLastError(QPersistenceError(query.lastError().text().append(": ").append(query.executedQuery()), QPersistenceError::SqlError));
+    setLastError(QpError(query.lastError().text().append(": ").append(query.executedQuery()), QpError::SqlError));
 }
 
 

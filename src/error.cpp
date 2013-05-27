@@ -4,26 +4,26 @@
 
 
 
-class QPersistenceErrorPrivate : public QSharedData
+class QpErrorPrivate : public QSharedData
 {
     public:
-        QPersistenceErrorPrivate() :
+        QpErrorPrivate() :
             QSharedData(),
             text(QString()),
             isValid(false),
-            type(QPersistenceError::NoError)
+            type(QpError::NoError)
         {}
 
         QString text;
         bool isValid;
         QVariantMap additionalInformation;
-        QPersistenceError::ErrorType type;
+        QpError::ErrorType type;
 };
 
-QPersistenceError::QPersistenceError(const QString &text,
+QpError::QpError(const QString &text,
              ErrorType type,
              QVariantMap additionalInformation) :
-    d(new QPersistenceErrorPrivate)
+    d(new QpErrorPrivate)
 {
     d->text = text;
     d->type = type;
@@ -31,16 +31,16 @@ QPersistenceError::QPersistenceError(const QString &text,
     d->isValid = (type != NoError && ! text.isEmpty());
 }
 
-QPersistenceError::~QPersistenceError()
+QpError::~QpError()
 {
 }
 
-QPersistenceError::QPersistenceError(const QPersistenceError &other)
+QpError::QpError(const QpError &other)
 {
     d = other.d;
 }
 
-QPersistenceError &QPersistenceError::operator =(const QPersistenceError &other)
+QpError &QpError::operator =(const QpError &other)
 {
     if (&other != this)
         d = other.d;
@@ -48,34 +48,34 @@ QPersistenceError &QPersistenceError::operator =(const QPersistenceError &other)
     return *this;
 }
 
-bool QPersistenceError::isValid() const
+bool QpError::isValid() const
 {
     return d->isValid;
 }
 
-QString QPersistenceError::text() const
+QString QpError::text() const
 {
     return d->text;
 }
 
-QPersistenceError::ErrorType QPersistenceError::type() const
+QpError::ErrorType QpError::type() const
 {
     return d->type;
 }
 
-QVariantMap QPersistenceError::additionalInformation() const
+QVariantMap QpError::additionalInformation() const
 {
     return d->additionalInformation;
 }
 
-void QPersistenceError::addAdditionalInformation(const QString &key, const QVariant &value)
+void QpError::addAdditionalInformation(const QString &key, const QVariant &value)
 {
     d->additionalInformation.insert(key, value);
 }
 
 
 
-QDebug operator<<(QDebug dbg, const QPersistenceError &error)
+QDebug operator<<(QDebug dbg, const QpError &error)
 {
     dbg.nospace() << "(" << error.type() << ", " << error.text() << ")";
     return dbg.space();

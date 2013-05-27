@@ -19,25 +19,28 @@ HEADERS += \
     metaproperty.h \
     error.h \
     metaobject.h \
-    abstractdataaccessobject.h \
-    simpledataaccessobject.h \
-    cacheddataaccessobject.h \
     sqlquery.h \
     sqldataaccessobjecthelper.h \
     sqlcondition.h \
-    persistentdataaccessobject.h \
     databaseschema.h \
-    qpersistence.h
+    qpersistence.h \
+    conversion.h \
+    private.h \
+    dataaccessobject.h \
+    cache.h \
+    relationresolver.h
 SOURCES += \
     metaproperty.cpp \
     error.cpp \
     metaobject.cpp \
-    abstractdataaccessobject.cpp \
-    simpledataaccessobject.cpp \
-    cacheddataaccessobject.cpp \
     sqlquery.cpp \
     sqldataaccessobjecthelper.cpp \
     sqlcondition.cpp \
-    persistentdataaccessobject.cpp \
     databaseschema.cpp \
-    qpersistence.cpp
+    qpersistence.cpp \
+    conversion.cpp \
+    private.cpp \
+    qpersistence_impl.cpp \
+    dataaccessobject.cpp \
+    cache.cpp \
+    relationresolver.cpp

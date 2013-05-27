@@ -1,7 +1,7 @@
 QPERSISTENCE_PATH = ../../
 include($$QPERSISTENCE_PATH/QPersistence.pri)
 
-include(../seriesModel/seriesModel.pri)
+include(../testModel/testModel.pri)
 
 
 ### General config ###
@@ -13,26 +13,17 @@ QT              += sql widgets
 CONFIG          += c++11
 QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
 
-
-### QPERSISTENCE ###
-
-INCLUDEPATH     += $$QPERSISTENCE_INCLUDEPATH
-LIBS            += $$QPERSISTENCE_LIBS
-
-
-### QPersistence ###
+### Qp ###
 
 INCLUDEPATH     += $$QPERSISTENCE_INCLUDEPATH
 LIBS            += $$QPERSISTENCE_LIBS
 
 
-### seriesModel ###
+### testModel ###
 
-INCLUDEPATH     += $$SERIESMODEL_INCLUDEPATH
+INCLUDEPATH     += $$TESTMODEL_INCLUDEPATH
 
 
 ### Files ###
-
-HEADERS +=
 
 SOURCES += main.cpp

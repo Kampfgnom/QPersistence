@@ -6,10 +6,10 @@
 #include <QtCore/QSharedDataPointer>
 
 struct QMetaObject;
-class QPersistenceMetaObject;
+class QpMetaObject;
 
-class QPersistenceMetaPropertyPrivate;
-class QPersistenceMetaProperty : public QMetaProperty
+class QpMetaPropertyPrivate;
+class QpMetaProperty : public QMetaProperty
 {
 public:
     enum Cardinality {
@@ -22,34 +22,31 @@ public:
         ManyToManyCardinality
     };
 
-    explicit QPersistenceMetaProperty(const QString &propertyName, const QPersistenceMetaObject &metaObject);
-    explicit QPersistenceMetaProperty(const QMetaProperty &property, const QPersistenceMetaObject &metaObject);
-    virtual ~QPersistenceMetaProperty();
-    QPersistenceMetaProperty(const QPersistenceMetaProperty &other);
-    QPersistenceMetaProperty &operator = (const QPersistenceMetaProperty &other);
+    explicit QpMetaProperty(const QString &propertyName, const QpMetaObject &metaObject);
+    explicit QpMetaProperty(const QMetaProperty &property, const QpMetaObject &metaObject);
+    virtual ~QpMetaProperty();
+    QpMetaProperty(const QpMetaProperty &other);
+    QpMetaProperty &operator = (const QpMetaProperty &other);
 
-    QPersistenceMetaObject metaObject() const;
+    QpMetaObject metaObject() const;
 
     bool write(QObject *obj, const QVariant &value) const;
 
     QString columnName() const;
-    bool isAutoIncremented() const;
-    bool isReadOnly() const;
-    bool isPrimaryKey() const;
 
     // Relations
     bool isRelationProperty() const;
     bool isToOneRelationProperty() const;
     bool isToManyRelationProperty() const;
+    bool hasTableForeignKey() const;
     Cardinality cardinality() const;
 
     QString reverseClassName() const;
-    QPersistenceMetaObject reverseMetaObject() const;
+    QpMetaObject reverseMetaObject() const;
     QString reverseRelationName() const;
-    QPersistenceMetaProperty reverseRelation() const;
+    QpMetaProperty reverseRelation() const;
 
     QString tableName() const;
-    QVariant::Type foreignKeyType() const;
 
     // Maps
     bool isMappingProperty() const;
@@ -61,7 +58,7 @@ public:
     QString setType() const;
 
 private:
-    QSharedDataPointer<QPersistenceMetaPropertyPrivate> d;
+    QSharedDataPointer<QpMetaPropertyPrivate> d;
 };
 
 #endif // QPERSISTENCE_METAPROPERTY_H

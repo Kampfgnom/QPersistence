@@ -8,23 +8,25 @@
 #include <QtSql/QSqlDatabase>
 
 class QSqlQuery;
-class QPersistenceError;
-class QPersistenceMetaProperty;
+class QpError;
+class QpMetaProperty;
 
-class QPersistenceDatabaseSchemaPrivate;
-class QPersistenceDatabaseSchema : public QObject
+class QpDatabaseSchemaPrivate;
+class QpDatabaseSchema : public QObject
 {
     Q_OBJECT
 public:
-    explicit QPersistenceDatabaseSchema(const QSqlDatabase &database = QSqlDatabase::database(), QObject *parent = 0);
-    ~QPersistenceDatabaseSchema();
+    static const QString PRIMARY_KEY_COLUMN_NAME;
+
+    explicit QpDatabaseSchema(const QSqlDatabase &database = QSqlDatabase::database(), QObject *parent = 0);
+    ~QpDatabaseSchema();
 
     bool existsTable(const QMetaObject &metaObject);
     void createTable(const QMetaObject &metaObject);
     void createTableIfNotExists(const QMetaObject &metaObject);
     void dropTable(const QMetaObject &metaObject);
     bool addMissingColumns(const QMetaObject &metaObject);
-    void addColumn(const QPersistenceMetaProperty &metaProperty);
+    void addColumn(const QpMetaProperty &metaProperty);
 
     template<class O> bool existsTable() { return existsTable(&O::staticMetaObject); }
     template<class O> void createTable() { createTable(&O::staticMetaObject); }
@@ -35,14 +37,14 @@ public:
     void createCleanSchema();
     void adjustSchema();
 
-    QPersistenceError lastError() const;
+    QpError lastError() const;
 
     static QString variantTypeToSqlType(QVariant::Type type);
 
 private:
-    QSharedDataPointer<QPersistenceDatabaseSchemaPrivate> d;
+    QSharedDataPointer<QpDatabaseSchemaPrivate> d;
 
-    void setLastError(const QPersistenceError &error) const;
+    void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;
 };
 

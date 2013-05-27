@@ -14,47 +14,49 @@
 #include <QSqlRecord>
 #include <QFile>
 
-class QPersistenceDatabaseSchemaPrivate : public QSharedData
+const QString QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME("_Qp_ID");
+
+class QpDatabaseSchemaPrivate : public QSharedData
 {
 public:
-    QPersistenceDatabaseSchemaPrivate() :
+    QpDatabaseSchemaPrivate() :
         QSharedData()
     {}
 
     QSqlDatabase database;
-    mutable QPersistenceError lastError;
-    QPersistenceSqlQuery query;
+    mutable QpError lastError;
+    QpSqlQuery query;
 
-    QString metaPropertyToColumnDefinition(const QPersistenceMetaProperty &property);
+    QString metaPropertyToColumnDefinition(const QpMetaProperty &property);
 };
 
-QPersistenceDatabaseSchema::QPersistenceDatabaseSchema(const QSqlDatabase &database, QObject *parent) :
+QpDatabaseSchema::QpDatabaseSchema(const QSqlDatabase &database, QObject *parent) :
     QObject(parent),
-    d(new QPersistenceDatabaseSchemaPrivate)
+    d(new QpDatabaseSchemaPrivate)
 {
     d->database = database;
-    d->query = QPersistenceSqlQuery(database);
+    d->query = QpSqlQuery(database);
 }
 
-QPersistenceDatabaseSchema::~QPersistenceDatabaseSchema()
+QpDatabaseSchema::~QpDatabaseSchema()
 {
 }
 
-bool QPersistenceDatabaseSchema::existsTable(const QMetaObject &metaObject)
+bool QpDatabaseSchema::existsTable(const QMetaObject &metaObject)
 {
-    QPersistenceMetaObject meta = QPersistence::metaObject(metaObject.className());
+    QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
     return d->database.tables().contains(meta.tableName());
 }
 
-void QPersistenceDatabaseSchema::createTableIfNotExists(const QMetaObject &metaObject)
+void QpDatabaseSchema::createTableIfNotExists(const QMetaObject &metaObject)
 {
     if (!existsTable(metaObject))
         createTable(metaObject);
 }
 
-void QPersistenceDatabaseSchema::dropTable(const QMetaObject &metaObject)
+void QpDatabaseSchema::dropTable(const QMetaObject &metaObject)
 {
-    QPersistenceMetaObject meta = QPersistence::metaObject(metaObject.className());
+    QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
 
     d->query.clear();
     d->query.setTable( meta.tableName());
@@ -66,50 +68,45 @@ void QPersistenceDatabaseSchema::dropTable(const QMetaObject &metaObject)
     }
 }
 
-void QPersistenceDatabaseSchema::createTable(const QMetaObject &metaObject)
+void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
 {
-    QPersistenceMetaObject meta = QPersistence::metaObject(metaObject.className());
+    QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
 
     d->query.clear();
     d->query.setTable(meta.tableName());
 
     int count = metaObject.propertyCount();
     for (int i=1; i < count; ++i) { // start at 1 because 0 is "objectName"
-        QPersistenceMetaProperty metaProperty(metaObject.property(i), meta);
+        QpMetaProperty metaProperty(metaObject.property(i), meta);
 
         if (!metaProperty.isStored())
             continue;
 
         if(metaProperty.isRelationProperty()) {
             if(metaProperty.tableName() == meta.tableName()) {
-                QPersistenceMetaProperty reverseRelation = metaProperty.reverseRelation();
+                QpMetaProperty reverseRelation = metaProperty.reverseRelation();
                 if(reverseRelation.isValid()) {
-                    QPersistenceMetaObject reverseMetaObject = reverseRelation.metaObject();
+                    QpMetaObject reverseMetaObject = reverseRelation.metaObject();
                     QString columnName = metaProperty.columnName();
-                    QString columnType = QPersistenceDatabaseSchema::variantTypeToSqlType(reverseMetaObject.primaryKeyProperty().type());
+                    QString columnType = QpDatabaseSchema::variantTypeToSqlType(QVariant::Int);
 
                     d->query.addField(columnName, columnType);
                     d->query.addForeignKey(metaProperty.columnName(),
-                                           reverseMetaObject.primaryKeyProperty().columnName(),
+                                           PRIMARY_KEY_COLUMN_NAME,
                                            reverseMetaObject.tableName());
                 }
             }
         }
         else {
             QString columnName = metaProperty.columnName();
-            QString columnType = QPersistenceDatabaseSchema::variantTypeToSqlType(metaProperty.type());
-
-            if (metaProperty.isPrimaryKey()) {
-                columnType.append(QLatin1String(" PRIMARY KEY"));
-            }
-
-            if(metaProperty.isAutoIncremented()) {
-                columnType.append(QLatin1String(" AUTOINCREMENT"));
-            }
+            QString columnType = QpDatabaseSchema::variantTypeToSqlType(metaProperty.type());
 
             d->query.addField(columnName, columnType);
         }
     }
+
+    // Add the primary key
+    d->query.addField(PRIMARY_KEY_COLUMN_NAME, "INTEGER PRIMARY KEY AUTOINCREMENT");
 
     d->query.prepareCreateTable();
 
@@ -119,22 +116,22 @@ void QPersistenceDatabaseSchema::createTable(const QMetaObject &metaObject)
     }
 }
 
-bool QPersistenceDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
+bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
 {
-    QPersistenceMetaObject meta = QPersistence::metaObject(metaObject.className());
+    QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
     QSqlRecord record = d->database.record(meta.tableName());;
 
     int count = metaObject.propertyCount();
     for (int i = 1; i < count; ++i) {
-        QPersistenceMetaProperty metaProperty(metaObject.property(i), meta);
+        QpMetaProperty metaProperty(metaObject.property(i), meta);
 
         if (!metaProperty.isStored())
             continue;
 
         if(metaProperty.isRelationProperty()) {
-            QPersistenceMetaProperty::Cardinality cardinality = metaProperty.cardinality();
-            if(cardinality == QPersistenceMetaProperty::ToManyCardinality
-                    || cardinality == QPersistenceMetaProperty::OneToManyCardinality) {
+            QpMetaProperty::Cardinality cardinality = metaProperty.cardinality();
+            if(cardinality == QpMetaProperty::ToManyCardinality
+                    || cardinality == QpMetaProperty::OneToManyCardinality) {
                 // The other table is responsible for adding this column
                 continue;
             }
@@ -152,7 +149,7 @@ bool QPersistenceDatabaseSchema::addMissingColumns(const QMetaObject &metaObject
     return true;
 }
 
-void QPersistenceDatabaseSchema::addColumn(const QPersistenceMetaProperty &metaProperty)
+void QpDatabaseSchema::addColumn(const QpMetaProperty &metaProperty)
 {
     QString tableName;
     QString name;
@@ -161,7 +158,7 @@ void QPersistenceDatabaseSchema::addColumn(const QPersistenceMetaProperty &metaP
     if(metaProperty.isRelationProperty()) {
         name = metaProperty.columnName();
         tableName = metaProperty.tableName();
-        type = QPersistenceDatabaseSchema::variantTypeToSqlType(metaProperty.foreignKeyType());
+        type = QpDatabaseSchema::variantTypeToSqlType(QVariant::Int);
 
         qWarning("The relation %s will be added to the %s table. "
                  "But SQLite does not support adding foreign key contraints after a table has been created. "
@@ -172,7 +169,7 @@ void QPersistenceDatabaseSchema::addColumn(const QPersistenceMetaProperty &metaP
     else {
         tableName = metaProperty.metaObject().tableName();
         name = metaProperty.columnName();
-        type = QPersistenceDatabaseSchema::variantTypeToSqlType(metaProperty.type());
+        type = QpDatabaseSchema::variantTypeToSqlType(metaProperty.type());
     }
 
     d->query.clear();
@@ -186,7 +183,7 @@ void QPersistenceDatabaseSchema::addColumn(const QPersistenceMetaProperty &metaP
     }
 }
 
-void QPersistenceDatabaseSchema::createCleanSchema()
+void QpDatabaseSchema::createCleanSchema()
 {
     QFile file(d->database.databaseName());
     if(file.exists()) {
@@ -196,25 +193,25 @@ void QPersistenceDatabaseSchema::createCleanSchema()
             qCritical() << Q_FUNC_INFO << "Could not re-open database file"<< file.fileName();
     }
 
-    foreach(const QPersistenceMetaObject &metaObject, QPersistence::metaObjects()) {
+    foreach(const QpMetaObject &metaObject, Qp::Private::metaObjects()) {
         createTable(metaObject);
     }
 }
 
-void QPersistenceDatabaseSchema::adjustSchema()
+void QpDatabaseSchema::adjustSchema()
 {
-    foreach(const QPersistenceMetaObject &metaObject, QPersistence::metaObjects()) {
+    foreach(const QpMetaObject &metaObject, Qp::Private::metaObjects()) {
         createTableIfNotExists(metaObject);
         addMissingColumns(metaObject);
     }
 }
 
-QPersistenceError QPersistenceDatabaseSchema::lastError() const
+QpError QpDatabaseSchema::lastError() const
 {
     return d->lastError;
 }
 
-QString QPersistenceDatabaseSchema::variantTypeToSqlType(QVariant::Type type)
+QString QpDatabaseSchema::variantTypeToSqlType(QVariant::Type type)
 {
     switch (type) {
     case QVariant::UInt:
@@ -238,43 +235,42 @@ QString QPersistenceDatabaseSchema::variantTypeToSqlType(QVariant::Type type)
     }
 }
 
-void QPersistenceDatabaseSchema::setLastError(const QPersistenceError &error) const
+void QpDatabaseSchema::setLastError(const QpError &error) const
 {
     qDebug() << error;
     d->lastError = error;
 }
 
-void QPersistenceDatabaseSchema::setLastError(const QSqlQuery &query) const
+void QpDatabaseSchema::setLastError(const QSqlQuery &query) const
 {
-    setLastError(QPersistenceError(query.lastError().text().append(": ").append(query.executedQuery()), QPersistenceError::SqlError));
+    setLastError(QpError(query.lastError().text().append(": ").append(query.executedQuery()), QpError::SqlError));
 }
 
-QString QPersistenceDatabaseSchemaPrivate::metaPropertyToColumnDefinition(const QPersistenceMetaProperty &metaProperty)
+QString QpDatabaseSchemaPrivate::metaPropertyToColumnDefinition(const QpMetaProperty &metaProperty)
 {
     QString name;
     QString type;
 
     if(metaProperty.isRelationProperty()) {
-        QPersistenceMetaProperty reverseRelation = metaProperty.reverseRelation();
         name = metaProperty.columnName();
-        type = QPersistenceDatabaseSchema::variantTypeToSqlType(reverseRelation.metaObject().primaryKeyProperty().type());
+        type = QpDatabaseSchema::variantTypeToSqlType(QVariant::Int);
 
         switch(metaProperty.cardinality()) {
-        case QPersistenceMetaProperty::ToOneCardinality:
-        case QPersistenceMetaProperty::OneToOneCardinality:
-        case QPersistenceMetaProperty::ManyToOneCardinality:
+        case QpMetaProperty::ToOneCardinality:
+        case QpMetaProperty::OneToOneCardinality:
+        case QpMetaProperty::ManyToOneCardinality:
             // My table gets a foreign key column
             break;
-        case QPersistenceMetaProperty::ToManyCardinality:
-        case QPersistenceMetaProperty::OneToManyCardinality:
+        case QpMetaProperty::ToManyCardinality:
+        case QpMetaProperty::OneToManyCardinality:
             // The related table gets a foreign key column
             return QString();
-        case QPersistenceMetaProperty::ManyToManyCardinality:
+        case QpMetaProperty::ManyToManyCardinality:
             // The relation need a whole table
-            qDebug() << "Many to many relations are not supported yet.";
-            return QString();
+            Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
+
         default:
-        case QPersistenceMetaProperty::NoCardinality:
+        case QpMetaProperty::NoCardinality:
             // This is BAD
             Q_ASSERT_X(false, Q_FUNC_INFO,
                        QString("The relation %1 has no cardinality. This is an internal error and should never happen.")
@@ -285,7 +281,7 @@ QString QPersistenceDatabaseSchemaPrivate::metaPropertyToColumnDefinition(const 
     }
     else {
         name = metaProperty.columnName();
-        type = QPersistenceDatabaseSchema::variantTypeToSqlType(metaProperty.type());
+        type = QpDatabaseSchema::variantTypeToSqlType(metaProperty.type());
     }
 
     if(name.isEmpty()

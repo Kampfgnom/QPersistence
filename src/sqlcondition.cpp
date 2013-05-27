@@ -8,22 +8,22 @@
 
 
 
-class QPersistenceSqlConditionData : public QSharedData {
+class QpSqlConditionData : public QSharedData {
 public:
     QString key;
     QVariant value;
-    QPersistenceSqlCondition::BooleanOperator booleanOperator;
-    QPersistenceSqlCondition::ComparisonOperator comparisonOperator;
-    QList<QPersistenceSqlCondition> conditions;
+    QpSqlCondition::BooleanOperator booleanOperator;
+    QpSqlCondition::ComparisonOperator comparisonOperator;
+    QList<QpSqlCondition> conditions;
 };
 
-QPersistenceSqlCondition::QPersistenceSqlCondition() :
-    d(new QPersistenceSqlConditionData)
+QpSqlCondition::QpSqlCondition() :
+    d(new QpSqlConditionData)
 {
 }
 
-QPersistenceSqlCondition::QPersistenceSqlCondition(const QString &key, QPersistenceSqlCondition::ComparisonOperator op, const QVariant &value) :
-    d(new QPersistenceSqlConditionData)
+QpSqlCondition::QpSqlCondition(const QString &key, QpSqlCondition::ComparisonOperator op, const QVariant &value) :
+    d(new QpSqlConditionData)
 {
     d->key = key;
     d->booleanOperator = And;
@@ -31,15 +31,15 @@ QPersistenceSqlCondition::QPersistenceSqlCondition(const QString &key, QPersiste
     d->value = value;
 }
 
-QPersistenceSqlCondition::QPersistenceSqlCondition(QPersistenceSqlCondition::BooleanOperator op, const QList<QPersistenceSqlCondition> &conditions) :
-    d(new QPersistenceSqlConditionData)
+QpSqlCondition::QpSqlCondition(QpSqlCondition::BooleanOperator op, const QList<QpSqlCondition> &conditions) :
+    d(new QpSqlConditionData)
 {
     d->booleanOperator = op;
     d->conditions = conditions;
     d->comparisonOperator = EqualTo;
 }
 
-bool QPersistenceSqlCondition::isValid() const
+bool QpSqlCondition::isValid() const
 {
     return !d->key.isEmpty()
             || (d->booleanOperator == Not
@@ -47,12 +47,12 @@ bool QPersistenceSqlCondition::isValid() const
             || !d->conditions.isEmpty();
 }
 
-QPersistenceSqlCondition::QPersistenceSqlCondition(const QPersistenceSqlCondition &rhs) :
+QpSqlCondition::QpSqlCondition(const QpSqlCondition &rhs) :
     d(rhs.d)
 {
 }
 
-QPersistenceSqlCondition &QPersistenceSqlCondition::operator=(const QPersistenceSqlCondition &rhs)
+QpSqlCondition &QpSqlCondition::operator=(const QpSqlCondition &rhs)
 {
     if (this != &rhs)
         d.operator=(rhs.d);
@@ -60,27 +60,27 @@ QPersistenceSqlCondition &QPersistenceSqlCondition::operator=(const QPersistence
     return *this;
 }
 
-QPersistenceSqlCondition::~QPersistenceSqlCondition()
+QpSqlCondition::~QpSqlCondition()
 {
 }
 
-QPersistenceSqlCondition QPersistenceSqlCondition::operator !()
+QpSqlCondition QpSqlCondition::operator !()
 {
-    QPersistenceSqlCondition result(QPersistenceSqlCondition::Not, QList<QPersistenceSqlCondition>() << *this);
+    QpSqlCondition result(QpSqlCondition::Not, QList<QpSqlCondition>() << *this);
     return result;
 }
 
-QPersistenceSqlCondition QPersistenceSqlCondition::operator ||(const QPersistenceSqlCondition &rhs)
+QpSqlCondition QpSqlCondition::operator ||(const QpSqlCondition &rhs)
 {
-    return QPersistenceSqlCondition(QPersistenceSqlCondition::Or, QList<QPersistenceSqlCondition>() << *this << rhs);
+    return QpSqlCondition(QpSqlCondition::Or, QList<QpSqlCondition>() << *this << rhs);
 }
 
-QPersistenceSqlCondition QPersistenceSqlCondition::operator &&(const QPersistenceSqlCondition &rhs)
+QpSqlCondition QpSqlCondition::operator &&(const QpSqlCondition &rhs)
 {
-    return QPersistenceSqlCondition(QPersistenceSqlCondition::And, QList<QPersistenceSqlCondition>() << *this << rhs);
+    return QpSqlCondition(QpSqlCondition::And, QList<QpSqlCondition>() << *this << rhs);
 }
 
-QString QPersistenceSqlCondition::toWhereClause(bool bindValues) const
+QString QpSqlCondition::toWhereClause(bool bindValues) const
 {
     if(d->booleanOperator == Not) {
         Q_ASSERT(d->conditions.size() == 1);
@@ -90,7 +90,7 @@ QString QPersistenceSqlCondition::toWhereClause(bool bindValues) const
 
     if(!d->conditions.isEmpty()) {
         QStringList conditions;
-        foreach(const QPersistenceSqlCondition &condition, d->conditions) {
+        foreach(const QpSqlCondition &condition, d->conditions) {
             conditions.append(condition.toWhereClause(bindValues));
         }
 
@@ -106,11 +106,11 @@ QString QPersistenceSqlCondition::toWhereClause(bool bindValues) const
     return comparisonOperator().prepend(QString("\"%1\"").arg(d->key)).append("?");
 }
 
-QVariantList QPersistenceSqlCondition::bindValues() const
+QVariantList QpSqlCondition::bindValues() const
 {
     QVariantList result;
 
-    foreach(const QPersistenceSqlCondition& condition, d->conditions) {
+    foreach(const QpSqlCondition& condition, d->conditions) {
         result.append(condition.bindValues());
     }
 
@@ -120,7 +120,7 @@ QVariantList QPersistenceSqlCondition::bindValues() const
     return result;
 }
 
-QString QPersistenceSqlCondition::booleanOperator() const
+QString QpSqlCondition::booleanOperator() const
 {
     switch(d->booleanOperator) {
     case And:
@@ -132,7 +132,7 @@ QString QPersistenceSqlCondition::booleanOperator() const
     }
 }
 
-QString QPersistenceSqlCondition::comparisonOperator() const
+QString QpSqlCondition::comparisonOperator() const
 {
     switch(d->comparisonOperator) {
     case EqualTo:

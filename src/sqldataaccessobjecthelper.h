@@ -8,47 +8,50 @@
 
 
 class QSqlQuery;
-class QPersistenceError;
-class QPersistenceMetaObject;
-class QPersistenceSqlQuery;
-class QPersistencePersistentDataAccessObjectBase;
+class QpError;
+class QpMetaObject;
+class QpSqlQuery;
+class QpMetaProperty;
 
-class QPersistenceSqlDataAccessObjectHelperPrivate;
-class QPersistenceSqlDataAccessObjectHelper : public QObject
+class QpSqlDataAccessObjectHelperPrivate;
+class QpSqlDataAccessObjectHelper : public QObject
 {
     Q_OBJECT
 public:
-    ~QPersistenceSqlDataAccessObjectHelper();
+    ~QpSqlDataAccessObjectHelper();
 
-    static QPersistenceSqlDataAccessObjectHelper *forDatabase(const QSqlDatabase &database = QSqlDatabase::database());
+    static QpSqlDataAccessObjectHelper *forDatabase(const QSqlDatabase &database = QSqlDatabase::database());
 
-    int count(const QPersistenceMetaObject &metaObject) const;
-    QList<QVariant> allKeys(const QPersistenceMetaObject &metaObject) const;
-    bool readObject(const QPersistenceMetaObject &metaObject, const QVariant &key, QObject *object);
-    bool insertObject(const QPersistenceMetaObject &metaObject, QObject *object);
-    bool updateObject(const QPersistenceMetaObject &metaObject, const QObject *object);
-    bool removeObject(const QPersistenceMetaObject &metaObject, const QObject *object);
-    bool readRelatedObjects(const QPersistenceMetaObject &metaObject, QObject *object);
+    int count(const QpMetaObject &metaObject) const;
+    QList<int> allKeys(const QpMetaObject &metaObject) const;
+    bool readObject(const QpMetaObject &metaObject, const QVariant &key, QObject *object);
+    bool insertObject(const QpMetaObject &metaObject, QObject *object);
+    bool updateObject(const QpMetaObject &metaObject, QObject *object);
+    bool removeObject(const QpMetaObject &metaObject, QObject *object);
+//    bool readRelatedObjects(const QpMetaObject &metaObject, QObject *object);
 
-    QPersistenceError lastError() const;
+    QpError lastError() const;
+
+    int foreignKey(const QpMetaProperty relation, QObject *object);
+    QList<int> foreignKeys(const QpMetaProperty relation, QObject *object);
 
 private:
-    QSharedDataPointer<QPersistenceSqlDataAccessObjectHelperPrivate> d;
+    QSharedDataPointer<QpSqlDataAccessObjectHelperPrivate> d;
 
-    explicit QPersistenceSqlDataAccessObjectHelper(const QSqlDatabase &database, QObject *parent = 0);
+    explicit QpSqlDataAccessObjectHelper(const QSqlDatabase &database, QObject *parent = 0);
 
-    void setLastError(const QPersistenceError &error) const;
+    void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;
 
-    void fillValuesIntoQuery(const QPersistenceMetaObject &metaObject,
+    void fillValuesIntoQuery(const QpMetaObject &metaObject,
                              const QObject *object,
-                             QPersistenceSqlQuery &queryconst);
+                             QpSqlQuery &queryconst);
     void readQueryIntoObject(const QSqlQuery &query,
                              QObject *object);
-    bool adjustRelations(const QPersistenceMetaObject &metaObject, const QObject *object);
-    bool readRelatedObjects(const QPersistenceMetaObject &metaObject,
-                            QObject *object,
-                            QHash<QString, QHash<QVariant, QObject *> > &alreadyReadObjectsPerTable);
+    bool adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object);
+//    bool readRelatedObjects(const QpMetaObject &metaObject,
+//                            QObject *object,
+//                            QHash<QString, QHash<QVariant, QObject *> > &alreadyReadObjectsPerTable);
 
 };
 

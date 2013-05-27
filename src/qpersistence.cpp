@@ -1,133 +1,47 @@
 #include "qpersistence.h"
 
 #include "metaobject.h"
-#include "abstractdataaccessobject.h"
+#include "dataaccessobject.h"
+#include "databaseschema.h"
+#include "sqlquery.h"
 
 #include <QDebug>
+#include <QSqlError>
 
-namespace QPersistence {
+namespace Qp {
 
-namespace Private {
-QHash<QString, QPersistenceMetaObject> metaObjects;
-QHash<QString, QHash<QString, QPersistenceAbstractDataAccessObject *> > daoPerConnectionAndMetaObject;
-QHash<int, ConverterBase *> convertersByUserType;
-QHash<QString, ConverterBase *> convertersByClassName;
-}
-
-QPersistenceMetaObject metaObject(const QString &className)
+void setDatabase(const QSqlDatabase &database)
 {
-    return Private::metaObjects.value(className);
-}
-
-QList<QPersistenceMetaObject> metaObjects()
-{
-    return Private::metaObjects.values();
-}
-
-QList<QPersistenceAbstractDataAccessObject *> dataAccessObjects(const QString connectionName)
-{
-    return Private::daoPerConnectionAndMetaObject[connectionName].values();
-}
-
-QPersistenceAbstractDataAccessObject *dataAccessObject(const QMetaObject &metaObject, const QString &connectionName)
-{
-
-    QPersistenceAbstractDataAccessObject *dao = Private::daoPerConnectionAndMetaObject[connectionName].value(metaObject.className());
-    if(dao)
-        return dao;
-
-    return Private::daoPerConnectionAndMetaObject[QString()].value(metaObject.className());
-}
-
-bool insert(QObject *object, const QString &connectionName)
-{
-    return dataAccessObject(*object->metaObject(), connectionName)->insertObject(object);
-}
-
-bool update(QObject *object, const QString &connectionName)
-{
-    return dataAccessObject(*object->metaObject(), connectionName)->updateObject(object);
-}
-
-bool remove(QObject *object, const QString &connectionName)
-{
-    return dataAccessObject(*object->metaObject(), connectionName)->removeObject(object);
-}
-
-namespace Private {
-
-bool canConvertToSqlStorableVariant(const QVariant &variant)
-{
-    return Private::convertersByUserType.contains(variant.userType());
-}
-
-QString convertToSqlStorableVariant(const QVariant &variant)
-{
-    if(!Private::convertersByUserType.contains(variant.userType()))
-        return variant.toString();
-
-    return Private::convertersByUserType.value(variant.userType())->convertToSqlStorableValue(variant);
-}
-
-bool canConvertFromSqlStoredVariant(QMetaType::Type type)
-{
-    return Private::convertersByUserType.contains(type);
-}
-
-QVariant convertFromSqlStoredVariant(const QString &variant, QMetaType::Type type)
-{
-    if(!Private::convertersByUserType.contains(type))
-        return variant;
-
-    return Private::convertersByUserType.value(type)->convertFromSqlStorableValue(variant);
-}
-
-
-void registerDataAccessObject(QPersistenceAbstractDataAccessObject *dataAccessObject,
-                              const QMetaObject &metaObject,
-                              const QString &connectionName)
-{
-    daoPerConnectionAndMetaObject[connectionName].insert(metaObject.className(), dataAccessObject);
-    metaObjects.insert(metaObject.className(), QPersistenceMetaObject(metaObject));
-}
-
-void registerConverter(int variantType, ConverterBase *converter)
-{
-    convertersByUserType.insert(variantType, converter);
-    convertersByClassName.insert(converter->className(), converter);
-}
-
-QObject *objectCast(const QVariant &variant)
-{
-    Q_ASSERT(convertersByUserType.contains(variant.userType()));
-
-    return convertersByUserType.value(variant.userType())->convertObject(variant);
-}
-
-QList<QObject *> objectListCast(const QVariant &variant)
-{
-    Q_ASSERT(convertersByUserType.contains(variant.userType()));
-
-    return convertersByUserType.value(variant.userType())->convertList(variant);
-}
-
-QVariant variantCast(QObject *object, const QString &classN)
-{
-    QString className = classN;
-    if(className.isEmpty()) {
-        Q_ASSERT(object);
-        className = QLatin1String(object->metaObject()->className());
+    if(Qp::database().isOpen()) {
+        Qp::database().close();
+        QSqlDatabase::removeDatabase("Qp");
     }
-    Q_ASSERT(convertersByClassName.contains(className));
-    return convertersByClassName.value(className)->convertVariant(object);
+
+    QSqlDatabase::cloneDatabase(database, "Qp");
+
+    QpSqlQuery query(database);
+    query.prepare("PRAGMA foreign_keys = 1;");
+    if ( !query.exec()
+         || query.lastError().isValid()) {
+        qCritical() << "The PRAGMA foreign_keys could not be set to 1:" << query.lastError();
+    }
 }
 
-QVariant variantListCast(QList<QObject *> objects, const QString &className)
+QSqlDatabase database()
 {
-    Q_ASSERT(convertersByClassName.contains(className));
-    return convertersByClassName.value(className)->convertVariantList(objects);
+    return QSqlDatabase::database("Qp");
 }
 
+void adjustDatabaseSchema()
+{
+    QpDatabaseSchema schema(Qp::database());
+    schema.adjustSchema();
+}
+
+void createCleanSchema()
+{
+    QpDatabaseSchema schema(Qp::database());
+    schema.createCleanSchema();
 }
 
 }

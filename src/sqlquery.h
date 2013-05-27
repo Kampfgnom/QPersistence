@@ -6,10 +6,10 @@
 #include <QtCore/QExplicitlySharedDataPointer>
 #include <QtCore/QVariant>
 
-class QPersistenceSqlCondition;
+class QpSqlCondition;
 
-class QPersistenceSqlQueryPrivate;
-class QPersistenceSqlQuery : public QSqlQuery
+class QpSqlQueryPrivate;
+class QpSqlQuery : public QSqlQuery
 {
 public:
     enum Order {
@@ -17,11 +17,11 @@ public:
         Descending
     };
 
-    QPersistenceSqlQuery();
-    QPersistenceSqlQuery(const QSqlDatabase &database);
-    QPersistenceSqlQuery(const QPersistenceSqlQuery &);
-    QPersistenceSqlQuery &operator=(const QPersistenceSqlQuery &);
-    ~QPersistenceSqlQuery();
+    QpSqlQuery();
+    QpSqlQuery(const QSqlDatabase &database);
+    QpSqlQuery(const QpSqlQuery &);
+    QpSqlQuery &operator=(const QpSqlQuery &);
+    ~QpSqlQuery();
 
     bool exec();
 
@@ -32,7 +32,7 @@ public:
     void addField(const QString &name, const QVariant &value = QVariant());
     void addForeignKey(const QString &columnName, const QString &keyName, const QString &foreignTableName);
     void setLimit(int limit);
-    void setWhereCondition(const QPersistenceSqlCondition &condition);
+    void setWhereCondition(const QpSqlCondition &condition);
     void addOrder(const QString &field, Order order = Ascending);
 
     void prepareCreateTable();
@@ -50,7 +50,7 @@ public:
     static QVariant variantFromSqlStorableVariant(const QVariant &val, QMetaType::Type type);
 
 private:
-    QExplicitlySharedDataPointer<QPersistenceSqlQueryPrivate> d;
+    QExplicitlySharedDataPointer<QpSqlQueryPrivate> d;
 
 };
 

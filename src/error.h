@@ -7,8 +7,8 @@
 
 class QSqlQuery;
 
-class QPersistenceErrorPrivate;
-class QPersistenceError
+class QpErrorPrivate;
+class QpError
 {
 public:
     enum ErrorType {
@@ -21,12 +21,12 @@ public:
         UserError = 1024
     };
 
-    QPersistenceError(const QString &text = QString(),
+    QpError(const QString &text = QString(),
           ErrorType type = NoError,
           QVariantMap additionalInformation = QVariantMap());
-    ~QPersistenceError();
-    QPersistenceError(const QPersistenceError &other);
-    QPersistenceError &operator = (const QPersistenceError &other);
+    ~QpError();
+    QpError(const QpError &other);
+    QpError &operator = (const QpError &other);
 
     bool isValid() const;
     QString text() const;
@@ -36,9 +36,9 @@ public:
     void addAdditionalInformation(const QString &key, const QVariant &value);
 
 private:
-    QSharedDataPointer<QPersistenceErrorPrivate> d;
+    QSharedDataPointer<QpErrorPrivate> d;
 };
 
-QDebug operator<<(QDebug dbg, const QPersistenceError &error);
+QDebug operator<<(QDebug dbg, const QpError &error);
 
 #endif // QPERSISTENCE_ERROR_H

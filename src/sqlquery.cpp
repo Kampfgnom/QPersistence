@@ -12,9 +12,9 @@
 
 
 
-class QPersistenceSqlQueryPrivate : public QSharedData {
+class QpSqlQueryPrivate : public QSharedData {
 public:
-    QPersistenceSqlQueryPrivate() :
+    QpSqlQueryPrivate() :
         QSharedData(),
         limit(-1)
     {}
@@ -22,30 +22,30 @@ public:
     QString table;
     QHash<QString, QVariant> fields;
     int limit;
-    QPersistenceSqlCondition whereCondition;
-    QList<QPair<QString, QPersistenceSqlQuery::Order> > orderBy;
+    QpSqlCondition whereCondition;
+    QList<QPair<QString, QpSqlQuery::Order> > orderBy;
     QList<QStringList> foreignKeys;
 };
 
-QPersistenceSqlQuery::QPersistenceSqlQuery() :
+QpSqlQuery::QpSqlQuery() :
     QSqlQuery(),
-    d(new QPersistenceSqlQueryPrivate)
+    d(new QpSqlQueryPrivate)
 {
 }
 
-QPersistenceSqlQuery::QPersistenceSqlQuery(const QSqlDatabase &database) :
+QpSqlQuery::QpSqlQuery(const QSqlDatabase &database) :
     QSqlQuery(database),
-    d(new QPersistenceSqlQueryPrivate)
+    d(new QpSqlQueryPrivate)
 {
 }
 
-QPersistenceSqlQuery::QPersistenceSqlQuery(const QPersistenceSqlQuery &rhs) :
+QpSqlQuery::QpSqlQuery(const QpSqlQuery &rhs) :
     QSqlQuery(rhs),
     d(rhs.d)
 {
 }
 
-QPersistenceSqlQuery &QPersistenceSqlQuery::operator=(const QPersistenceSqlQuery &rhs)
+QpSqlQuery &QpSqlQuery::operator=(const QpSqlQuery &rhs)
 {
     QSqlQuery::operator =(rhs);
 
@@ -55,11 +55,11 @@ QPersistenceSqlQuery &QPersistenceSqlQuery::operator=(const QPersistenceSqlQuery
     return *this;
 }
 
-QPersistenceSqlQuery::~QPersistenceSqlQuery()
+QpSqlQuery::~QpSqlQuery()
 {
 }
 
-bool QPersistenceSqlQuery::exec()
+bool QpSqlQuery::exec()
 {
     bool ok = QSqlQuery::exec();
     QString query = executedQuery();
@@ -78,54 +78,54 @@ bool QPersistenceSqlQuery::exec()
     return ok;
 }
 
-QString QPersistenceSqlQuery::table() const
+QString QpSqlQuery::table() const
 {
     return d->table;
 }
 
-void QPersistenceSqlQuery::clear()
+void QpSqlQuery::clear()
 {
     QSqlQuery::clear();
 
     d->table = QString();
     d->fields.clear();
     d->limit = -1;
-    d->whereCondition = QPersistenceSqlCondition();
+    d->whereCondition = QpSqlCondition();
     d->orderBy.clear();
     d->foreignKeys.clear();
 }
 
-void QPersistenceSqlQuery::setTable(const QString &table)
+void QpSqlQuery::setTable(const QString &table)
 {
     d->table = table;
 }
 
-void QPersistenceSqlQuery::addField(const QString &name, const QVariant &value)
+void QpSqlQuery::addField(const QString &name, const QVariant &value)
 {
     d->fields.insert(name, value);
 }
 
-void QPersistenceSqlQuery::addForeignKey(const QString &columnName, const QString &keyName, const QString &foreignTableName)
+void QpSqlQuery::addForeignKey(const QString &columnName, const QString &keyName, const QString &foreignTableName)
 {
     d->foreignKeys.append(QStringList() << columnName << keyName << foreignTableName);
 }
 
-void QPersistenceSqlQuery::setLimit(int limit)
+void QpSqlQuery::setLimit(int limit)
 {
     d->limit = limit;
 }
 
-void QPersistenceSqlQuery::setWhereCondition(const QPersistenceSqlCondition &condition)
+void QpSqlQuery::setWhereCondition(const QpSqlCondition &condition)
 {
     d->whereCondition = condition;
 }
 
-void QPersistenceSqlQuery::addOrder(const QString &field, QPersistenceSqlQuery::Order order)
+void QpSqlQuery::addOrder(const QString &field, QpSqlQuery::Order order)
 {
-    d->orderBy.append(QPair<QString, QPersistenceSqlQuery::Order>(field, order));
+    d->orderBy.append(QPair<QString, QpSqlQuery::Order>(field, order));
 }
 
-void QPersistenceSqlQuery::prepareCreateTable()
+void QpSqlQuery::prepareCreateTable()
 {
     QString query("CREATE TABLE \"");
     query.append(d->table).append("\" (\n\t");
@@ -152,7 +152,7 @@ void QPersistenceSqlQuery::prepareCreateTable()
     QSqlQuery::prepare(query);
 }
 
-void QPersistenceSqlQuery::prepareDropTable()
+void QpSqlQuery::prepareDropTable()
 {
     QString query("DROP TABLE \"");
     query.append(d->table).append("\";");
@@ -160,7 +160,7 @@ void QPersistenceSqlQuery::prepareDropTable()
     QSqlQuery::prepare(query);
 }
 
-void QPersistenceSqlQuery::prepareAlterTable()
+void QpSqlQuery::prepareAlterTable()
 {
     QSqlQuery::prepare(QString("ALTER TABLE \"%1\" ADD COLUMN \"%2\" %3;")
                        .arg(d->table)
@@ -168,7 +168,7 @@ void QPersistenceSqlQuery::prepareAlterTable()
                        .arg(d->fields.values().first().toString()));
 }
 
-void QPersistenceSqlQuery::prepareSelect()
+void QpSqlQuery::prepareSelect()
 {
     QString query("SELECT ");
 
@@ -192,9 +192,9 @@ void QPersistenceSqlQuery::prepareSelect()
     if(!d->orderBy.isEmpty()) {
         query.append("\n\tORDER BY ");
         QStringList orderClauses;
-        foreach(QPair<QString COMMA QPersistenceSqlQuery::Order> order, d->orderBy) {
+        foreach(QPair<QString COMMA QpSqlQuery::Order> order, d->orderBy) {
             QString orderClause = order.first.prepend("\n\t\t");
-            if(order.second == QPersistenceSqlQuery::Descending)
+            if(order.second == QpSqlQuery::Descending)
                 orderClause.append(" DESC");
             else
                 orderClause.append(" ASC");
@@ -215,7 +215,7 @@ void QPersistenceSqlQuery::prepareSelect()
     }
 }
 
-bool QPersistenceSqlQuery::prepareUpdate()
+bool QpSqlQuery::prepareUpdate()
 {
     if(d->fields.isEmpty())
         return false;
@@ -246,7 +246,7 @@ bool QPersistenceSqlQuery::prepareUpdate()
     return true;
 }
 
-void QPersistenceSqlQuery::prepareInsert()
+void QpSqlQuery::prepareInsert()
 {
     QString query("INSERT INTO \"");
     query.append(d->table).append("\"\n\t(");
@@ -271,7 +271,7 @@ void QPersistenceSqlQuery::prepareInsert()
     }
 }
 
-void QPersistenceSqlQuery::prepareDelete()
+void QpSqlQuery::prepareDelete()
 {
     QString query("DELETE FROM \"");
     query.append(d->table).append("\"\n\tWHERE ");
@@ -288,32 +288,32 @@ void QPersistenceSqlQuery::prepareDelete()
     }
 }
 
-void QPersistenceSqlQuery::addBindValue(const QVariant &val)
+void QpSqlQuery::addBindValue(const QVariant &val)
 {
     QSqlQuery::addBindValue(variantToSqlStorableVariant(val));
 }
 
-QVariant QPersistenceSqlQuery::variantToSqlStorableVariant(const QVariant &val)
+QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
 {
     QVariant value = val;
     if(static_cast<QMetaType::Type>(val.type()) == QMetaType::QStringList) {
         value = QVariant::fromValue<QString>(val.toStringList().join(','));
     }
-    else if(QPersistence::Private::canConvertToSqlStorableVariant(val)) {
-        value = QPersistence::Private::convertToSqlStorableVariant(val);
+    else if(Qp::Private::canConvertToSqlStorableVariant(val)) {
+        value = Qp::Private::convertToSqlStorableVariant(val);
     }
 
     return value;
 }
 
-QVariant QPersistenceSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaType::Type type)
+QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaType::Type type)
 {
     QVariant value = val;
     if(type == QMetaType::QStringList) {
         value = QVariant::fromValue<QStringList>(val.toString().split(','));
     }
-    else if(QPersistence::Private::canConvertFromSqlStoredVariant(type)) {
-        value = QPersistence::Private::convertFromSqlStoredVariant(val.toString(), type);
+    else if(Qp::Private::canConvertFromSqlStoredVariant(type)) {
+        value = Qp::Private::convertFromSqlStoredVariant(val.toString(), type);
     }
     return value;
 }

@@ -7,8 +7,8 @@
 
 class QVariant;
 
-class QPersistenceSqlConditionData;
-class QPersistenceSqlCondition
+class QpSqlConditionData;
+class QpSqlCondition
 {
 public:
     enum BooleanOperator {
@@ -26,19 +26,19 @@ public:
         NotEqualTo
     };
 
-    QPersistenceSqlCondition();
-    QPersistenceSqlCondition(const QString &key, ComparisonOperator op, const QVariant &value);
-    QPersistenceSqlCondition(BooleanOperator op, const QList<QPersistenceSqlCondition> &conditions);
+    QpSqlCondition();
+    QpSqlCondition(const QString &key, ComparisonOperator op, const QVariant &value);
+    QpSqlCondition(BooleanOperator op, const QList<QpSqlCondition> &conditions);
 
     bool isValid() const;
 
-    QPersistenceSqlCondition(const QPersistenceSqlCondition &);
-    QPersistenceSqlCondition &operator=(const QPersistenceSqlCondition &);
-    ~QPersistenceSqlCondition();
+    QpSqlCondition(const QpSqlCondition &);
+    QpSqlCondition &operator=(const QpSqlCondition &);
+    ~QpSqlCondition();
 
-    QPersistenceSqlCondition operator !();
-    QPersistenceSqlCondition operator ||(const QPersistenceSqlCondition &rhs);
-    QPersistenceSqlCondition operator &&(const QPersistenceSqlCondition &rhs);
+    QpSqlCondition operator !();
+    QpSqlCondition operator ||(const QpSqlCondition &rhs);
+    QpSqlCondition operator &&(const QpSqlCondition &rhs);
 
     QString toWhereClause(bool bindValues = true) const;
     QVariantList bindValues() const;
@@ -47,7 +47,7 @@ public:
     QString comparisonOperator() const;
 
 private:
-    QSharedDataPointer<QPersistenceSqlConditionData> d;
+    QSharedDataPointer<QpSqlConditionData> d;
 };
 
 #endif // QPERSISTENCE_SQLCONDITION_H
