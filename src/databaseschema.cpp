@@ -113,8 +113,49 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
     if ( !d->query.exec()
          || d->query.lastError().isValid()) {
         setLastError(d->query);
+        return;
+    }
+
+    createRelationTables(metaObject);
+}
+
+void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
+{
+    QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
+    QString primaryTable = meta.tableName();
+    QString columnType = QpDatabaseSchema::variantTypeToSqlType(QVariant::Int);
+
+    foreach(QpMetaProperty property, meta.relationProperties()) {
+        if(property.cardinality() != QpMetaProperty::ManyToManyCardinality)
+            continue;
+
+        QString tableName = property.tableName();
+        if(d->database.tables().contains(tableName))
+            continue;
+
+        QString columnName = property.columnName();
+        QString foreignTable = property.reverseMetaObject().tableName();
+        QString foreignColumnName = property.reverseRelation().columnName();
+
+        QpSqlQuery createTableQuery(d->database);
+        createTableQuery.setTable(tableName);
+        createTableQuery.addField(columnName, columnType);
+        createTableQuery.addField(foreignColumnName, columnType);
+        createTableQuery.addForeignKey(columnName,
+                                       PRIMARY_KEY_COLUMN_NAME,
+                                       primaryTable);
+        createTableQuery.addForeignKey(foreignColumnName,
+                                       PRIMARY_KEY_COLUMN_NAME,
+                                       foreignTable);
+        createTableQuery.prepareCreateTable();
+        if ( !createTableQuery.exec()
+             || createTableQuery.lastError().isValid()) {
+            setLastError(createTableQuery);
+            return;
+        }
     }
 }
+
 
 bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
 {
@@ -245,7 +286,6 @@ void QpDatabaseSchema::setLastError(const QSqlQuery &query) const
 {
     setLastError(QpError(query.lastError().text().append(": ").append(query.executedQuery()), QpError::SqlError));
 }
-
 QString QpDatabaseSchemaPrivate::metaPropertyToColumnDefinition(const QpMetaProperty &metaProperty)
 {
     QString name;
@@ -267,7 +307,7 @@ QString QpDatabaseSchemaPrivate::metaPropertyToColumnDefinition(const QpMetaProp
             return QString();
         case QpMetaProperty::ManyToManyCardinality:
             // The relation need a whole table
-            Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
+            break;
 
         default:
         case QpMetaProperty::NoCardinality:

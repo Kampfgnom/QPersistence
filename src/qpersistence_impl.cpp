@@ -36,9 +36,9 @@ void registerClass()
 template<class K, class V>
 void registerMappableTypes()
 {
-    qRegisterMetaType<QMap<K,V> >();
     qRegisterMetaType<K>();
     qRegisterMetaType<V>();
+    qRegisterMetaType<QMap<K,V> >();
 
     // Create converter
     static QObject guard;
@@ -106,7 +106,7 @@ bool remove(QSharedPointer<T> object)
 }
 
 template<class T>
-QSharedPointer<T> sharedFrom(QObject *object)
+QSharedPointer<T> sharedFrom(const QObject *object)
 {
     QVariant variant = object->property(Qp::Private::QPERSISTENCE_SHARED_POINTER_PROPERTY.toLatin1());
     QWeakPointer<QObject> weak = variant.value<QWeakPointer<QObject> >();
@@ -128,6 +128,36 @@ QList<QSharedPointer<T> > resolveToManyRelation(const QString &name, const QObje
     QpRelationResolver resolver;
     return Qp::Private::castList<T>(resolver.resolveToOneRelation(name, object));
 
+}
+
+template<class T>
+QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list)
+{
+    QList<QSharedPointer<T> > result;
+    Q_FOREACH(QWeakPointer<T> s, list) result.append(s.toStrongRef());
+    return result;
+}
+
+template<class T>
+QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list)
+{
+    QList<QWeakPointer<T> > result;
+    Q_FOREACH(QSharedPointer<T> s, list) result.append(s.toWeakRef());
+    return result;
+}
+
+template<class T>
+int primaryKey(QSharedPointer<T> object)
+{
+    return Qp::Private::primaryKey(object.data());
+}
+
+template <typename T>
+QList<T> reversed( const QList<T> & in ) {
+    QList<T> result;
+    result.reserve( in.size() );
+    std::reverse_copy( in.begin(), in.end(), std::back_inserter( result ) );
+    return result;
 }
 
 } // namespace Qp

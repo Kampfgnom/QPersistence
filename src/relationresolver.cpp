@@ -30,6 +30,27 @@ QpRelationResolver::~QpRelationResolver()
 {
 }
 
+QList<QSharedPointer<QObject> > QpRelationResolver::resolveRelation(const QString &name, const QObject *object)
+{
+    QList<QSharedPointer<QObject> > result;
+
+    QpMetaObject metaObject = Qp::Private::metaObject(object->metaObject()->className());
+    QpMetaProperty relation = metaObject.metaProperty(name);
+
+    QpMetaProperty::Cardinality cardinality = relation.cardinality();
+
+    if(cardinality == QpMetaProperty::ToManyCardinality
+            || cardinality == QpMetaProperty::OneToManyCardinality
+            || cardinality == QpMetaProperty::ManyToManyCardinality) {
+        result = resolveToManyRelation(name, object);
+    }
+    else {
+        result.append(resolveToOneRelation(name, object));
+    }
+
+    return result;
+}
+
 QSharedPointer<QObject> QpRelationResolver::resolveToOneRelation(const QString &name, const QObject *object)
 {
     QpMetaObject metaObject = Qp::Private::metaObject(object->metaObject()->className());

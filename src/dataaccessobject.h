@@ -23,8 +23,8 @@ public:
     QpMetaObject qpMetaObject() const;
 
     int count() const;
-    QList<int> allKeys() const;
-    QList<QSharedPointer<QObject> > readAllObjects() const;
+    QList<int> allKeys(int skip = -1, int count = -1) const;
+    QList<QSharedPointer<QObject> > readAllObjects(int skip = -1, int count = -1) const;
     QSharedPointer<QObject> readObject(int id) const;
     QSharedPointer<QObject> createObject();
     bool updateObject(QSharedPointer<QObject> object);

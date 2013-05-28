@@ -15,6 +15,7 @@ public:
     QpRelationResolver &operator=(const QpRelationResolver &);
     ~QpRelationResolver();
 
+    QList<QSharedPointer<QObject > > resolveRelation(const QString &name, const QObject *object);
     QSharedPointer<QObject> resolveToOneRelation(const QString &name, const QObject *object);
     QList<QSharedPointer<QObject > > resolveToManyRelation(const QString &name, const QObject *object);
 

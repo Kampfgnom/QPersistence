@@ -8,7 +8,7 @@
 #include <QStringList>
 #include <QDebug>
 
-static const QRegularExpression TOMANYRELATIONREGEXP("QList\\<QSharedPointer\\<(\\w+)\\> \\>");
+static const QRegularExpression TOMANYRELATIONREGEXP("QList\\<(QSharedPointer|QWeakPointer)\\<(\\w+)\\> \\>");
 static const QRegularExpression MAPPINGRELATIONREGEXP("QMap\\<(.+),(.+)\\>");
 static const QRegularExpression SETTYPEREGEXP("QSet<(.+)\\>");
 
@@ -89,18 +89,17 @@ QpMetaObject QpMetaProperty::metaObject() const
 
 QString QpMetaProperty::columnName() const
 {
-    if(isToManyRelationProperty()
+    if(!isRelationProperty())
+        return QString(name());
+
+    if(cardinality() == ManyToManyCardinality) {
+        return QString(metaObject().tableName()).prepend("_Qp_FK_");;
+    }
+    else if(isToManyRelationProperty()
             || (isToOneRelationProperty()
                 && !hasTableForeignKey())) {
-        QString result = QString(name());
-
         QpMetaProperty reverse(reverseRelation());
-        if(reverse.isValid()) {
-            result = QString(reverse.name());
-        }
-
-        result.prepend("_Qp_FK_");
-        return result;
+        return QString(reverse.name()).prepend("_Qp_FK_");
     }
     else if(isToOneRelationProperty()) {
         return QString(name()).prepend("_Qp_FK_");
@@ -116,7 +115,8 @@ bool QpMetaProperty::isRelationProperty() const
 
 bool QpMetaProperty::isToOneRelationProperty() const
 {
-    return QString(typeName()).startsWith("QSharedPointer<");
+    return QString(typeName()).startsWith("QSharedPointer<")
+            || QString(typeName()).startsWith("QWeakPointer<");
 }
 
 bool QpMetaProperty::isToManyRelationProperty() const
@@ -139,7 +139,7 @@ bool QpMetaProperty::hasTableForeignKey() const
         return  metaObject().tableName() < reverseMetaObject().tableName();
 
     case QpMetaProperty::ManyToManyCardinality:
-        Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
+        return false;
 
     case QpMetaProperty::NoCardinality:
     default:
@@ -207,7 +207,7 @@ QString QpMetaProperty::reverseClassName() const
     if(!match.hasMatch())
         return QString();
 
-    return match.captured(1);
+    return match.captured(2);
 }
 
 QpMetaObject QpMetaProperty::reverseMetaObject() const
@@ -232,6 +232,7 @@ QString QpMetaProperty::tableName() const
 
     QString table = metaObject().tableName();
     QString reverseTable = reverseMetaObject().tableName();
+    QString s1, s2;
 
     switch(cardinality()) {
     case QpMetaProperty::ToOneCardinality:
@@ -248,7 +249,17 @@ QString QpMetaProperty::tableName() const
         return table < reverseTable ? table : reverseTable;
 
     case QpMetaProperty::ManyToManyCardinality:
-        Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
+        s1 = QString(name());
+        s2 = QString(reverseRelation().name());
+        if(table > reverseTable) {
+            qSwap(table, reverseTable);
+            qSwap(s1, s2);
+        }
+        return QString("_Qp_REL_%1_%2__%3_%4")
+                .arg(table)
+                .arg(s1)
+                .arg(reverseTable)
+                .arg(s2);
 
     case QpMetaProperty::NoCardinality:
     default:

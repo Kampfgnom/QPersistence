@@ -9,7 +9,7 @@
 #include "metaobject.h"
 #include "qpersistence.h"
 
-#include <QDebug>
+#include <//qDebug>
 #include <QMetaProperty>
 #include <QSqlDatabase>
 #include <QSqlError>
@@ -75,13 +75,15 @@ int QpSqlDataAccessObjectHelper::count(const QpMetaObject &metaObject) const
     return query.value(0).toInt();
 }
 
-QList<int> QpSqlDataAccessObjectHelper::allKeys(const QpMetaObject &metaObject) const
+QList<int> QpSqlDataAccessObjectHelper::allKeys(const QpMetaObject &metaObject, int skip, int count) const
 {
-    qDebug("\n\nallKeys<%s>", qPrintable(metaObject.tableName()));
+    //qDebug("\n\nallKeys<%s>", qPrintable(metaObject.tableName()));
     QpSqlQuery query(d->database);
     query.clear();
     query.setTable(metaObject.tableName());
     query.addField(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME);
+    query.setCount(count);
+    query.setSkip(skip);
     query.prepareSelect();
 
     QList<int> result;
@@ -102,13 +104,13 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
                                              const QVariant &key,
                                              QObject *object)
 {
-    qDebug("\n\nreadObject<%s>(%s)", qPrintable(metaObject.tableName()), qPrintable(key.toString()));
+    //qDebug("\n\nreadObject<%s>(%s)", qPrintable(metaObject.tableName()), qPrintable(key.toString()));
     Q_ASSERT(object);
     Q_ASSERT(!key.isNull());
 
     QpSqlQuery query(d->database);
     query.setTable(metaObject.tableName());
-    query.setLimit(1);
+    query.setCount(1);
     query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
                                            QpSqlCondition::EqualTo,
                                            key));
@@ -127,7 +129,7 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
 
 bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, QObject *object)
 {
-    qDebug("\n\ninsertObject<%s>", qPrintable(metaObject.tableName()));
+    //qDebug("\n\ninsertObject<%s>", qPrintable(metaObject.tableName()));
     Q_ASSERT(object);
 
     // Create main INSERT query
@@ -150,7 +152,7 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
 
 bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, QObject *object)
 {
-    qDebug("\n\nupdateObject<%s>", qPrintable(metaObject.tableName()));
+    //qDebug("\n\nupdateObject<%s>", qPrintable(metaObject.tableName()));
     Q_ASSERT(object);
 
     // Create main UPDATE query
@@ -283,7 +285,29 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
             queries.append(setForeignKeysQuery);
         }
         else if(cardinality == QpMetaProperty::ManyToManyCardinality) {
-            Q_ASSERT_X(false, Q_FUNC_INFO, "ManyToManyCardinality relations are not supported yet.");
+            // Prepare a query, which resets the relation (deletes all relation rows)
+            QpSqlQuery resetRelationQuery(d->database);
+            resetRelationQuery.setTable(property.tableName());
+            resetRelationQuery.setWhereCondition(QpSqlCondition(property.columnName(),
+                                                                QpSqlCondition::EqualTo,
+                                                                primaryKey));
+            resetRelationQuery.prepareDelete();
+            queries.append(resetRelationQuery);
+
+            // Create rows, which represent the relation
+            QList<QSharedPointer<QObject> > relatedObjects = Qp::Private::objectListCast(property.read(object));
+            if(relatedObjects.isEmpty())
+                continue;
+
+            foreach(QSharedPointer<QObject> relatedObject, relatedObjects) {
+                QpSqlQuery createRelationQuery(d->database);
+                createRelationQuery.setTable(property.tableName());
+                createRelationQuery.addField(property.columnName(), primaryKey);
+                createRelationQuery.addField(property.reverseRelation().columnName(), Qp::Private::primaryKey(relatedObject.data()));
+
+                createRelationQuery.prepareInsert();
+                queries.append(createRelationQuery);
+            }
         }
     }
 
@@ -398,7 +422,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
 
 bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, QObject *object)
 {
-    qDebug("\n\nremoveObject<%s>", qPrintable(metaObject.tableName()));
+    //qDebug("\n\nremoveObject<%s>", qPrintable(metaObject.tableName()));
     Q_ASSERT(object);
 
     QpSqlQuery query(d->database);
@@ -435,10 +459,14 @@ int QpSqlDataAccessObjectHelper::foreignKey(const QpMetaProperty relation, QObje
 
 QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relation, QObject *object)
 {
-    QString foreignColumn = QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME;
+    QString foreignColumn = relation.reverseRelation().columnName();
     QString keyColumn = relation.columnName();
 
-    if(!relation.hasTableForeignKey()) {
+    if(relation.cardinality() == QpMetaProperty::OneToManyCardinality) {
+        foreignColumn = QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME;
+    }
+
+    if(relation.hasTableForeignKey()) {
         qSwap(foreignColumn, keyColumn);
     }
 
@@ -448,6 +476,7 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
                                            QpSqlCondition::EqualTo,
                                            Qp::Private::primaryKey(object)));
     query.addField(foreignColumn);
+    query.addOrder(keyColumn);
     query.prepareSelect();
 
     if ( !query.exec()
@@ -470,7 +499,7 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
 
 void QpSqlDataAccessObjectHelper::setLastError(const QpError &error) const
 {
-    qDebug() << error;
+    //qDebug() << error;
     d->lastError = error;
 }
 

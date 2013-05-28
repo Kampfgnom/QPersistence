@@ -44,6 +44,9 @@ template<class T>
 bool canConvertToSqlStorableVariant()
 {
     QVariant v = QVariant::fromValue<T>(T());
+    if(static_cast<QMetaType::Type>(v.type()) != QMetaType::User)
+        return true;
+
     return canConvertToSqlStorableVariant(v);
 }
 
@@ -53,6 +56,9 @@ template<class T>
 bool canConvertFromSqlStoredVariant()
 {
     QVariant v = QVariant::fromValue<T>(T());
+    if(static_cast<QMetaType::Type>(v.type()) != QMetaType::User)
+        return true;
+
     return canConvertFromSqlStoredVariant(static_cast<QMetaType::Type>(v.userType()));
 }
 
@@ -144,8 +150,6 @@ public:
             QVariant valueVariant = QVariant::fromValue<V>(it.value());
             QString key = Private::convertToSqlStorableVariant(keyVariant);
             QString value = Private::convertToSqlStorableVariant(valueVariant);
-            qDebug() << key;
-            qDebug() << value;
 
             result.append(QString("%1=%2")
                           .arg(key)
@@ -164,24 +168,16 @@ public:
         QMetaType::Type keyType = static_cast<QMetaType::Type>(QVariant::fromValue<K>(K()).userType());
         QMetaType::Type valueType = static_cast<QMetaType::Type>(QVariant::fromValue<V>(V()).userType());
 
-        qDebug() << "value" << value;
-        qDebug() << "list" << list;
         foreach(QString string, list) {
             QRegularExpressionMatch match = KEYVALUEREGEXP.match(string);
             if(match.hasMatch()) {
                 QString keyString = match.captured(1);
                 QString valueString = match.captured(2);
-                qDebug() << "keyString" << keyString;
-                qDebug() << "valueString" << valueString;
                 QVariant keyVariant = Private::convertFromSqlStoredVariant(keyString, keyType);
                 QVariant valueVariant = Private::convertFromSqlStoredVariant(valueString, valueType);
-                qDebug() << "keyVariant" << keyVariant;
-                qDebug() << "valueVariant" << valueVariant;
 
                 K key = keyVariant.value<K>();
                 V v = valueVariant.value<V>();
-                qDebug() << "key" << key;
-                qDebug() << "v" << v;
                 result.insert(key, v);
             }
         }
@@ -231,7 +227,7 @@ public:
 };
 
 template<typename K, typename V>
-const QRegularExpression MapConverter<K,V>::KEYVALUEREGEXP("(\\w+)=(\\w+)");
+const QRegularExpression MapConverter<K,V>::KEYVALUEREGEXP("(.+)=(.+)");
 
 
 void registerConverter(int variantType, ConverterBase *converter);

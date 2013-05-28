@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
     {
         QSharedPointer<ParentObject> parent1 = Qp::create<ParentObject>();
         parent1->setChildObject(child1);
+        qDebug() << parent1.data();
         Qp::update(parent1);
     }
 

@@ -61,9 +61,9 @@ int QpDaoBase::count() const
     return d->sqlDataAccessObjectHelper->count(d->metaObject);
 }
 
-QList<int> QpDaoBase::allKeys() const
+QList<int> QpDaoBase::allKeys(int skip, int count) const
 {
-    QList<int> result = d->sqlDataAccessObjectHelper->allKeys(d->metaObject);
+    QList<int> result = d->sqlDataAccessObjectHelper->allKeys(d->metaObject, skip, count);
 
     if(d->sqlDataAccessObjectHelper->lastError().isValid())
         setLastError(d->sqlDataAccessObjectHelper->lastError());
@@ -71,10 +71,10 @@ QList<int> QpDaoBase::allKeys() const
     return result;
 }
 
-QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects() const
+QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count) const
 {
     QList<QSharedPointer<QObject> > result;
-    Q_FOREACH(int id, allKeys()) result.append(readObject(id));
+    Q_FOREACH(int id, allKeys(skip, count)) result.append(readObject(id));
     return result;
 }
 

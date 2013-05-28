@@ -23,7 +23,7 @@ public:
     static QpSqlDataAccessObjectHelper *forDatabase(const QSqlDatabase &database = QSqlDatabase::database());
 
     int count(const QpMetaObject &metaObject) const;
-    QList<int> allKeys(const QpMetaObject &metaObject) const;
+    QList<int> allKeys(const QpMetaObject &metaObject, int skip, int count) const;
     bool readObject(const QpMetaObject &metaObject, const QVariant &key, QObject *object);
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);

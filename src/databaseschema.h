@@ -46,6 +46,8 @@ private:
 
     void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;
+
+    void createRelationTables(const QMetaObject &metaObject);
 };
 
 #endif // QPERSISTENCE_DATABASESCHEMAHELPER_H

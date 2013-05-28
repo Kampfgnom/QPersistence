@@ -1,4 +1,5 @@
 TEMPLATE = subdirs
 
 CONFIG += ordered
-SUBDIRS = persistence
+SUBDIRS = persistence \
+    projectstats

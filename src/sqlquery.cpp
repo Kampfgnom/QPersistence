@@ -8,6 +8,9 @@
 #include <QHash>
 #include <QDebug>
 #include <QRegularExpressionMatchIterator>
+#include <QBuffer>
+#include <QPixmap>
+#include <QByteArray>
 #define COMMA ,
 
 
@@ -16,12 +19,14 @@ class QpSqlQueryPrivate : public QSharedData {
 public:
     QpSqlQueryPrivate() :
         QSharedData(),
-        limit(-1)
+        count(-1),
+        skip(-1)
     {}
 
     QString table;
     QHash<QString, QVariant> fields;
-    int limit;
+    int count;
+    int skip;
     QpSqlCondition whereCondition;
     QList<QPair<QString, QpSqlQuery::Order> > orderBy;
     QList<QStringList> foreignKeys;
@@ -74,7 +79,7 @@ bool QpSqlQuery::exec()
         index = query.indexOf('?', index + value.length());
         ++i;
     }
-    qDebug() << qPrintable(query);
+//    qDebug() << qPrintable(query);
     return ok;
 }
 
@@ -89,7 +94,8 @@ void QpSqlQuery::clear()
 
     d->table = QString();
     d->fields.clear();
-    d->limit = -1;
+    d->count = -1;
+    d->skip = -1;
     d->whereCondition = QpSqlCondition();
     d->orderBy.clear();
     d->foreignKeys.clear();
@@ -110,9 +116,14 @@ void QpSqlQuery::addForeignKey(const QString &columnName, const QString &keyName
     d->foreignKeys.append(QStringList() << columnName << keyName << foreignTableName);
 }
 
-void QpSqlQuery::setLimit(int limit)
+void QpSqlQuery::setCount(int count)
 {
-    d->limit = limit;
+    d->count = count;
+}
+
+void QpSqlQuery::setSkip(int skip)
+{
+    d->skip = skip;
 }
 
 void QpSqlQuery::setWhereCondition(const QpSqlCondition &condition)
@@ -203,8 +214,12 @@ void QpSqlQuery::prepareSelect()
         query.append(orderClauses.join(','));
     }
 
-    if(d->limit >= 0) {
-        query.append(QString("\n\tLIMIT %1").arg(d->limit));
+    if(d->count >= 0) {
+        query.append(QString("\n\tLIMIT "));
+        if(d->skip >= 0) {
+            query.append(QString("%1, ").arg(d->skip));
+        }
+        query.append(QString("%1").arg(d->count));
     }
 
     query.append(';');
@@ -257,12 +272,15 @@ void QpSqlQuery::prepareInsert()
     }
     query.append(fields.join(", "));
 
-    query.append(")\n\tVALUES (");
+    query.append(")\n\tVALUES ");
+    query.append("(");
     query.append(QString("?, ").repeated(fields.size() - 1));
     if(fields.size() > 0)
         query.append("?");
+    query.append("),");
 
-    query.append(");");
+    // Remove the last comma
+    query.remove(query.length() - 1, 1);
 
     QSqlQuery::prepare(query);
 
@@ -297,10 +315,19 @@ QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
 {
     QVariant value = val;
     if(static_cast<QMetaType::Type>(val.type()) == QMetaType::QStringList) {
-        value = QVariant::fromValue<QString>(val.toStringList().join(','));
+        return QVariant::fromValue<QString>(val.toStringList().join(','));
+    }
+    else if(static_cast<QMetaType::Type>(val.type()) == QMetaType::QPixmap) {
+        QByteArray byteArray;
+        QPixmap pixmap = val.value<QPixmap>();
+
+        QBuffer buffer(&byteArray);
+        buffer.open(QIODevice::WriteOnly);
+        pixmap.save(&buffer, "PNG");
+        return byteArray.toBase64();
     }
     else if(Qp::Private::canConvertToSqlStorableVariant(val)) {
-        value = Qp::Private::convertToSqlStorableVariant(val);
+        return Qp::Private::convertToSqlStorableVariant(val);
     }
 
     return value;
@@ -310,10 +337,16 @@ QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaTyp
 {
     QVariant value = val;
     if(type == QMetaType::QStringList) {
-        value = QVariant::fromValue<QStringList>(val.toString().split(','));
+        return QVariant::fromValue<QStringList>(val.toString().split(','));
+    }
+    else if(type == QMetaType::QPixmap) {
+        QByteArray byteArray = QByteArray::fromBase64(val.toByteArray());
+        QPixmap pixmap;
+        pixmap.loadFromData(byteArray, "PNG");
+        return QVariant::fromValue<QPixmap>(pixmap);
     }
     else if(Qp::Private::canConvertFromSqlStoredVariant(type)) {
-        value = Qp::Private::convertFromSqlStoredVariant(val.toString(), type);
+        return Qp::Private::convertFromSqlStoredVariant(val.toString(), type);
     }
     return value;
 }

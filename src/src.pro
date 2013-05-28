@@ -7,11 +7,9 @@ TARGET          = $$QPERSISTENCE_TARGET
 VERSION         = $$QPERSISTENCE_VERSION
 TEMPLATE        = lib
 QT              += sql
-QT              -= gui
 CONFIG          += static c++11
 QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
 INCLUDEPATH     += $$QPERSISTENCE_INCLUDEPATH
-
 
 ### Files ###
 
@@ -28,7 +26,10 @@ HEADERS += \
     private.h \
     dataaccessobject.h \
     cache.h \
-    relationresolver.h
+    relationresolver.h \
+    relations.h \
+    abstractobjectlistmodel.h \
+    objectlistmodel.h
 SOURCES += \
     metaproperty.cpp \
     error.cpp \
@@ -43,4 +44,7 @@ SOURCES += \
     qpersistence_impl.cpp \
     dataaccessobject.cpp \
     cache.cpp \
-    relationresolver.cpp
+    relationresolver.cpp \
+    relations.cpp \
+    abstractobjectlistmodel.cpp \
+    objectlistmodel.cpp

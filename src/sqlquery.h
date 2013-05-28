@@ -31,7 +31,8 @@ public:
     void setTable(const QString &table);
     void addField(const QString &name, const QVariant &value = QVariant());
     void addForeignKey(const QString &columnName, const QString &keyName, const QString &foreignTableName);
-    void setLimit(int limit);
+    void setCount(int limit);
+    void setSkip(int skip);
     void setWhereCondition(const QpSqlCondition &condition);
     void addOrder(const QString &field, Order order = Ascending);
 
