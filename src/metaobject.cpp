@@ -102,6 +102,11 @@ QList<QpMetaProperty> QpMetaObject::relationProperties() const
     return result;
 }
 
+QString QpMetaObject::sqlFilter() const
+{
+    return classInformation(QPERSISTENCE_SQLFILTER, QString());
+}
+
 QString QpMetaObject::classInformation(const QString &name, const QString &defaultValue) const
 {
     int index = indexOfClassInfo(name.toLatin1());

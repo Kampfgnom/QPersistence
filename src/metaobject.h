@@ -33,6 +33,8 @@ public:
     QList<QpMetaProperty> simpleProperties() const;
     QList<QpMetaProperty> relationProperties() const;
 
+    QString sqlFilter() const;
+
 private:
     QSharedDataPointer<QpMetaObjectPrivate> d;
 };

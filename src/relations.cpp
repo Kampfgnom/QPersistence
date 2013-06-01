@@ -33,10 +33,12 @@ QpWeakRelation<T>::~QpWeakRelation()
 template<class T>
 QList<QSharedPointer<T> > QpWeakRelation<T>::resolveList() const
 {
-    if(!data->resolved || !checkPointers())
+    bool ok;
+    QList<QSharedPointer<T> > result = Qp::makeListStrong<T>(data->relatedList, &ok);
+    if(!data->resolved || !ok)
         return resolveFromDatabase();
 
-    return Qp::makeListStrong<T>(data->relatedList);
+    return result;
 }
 
 template<class T>
@@ -97,16 +99,6 @@ void QpWeakRelation<T>::clear()
 {
     data->related = QWeakPointer<T>();
     data->relatedList.clear();
-}
-
-template<class T>
-bool QpWeakRelation<T>::checkPointers() const
-{
-    Q_FOREACH(QWeakPointer<T> t, data->relatedList) {
-        if(!t.toStrongRef())
-            return false;
-    }
-    return true;
 }
 
 template<class T>

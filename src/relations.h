@@ -31,7 +31,6 @@ private:
         mutable QWeakPointer<T> related;
     };
 
-    bool checkPointers() const;
     QList<QSharedPointer<T> > resolveFromDatabase() const;
 
     QSharedDataPointer<QpWeakRelationData> data;

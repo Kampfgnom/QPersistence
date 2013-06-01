@@ -20,29 +20,10 @@ public:
     {}
 
     QpMetaObject metaObject;
-    QHash<QString, QString> attributes;
+    mutable QHash<QString, QString> attributes;
 
     QpMetaProperty *q;
-
-    void parseClassInfo();
 };
-
-void QpMetaPropertyPrivate::parseClassInfo()
-{
-    QString classInfoName = QString(QPERSISTENCE_PROPERTYMETADATA).append(":").append(q->name());
-    QString classInfoRawValue = metaObject.classInformation(classInfoName.toLatin1(), QString());
-
-    // First parse the attributes
-    QRegularExpression reg("(\\w+)=(\\w+)");
-    QStringList attributesList = classInfoRawValue.split(';');
-    foreach(const QString attribute, attributesList) {
-        QRegularExpressionMatch match = reg.match(attribute);
-        if(!match.hasMatch())
-            continue;
-
-        attributes.insert( match.captured(1), match.captured(2) );
-    }
-}
 
 QpMetaProperty::QpMetaProperty(const QString &propertyName, const QpMetaObject &metaObject) :
     QMetaProperty(metaObject.property(metaObject.indexOfProperty(propertyName.toLatin1()))),
@@ -50,7 +31,6 @@ QpMetaProperty::QpMetaProperty(const QString &propertyName, const QpMetaObject &
 {
     d->q = this;
     d->metaObject = metaObject;
-    d->parseClassInfo();
 }
 
 QpMetaProperty::QpMetaProperty(const QMetaProperty &property, const QpMetaObject &metaObject) :
@@ -59,7 +39,6 @@ QpMetaProperty::QpMetaProperty(const QMetaProperty &property, const QpMetaObject
 {
     d->q = this;
     d->metaObject = metaObject;
-    d->parseClassInfo();
 }
 
 QpMetaProperty::~QpMetaProperty()
@@ -217,6 +196,22 @@ QpMetaObject QpMetaProperty::reverseMetaObject() const
 
 QString QpMetaProperty::reverseRelationName() const
 {
+    if(d->attributes.isEmpty()) {
+        QString classInfoName = QString(QPERSISTENCE_PROPERTYMETADATA).append(":").append(name());
+        QString classInfoRawValue = d->metaObject.classInformation(classInfoName.toLatin1(), QString());
+
+        // First parse the attributes
+        QRegularExpression reg("(\\w+)=(\\w+)");
+        QStringList attributesList = classInfoRawValue.split(';');
+        foreach(const QString attribute, attributesList) {
+            QRegularExpressionMatch match = reg.match(attribute);
+            if(!match.hasMatch())
+                continue;
+
+            d->attributes.insert( match.captured(1), match.captured(2) );
+        }
+    }
+
     return d->attributes.value(QPERSISTENCE_PROPERTYMETADATA_REVERSERELATION);
 }
 

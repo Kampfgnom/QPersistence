@@ -57,14 +57,15 @@ QSharedPointer<QObject> QpRelationResolver::resolveToOneRelation(const QString &
     QpMetaProperty relation = metaObject.metaProperty(name);
     const char* column = relation.columnName().toLatin1();
 
-    int foreignKey = object->property(column).toInt();
+    QVariant variantForeignKey = object->property(column);
+    int foreignKey = variantForeignKey.toInt();
 
-    if(foreignKey == 0) {
+    if(!variantForeignKey.isValid()) {
         QpSqlDataAccessObjectHelper *helper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
         foreignKey = helper->foreignKey(relation, const_cast<QObject*>(object));
     }
 
-    if(foreignKey == 0)
+    if(foreignKey <= 0)
         return QSharedPointer<QObject>();
 
     QpMetaObject foreignMetaObject = relation.reverseMetaObject();
@@ -92,7 +93,15 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveToManyRelation(const 
     relatedObjects.reserve(foreignKeys.size());
     foreach(int key, foreignKeys) {
         QSharedPointer<QObject> relatedObject = dao->readObject(key);
-        Q_ASSERT(relatedObject);
+        Q_ASSERT_X(relatedObject,
+                   Q_FUNC_INFO,
+                   QString("It appears, that there is no '%1' object with the ID '%2',"
+                           "although the '%3' relation of the '%4' class refers to this ID.")
+                   .arg(foreignMetaObject.className())
+                   .arg(key)
+                   .arg(relation.name())
+                   .arg(metaObject.className())
+                   .toLatin1());
         relatedObjects.append(relatedObject);
     }
 

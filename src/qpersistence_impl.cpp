@@ -131,10 +131,16 @@ QList<QSharedPointer<T> > resolveToManyRelation(const QString &name, const QObje
 }
 
 template<class T>
-QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list)
+QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bool *ok)
 {
     QList<QSharedPointer<T> > result;
-    Q_FOREACH(QWeakPointer<T> s, list) result.append(s.toStrongRef());
+    result.reserve(list.size());
+    if(ok) *ok = true;
+    Q_FOREACH(QWeakPointer<T> s, list) {
+        QSharedPointer<T> p = s.toStrongRef();
+        if(ok && !p) *ok = false;
+        result.append(p);
+    }
     return result;
 }
 

@@ -22,11 +22,15 @@ public:
     ~QpDatabaseSchema();
 
     bool existsTable(const QMetaObject &metaObject);
+    bool existsTable(const QString &table);
     void createTable(const QMetaObject &metaObject);
     void createTableIfNotExists(const QMetaObject &metaObject);
     void dropTable(const QMetaObject &metaObject);
+    void dropTable(const QString &table);
     bool addMissingColumns(const QMetaObject &metaObject);
     void addColumn(const QpMetaProperty &metaProperty);
+    void addColumn(const QString &table, const QString &column, const QString &type);
+    bool dropColumns(const QString &table, const QStringList &columns);
 
     template<class O> bool existsTable() { return existsTable(&O::staticMetaObject); }
     template<class O> void createTable() { createTable(&O::staticMetaObject); }
@@ -39,6 +43,10 @@ public:
 
     QpError lastError() const;
 
+    bool renameColumn(const QString &tableName, const QString &oldColumnName, const QString &newColumnName);
+    bool renameTable(const QString &oldTableName, const QString &newTableName);
+    bool createColumnCopy(const QString &sourceTable, const QString &sourceColumn, const QString &destColumn);
+
     static QString variantTypeToSqlType(QVariant::Type type);
 
 private:
@@ -49,5 +57,7 @@ private:
 
     void createRelationTables(const QMetaObject &metaObject);
 };
+
+
 
 #endif // QPERSISTENCE_DATABASESCHEMAHELPER_H

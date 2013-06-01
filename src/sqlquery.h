@@ -23,6 +23,7 @@ public:
     QpSqlQuery &operator=(const QpSqlQuery &);
     ~QpSqlQuery();
 
+    bool exec(const QString &queryString);
     bool exec();
 
     QString table() const;

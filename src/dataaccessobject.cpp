@@ -92,8 +92,10 @@ QSharedPointer<QObject> QpDaoBase::readObject(int id) const
         delete object;
         return QSharedPointer<QObject>();
     }
+    QSharedPointer<QObject> obj = d->cache.insert(Qp::Private::primaryKey(object), object);
+    Qp::Private::enableSharedFromThis(obj);
 
-    return d->cache.insert(id, object);
+    return obj;
 }
 
 QSharedPointer<QObject> QpDaoBase::createObject()

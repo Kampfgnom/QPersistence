@@ -64,10 +64,18 @@ QpSqlQuery::~QpSqlQuery()
 {
 }
 
-bool QpSqlQuery::exec()
+bool QpSqlQuery::exec(const QString &queryString)
 {
-    bool ok = QSqlQuery::exec();
-    QString query = executedQuery();
+    bool ok;
+    QString query = queryString;
+    if(query.isEmpty()) {
+        ok = QSqlQuery::exec();
+        query = executedQuery();
+    }
+    else {
+        ok = QSqlQuery::exec(queryString);
+    }
+
     int index = query.indexOf('?');
     int i = 0;
     QList<QVariant> values = boundValues().values();
@@ -79,8 +87,13 @@ bool QpSqlQuery::exec()
         index = query.indexOf('?', index + value.length());
         ++i;
     }
-//    qDebug() << qPrintable(query);
+    qDebug() << qPrintable(query);
     return ok;
+}
+
+bool QpSqlQuery::exec()
+{
+    return exec(QString());
 }
 
 QString QpSqlQuery::table() const

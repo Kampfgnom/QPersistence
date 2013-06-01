@@ -10,6 +10,7 @@
 
 class QpSqlConditionData : public QSharedData {
 public:
+    QString rawString;
     QString key;
     QVariant value;
     QpSqlCondition::BooleanOperator booleanOperator;
@@ -20,6 +21,12 @@ public:
 QpSqlCondition::QpSqlCondition() :
     d(new QpSqlConditionData)
 {
+}
+
+QpSqlCondition::QpSqlCondition(const QString &rawString) :
+    d(new QpSqlConditionData)
+{
+    d->rawString = rawString;
 }
 
 QpSqlCondition::QpSqlCondition(const QString &key, QpSqlCondition::ComparisonOperator op, const QVariant &value) :
@@ -82,6 +89,9 @@ QpSqlCondition QpSqlCondition::operator &&(const QpSqlCondition &rhs)
 
 QString QpSqlCondition::toWhereClause(bool bindValues) const
 {
+    if(!d->rawString.isEmpty())
+        return d->rawString;
+
     if(d->booleanOperator == Not) {
         Q_ASSERT(d->conditions.size() == 1);
 

@@ -13,6 +13,7 @@
 #include <QDebug>
 #include <QSqlRecord>
 #include <QFile>
+#include <QSqlField>
 
 const QString QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME("_Qp_ID");
 
@@ -45,8 +46,14 @@ QpDatabaseSchema::~QpDatabaseSchema()
 bool QpDatabaseSchema::existsTable(const QMetaObject &metaObject)
 {
     QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
-    return d->database.tables().contains(meta.tableName());
+    return existsTable(meta.tableName());
 }
+
+bool QpDatabaseSchema::existsTable(const QString &table)
+{
+    return d->database.tables().contains(table);
+}
+
 
 void QpDatabaseSchema::createTableIfNotExists(const QMetaObject &metaObject)
 {
@@ -58,8 +65,13 @@ void QpDatabaseSchema::dropTable(const QMetaObject &metaObject)
 {
     QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
 
+    dropTable(meta.tableName());
+}
+
+void QpDatabaseSchema::dropTable(const QString &table)
+{
     d->query.clear();
-    d->query.setTable( meta.tableName());
+    d->query.setTable(table);
     d->query.prepareDropTable();
 
     if ( !d->query.exec()
@@ -213,15 +225,77 @@ void QpDatabaseSchema::addColumn(const QpMetaProperty &metaProperty)
         type = QpDatabaseSchema::variantTypeToSqlType(metaProperty.type());
     }
 
+    addColumn(tableName, name, type);
+}
+
+void QpDatabaseSchema::addColumn(const QString &table, const QString &column, const QString &type)
+{
+
     d->query.clear();
-    d->query.setTable(tableName);
-    d->query.addField(name, type);
+    d->query.setTable(table);
+    d->query.addField(column, type);
     d->query.prepareAlterTable();
 
     if ( !d->query.exec()
          || d->query.lastError().isValid()) {
         setLastError(d->query);
     }
+}
+
+bool QpDatabaseSchema::dropColumns(const QString &table, const QStringList &columns)
+{
+    d->database.close();
+    d->database.open();
+
+    if(!d->database.transaction())
+        return false;
+
+    QpSqlQuery query(d->database);
+    query.exec(QString("SELECT sql FROM sqlite_master WHERE name = '%1'")
+               .arg(table));
+    if (!query.first()
+         || query.lastError().isValid()) {
+        setLastError(query);
+        return false;
+    }
+
+    QString sql = query.value(0).toString();
+
+    QString tableBackup = QString("_Qp_BACKUP_").append(table);
+    renameTable(table, tableBackup);
+
+    qDebug() << "#########";
+    qDebug() << sql;
+    qDebug() << "#########";
+    foreach(QString col, columns) {
+        sql.remove(QRegularExpression(QString(", \"?%1\"? ?\\w*").arg(col)));
+    }
+
+    qDebug() << sql;
+    qDebug() << "#########";
+
+    query.exec(sql);
+
+    QStringList newCols;
+    QSqlRecord record = d->database.record(table);
+    int count = record.count();
+    for(int i = 0; i < count; ++i) {
+        newCols << record.fieldName(i);
+    }
+
+    query.exec(QString("INSERT INTO %1 SELECT %2 FROM %3")
+               .arg(table)
+               .arg(newCols.join(','))
+               .arg(tableBackup));
+
+    dropTable(tableBackup);
+
+    if(!d->database.commit())
+        return false;
+
+    d->database.close();
+    d->database.open();
+    return true;
 }
 
 void QpDatabaseSchema::createCleanSchema()
@@ -250,6 +324,97 @@ void QpDatabaseSchema::adjustSchema()
 QpError QpDatabaseSchema::lastError() const
 {
     return d->lastError;
+}
+
+bool QpDatabaseSchema::renameColumn(const QString &tableName, const QString &oldColumnName, const QString &newColumnName)
+{
+    d->database.close();
+    d->database.open();
+
+    if(!d->database.transaction())
+        return false;
+
+    QpSqlQuery query(d->database);
+    query.exec(QString("SELECT sql FROM sqlite_master WHERE name = '%1'")
+               .arg(tableName));
+    if (!query.first()
+         || query.lastError().isValid()) {
+        setLastError(query);
+        return false;
+    }
+
+    QString sql = query.value(0).toString();
+    sql.replace(QString("\"%1\"").arg(oldColumnName), QString("\"%1\"").arg(newColumnName));
+    sql.replace(QString(" %1 ").arg(oldColumnName), QString(" %1 ").arg(newColumnName));
+    sql.replace(QString("(%1 ").arg(oldColumnName), QString("(%1 ").arg(newColumnName));
+
+    query.exec("PRAGMA writable_schema = 1;");
+    query.exec(QString("UPDATE SQLITE_MASTER SET SQL ="
+                       "'%1' WHERE NAME = '%2';")
+               .arg(sql)
+               .arg(tableName));
+    query.exec("PRAGMA writable_schema = 0;");
+
+    if (query.lastError().isValid()) {
+        setLastError(query);
+        return false;
+    }
+
+    if(!d->database.commit())
+        return false;
+
+    d->database.close();
+    d->database.open();
+    return true;
+}
+
+bool QpDatabaseSchema::renameTable(const QString &oldTableName, const QString &newTableName)
+{
+    QpSqlQuery query(d->database);
+    query.exec(QString("ALTER TABLE %1 RENAME TO %2")
+               .arg(oldTableName)
+               .arg(newTableName));
+
+    if (query.lastError().isValid()) {
+        setLastError(query);
+        return false;
+    }
+
+    return true;
+}
+
+bool QpDatabaseSchema::createColumnCopy(const QString &sourceTable,
+                                  const QString &sourceColumn,
+                                  const QString &destColumn)
+{
+
+    if(!d->database.transaction())
+        return false;
+
+    QSqlQuery query(d->database);
+    QSqlRecord record = d->database.record(sourceTable);
+    int i = record.indexOf(sourceColumn);
+
+    QString type = QpDatabaseSchema::variantTypeToSqlType(record.field(i).type());
+
+    query.exec(QString("ALTER TABLE %1 ADD COLUMN %2 %3")
+               .arg(sourceTable)
+               .arg(destColumn)
+               .arg(type));
+    query.exec(QString("UPDATE %1 SET %2 = %3")
+                .arg(sourceTable)
+                .arg(destColumn)
+                .arg(sourceColumn));
+
+    if (query.lastError().isValid()) {
+        setLastError(query);
+        return false;
+    }
+
+    if(!d->database.commit())
+        return false;
+
+    return true;
 }
 
 QString QpDatabaseSchema::variantTypeToSqlType(QVariant::Type type)
@@ -333,5 +498,3 @@ QString QpDatabaseSchemaPrivate::metaPropertyToColumnDefinition(const QpMetaProp
             .arg(name)
             .arg(type);
 }
-
-
