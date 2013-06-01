@@ -52,12 +52,12 @@ QList<QpDaoBase *> dataAccessObjects()
 
 int primaryKey(QObject *object)
 {
-    return object->property(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME.toLatin1()).toInt();
+    return object->property("_Qp_ID").toInt();
 }
 
 void setPrimaryKey(QObject *object, int key)
 {
-    object->setProperty(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME.toLatin1(),key);
+    object->setProperty("_Qp_ID",key);
 }
 
 void enableSharedFromThis(QSharedPointer<QObject> object)
