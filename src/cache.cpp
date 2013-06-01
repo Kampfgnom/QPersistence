@@ -31,6 +31,11 @@ QpCache::~QpCache()
 {
 }
 
+bool QpCache::contains(int id) const
+{
+    return data->cache.contains(id);
+}
+
 QSharedPointer<QObject> QpCache::insert(int id, QObject *object)
 {
     QSharedPointer<QObject> p = data->cache.value(id);

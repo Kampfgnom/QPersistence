@@ -25,6 +25,7 @@ public:
     int count(const QpMetaObject &metaObject) const;
     QList<int> allKeys(const QpMetaObject &metaObject, int skip, int count) const;
     bool readObject(const QpMetaObject &metaObject, const QVariant &key, QObject *object);
+    bool readAllObjects(const QpMetaObject &metaObject, QList<QObject *> objects, int skip, int count);
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);

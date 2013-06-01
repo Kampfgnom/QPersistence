@@ -87,7 +87,7 @@ bool QpSqlQuery::exec(const QString &queryString)
         index = query.indexOf('?', index + value.length());
         ++i;
     }
-    qDebug() << qPrintable(query);
+//    qDebug() << qPrintable(query);
     return ok;
 }
 

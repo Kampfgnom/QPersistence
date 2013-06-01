@@ -73,8 +73,38 @@ QList<int> QpDaoBase::allKeys(int skip, int count) const
 
 QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count) const
 {
+    if(count <= 0)
+        count = this->count();
+
+    QList<QObject *> objects;
+
+    for(int i = 0; i < count; ++i)
+        objects.append(createInstance());
+
+    if(!d->sqlDataAccessObjectHelper->readAllObjects(d->metaObject, objects, skip, count)) {
+        setLastError(d->sqlDataAccessObjectHelper->lastError());
+        for(int i = 0; i < count; ++i)
+            delete objects.at(i);
+
+        return QList<QSharedPointer<QObject> >();
+    }
+
     QList<QSharedPointer<QObject> > result;
-    Q_FOREACH(int id, allKeys(skip, count)) result.append(readObject(id));
+    result.reserve(count);
+    for(int i = 0; i < count; ++i) {
+        QObject *object = objects.at(i);
+        int key = Qp::Private::primaryKey(object);
+        if(d->cache.contains(key)) {
+            result.append(d->cache.get(key));
+            delete object;
+        }
+        else {
+            QSharedPointer<QObject> obj = d->cache.insert(Qp::Private::primaryKey(object), object);
+            Qp::Private::enableSharedFromThis(obj);
+            result.append(obj);
+        }
+    }
+
     return result;
 }
 

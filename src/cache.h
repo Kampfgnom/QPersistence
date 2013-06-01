@@ -15,6 +15,7 @@ public:
     QpCache &operator=(const QpCache &);
     ~QpCache();
     
+    bool contains(int id) const;
     QSharedPointer<QObject> insert(int id, QObject *object);
     QSharedPointer<QObject> get(int id) const;
     void remove(int id);
