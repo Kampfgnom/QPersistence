@@ -264,15 +264,9 @@ bool QpDatabaseSchema::dropColumns(const QString &table, const QStringList &colu
     QString tableBackup = QString("_Qp_BACKUP_").append(table);
     renameTable(table, tableBackup);
 
-    qDebug() << "#########";
-    qDebug() << sql;
-    qDebug() << "#########";
     foreach(QString col, columns) {
         sql.remove(QRegularExpression(QString(", \"?%1\"? ?\\w*").arg(col)));
     }
-
-    qDebug() << sql;
-    qDebug() << "#########";
 
     query.exec(sql);
 
