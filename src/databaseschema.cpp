@@ -125,10 +125,7 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
     if ( !d->query.exec()
          || d->query.lastError().isValid()) {
         setLastError(d->query);
-        return;
     }
-
-    createRelationTables(metaObject);
 }
 
 void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
@@ -159,6 +156,7 @@ void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
         createTableQuery.addForeignKey(foreignColumnName,
                                        PRIMARY_KEY_COLUMN_NAME,
                                        foreignTable);
+        createTableQuery.addField(PRIMARY_KEY_COLUMN_NAME, "INTEGER PRIMARY KEY AUTOINCREMENT");
         createTableQuery.prepareCreateTable();
         if ( !createTableQuery.exec()
              || createTableQuery.lastError().isValid()) {
@@ -172,11 +170,11 @@ void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
 bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
 {
     QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
-    QSqlRecord record = d->database.record(meta.tableName());;
 
     int count = metaObject.propertyCount();
     for (int i = 1; i < count; ++i) {
         QpMetaProperty metaProperty(metaObject.property(i), meta);
+        QSqlRecord record = d->database.record(metaProperty.tableName());;
 
         if (!metaProperty.isStored())
             continue;
@@ -311,6 +309,7 @@ void QpDatabaseSchema::adjustSchema()
 {
     foreach(const QpMetaObject &metaObject, Qp::Private::metaObjects()) {
         createTableIfNotExists(metaObject);
+        createRelationTables(metaObject);
         addMissingColumns(metaObject);
     }
 }
