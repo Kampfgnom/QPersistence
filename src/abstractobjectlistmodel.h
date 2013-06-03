@@ -13,6 +13,8 @@ class QpAbstractObjectListModelBase : public QAbstractListModel
 public:
     explicit QpAbstractObjectListModelBase(QObject *parent = 0);
 
+    virtual QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const = 0;
+
 protected slots:
     virtual void objectInserted(QSharedPointer<QObject>) = 0;
     virtual void objectUpdated(QSharedPointer<QObject>) = 0;
@@ -33,6 +35,7 @@ public:
 
     bool canFetchMore(const QModelIndex &parent) const Q_DECL_OVERRIDE;
     void fetchMore(const QModelIndex &parent) Q_DECL_OVERRIDE;
+    QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const Q_DECL_OVERRIDE;
 
 protected:
     void objectInserted(QSharedPointer<QObject>) Q_DECL_OVERRIDE;
@@ -45,6 +48,12 @@ private:
     int m_fetchCount;
     void adjustExistingRows();
 };
+
+template<class T>
+QSharedPointer<QObject> QpAbstractObjectListModel<T>::objectByIndexBase(const QModelIndex &index) const
+{
+    return qSharedPointerCast<QObject>(objectByIndex(index));
+}
 
 template<class T>
 QSharedPointer<T> QpAbstractObjectListModel<T>::objectByIndex(const QModelIndex &index) const
