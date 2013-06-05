@@ -106,7 +106,7 @@ bool remove(QSharedPointer<T> object)
 }
 
 template<class T>
-QSharedPointer<T> sharedFrom(const QObject *object)
+QSharedPointer<T> sharedFrom(const T *object)
 {
     QVariant variant = object->property(Qp::Private::QPERSISTENCE_SHARED_POINTER_PROPERTY.toLatin1());
     QWeakPointer<QObject> weak = variant.value<QWeakPointer<QObject> >();
