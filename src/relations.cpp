@@ -107,7 +107,7 @@ QList<QSharedPointer<T> > QpWeakRelation<T>::resolveFromDatabase() const
     QpRelationResolver resolver;
     QList<QSharedPointer<T> > resolved = Qp::Private::castList<T>(resolver.resolveRelation(data->name, data->parent));
     data->resolved = true;
-    data->relatedList = Qp::makeListWeak<T>(resolved);
+    data->relatedList.append(Qp::makeListWeak<T>(resolved));
     if(resolved.isEmpty())
         return QList<QSharedPointer<T> >();
     data->related = resolved.first();
@@ -202,7 +202,7 @@ void QpStrongRelation<T>::resolveFromDatabase() const
     QpRelationResolver resolver;
     QList<QSharedPointer<T> > resolved = Qp::Private::castList<T>(resolver.resolveRelation(data->name, data->parent));
     data->resolved = true;
-    data->relatedList = resolved;
+    data->relatedList.append(resolved);
     if(resolved.isEmpty())
         return;
     data->related = resolved.first();
