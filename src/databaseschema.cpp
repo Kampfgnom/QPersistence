@@ -166,7 +166,6 @@ void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
     }
 }
 
-
 bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
 {
     QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
