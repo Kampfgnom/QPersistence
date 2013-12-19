@@ -24,7 +24,7 @@ QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
     d(new QpDaoBaseData)
 {
     d->sqlDataAccessObjectHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
-    d->metaObject = QpMetaObject(metaObject);
+    d->metaObject = QpMetaObject::registerMetaObject(metaObject);
 }
 
 QpDaoBase::~QpDaoBase()

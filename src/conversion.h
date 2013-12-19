@@ -132,7 +132,6 @@ public:
 template<typename K, typename V>
 class MapConverter : public ConverterBase
 {
-    static const QRegularExpression KEYVALUEREGEXP;
 
 public:
     MapConverter(QObject *parent = 0) : ConverterBase(parent) {}
@@ -160,26 +159,27 @@ public:
 
     QVariant convertFromSqlStorableValue(const QString &value) const
     {
+        QMap<K, V> result;
+
+        if(value.isEmpty())
+            return QVariant::fromValue<QMap<K,V> >(result);
+
         Q_ASSERT(canConvertFromSqlStoredVariant<K>());
         Q_ASSERT(canConvertFromSqlStoredVariant<V>());
 
         QStringList list = value.split(';');
-        QMap<K, V> result;
         QMetaType::Type keyType = static_cast<QMetaType::Type>(QVariant::fromValue<K>(K()).userType());
         QMetaType::Type valueType = static_cast<QMetaType::Type>(QVariant::fromValue<V>(V()).userType());
 
         foreach(QString string, list) {
-            QRegularExpressionMatch match = KEYVALUEREGEXP.match(string);
-            if(match.hasMatch()) {
-                QString keyString = match.captured(1);
-                QString valueString = match.captured(2);
-                QVariant keyVariant = Private::convertFromSqlStoredVariant(keyString, keyType);
-                QVariant valueVariant = Private::convertFromSqlStoredVariant(valueString, valueType);
+            QStringList list2 = string.split('=');
+            Q_ASSERT(list2.size() == 2);
+            QVariant keyVariant = Private::convertFromSqlStoredVariant(list2.at(0), keyType);
+            QVariant valueVariant = Private::convertFromSqlStoredVariant(list2.at(1), valueType);
 
-                K key = keyVariant.value<K>();
-                V v = valueVariant.value<V>();
-                result.insert(key, v);
-            }
+            K key = keyVariant.value<K>();
+            V v = valueVariant.value<V>();
+            result.insert(key, v);
         }
         return QVariant::fromValue<QMap<K,V> >(result);
     }
@@ -225,9 +225,6 @@ public:
         return QVariant::fromValue<QSet<T> >(result);
     }
 };
-
-template<typename K, typename V>
-const QRegularExpression MapConverter<K,V>::KEYVALUEREGEXP("(.+)=(.+)");
 
 
 void registerConverter(int variantType, ConverterBase *converter);

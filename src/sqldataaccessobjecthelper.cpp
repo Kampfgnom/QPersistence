@@ -139,6 +139,7 @@ bool QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject,
     query.setTable(metaObject.tableName());
     query.setCount(count);
     query.setSkip(skip);
+    query.setForwardOnly(true);
     query.prepareSelect();
 
     if ( !query.exec()
@@ -215,7 +216,7 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
 {
     // Add simple properties
     foreach(const QpMetaProperty property, metaObject.simpleProperties()) {
-        query.addField(property.columnName(), property.read(object));
+        query.addField(property.columnName(), property.metaProperty().read(object));
     }
 
     // Add relation properties
@@ -227,7 +228,7 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
                 || cardinality == QpMetaProperty::ManyToOneCardinality
                 || (QpMetaProperty::OneToOneCardinality
                     && property.hasTableForeignKey())) {
-            QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.read(object));
+            QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.metaProperty().read(object));
 
             if(!relatedObject)
                 continue;
@@ -243,11 +244,11 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery &query, QO
     QSqlRecord record = query.record();
     int fieldCount = record.count();
     for (int i = 0; i < fieldCount; ++i) {
-        QString fieldName = record.fieldName(i);
+        QByteArray fieldName = record.fieldName(i).toLatin1();
         QVariant value = query.value(i);
 
-        value = QpSqlQuery::variantFromSqlStorableVariant(value, static_cast<QMetaType::Type>(object->property(fieldName.toLatin1()).userType()));
-        object->setProperty(fieldName.toLatin1(), value);
+        value = QpSqlQuery::variantFromSqlStorableVariant(value, static_cast<QMetaType::Type>(object->property(fieldName).userType()));
+        object->setProperty(fieldName, value);
     }
 }
 
@@ -275,7 +276,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
             queries.append(resetRelationQuery);
 
             // Check if there are related objects
-            QList<QSharedPointer<QObject> > relatedObjects = Qp::Private::objectListCast(property.read(object));
+            QList<QSharedPointer<QObject> > relatedObjects = Qp::Private::objectListCast(property.metaProperty().read(object));
             if(relatedObjects.isEmpty())
                 continue;
 
@@ -314,7 +315,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
         }
         else if(cardinality == QpMetaProperty::OneToOneCardinality
                 && !property.hasTableForeignKey()) {
-            QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.read(object));
+            QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.metaProperty().read(object));
             if(!relatedObject)
                 continue;
 
@@ -343,7 +344,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
             queries.append(resetRelationQuery);
 
             // Create rows, which represent the relation
-            QList<QSharedPointer<QObject> > relatedObjects = Qp::Private::objectListCast(property.read(object));
+            QList<QSharedPointer<QObject> > relatedObjects = Qp::Private::objectListCast(property.metaProperty().read(object));
             if(relatedObjects.isEmpty())
                 continue;
 

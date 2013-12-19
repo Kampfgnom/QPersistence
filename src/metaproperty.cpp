@@ -16,45 +16,64 @@ class QpMetaPropertyPrivate : public QSharedData
 {
 public:
     QpMetaPropertyPrivate() :
-        QSharedData()
+        QSharedData(),
+        q(nullptr),
+        cardinality(QpMetaProperty::UnknownCardinality)
     {}
 
+    QString typeName;
+    QMetaProperty metaProperty;
     QpMetaObject metaObject;
     mutable QHash<QString, QString> attributes;
+    QpMetaProperty::Cardinality cardinality;
 
     QpMetaProperty *q;
 };
 
-QpMetaProperty::QpMetaProperty(const QString &propertyName, const QpMetaObject &metaObject) :
-    QMetaProperty(metaObject.property(metaObject.indexOfProperty(propertyName.toLatin1()))),
+QpMetaProperty::QpMetaProperty() :
     d(new QpMetaPropertyPrivate)
 {
     d->q = this;
-    d->metaObject = metaObject;
 }
 
 QpMetaProperty::QpMetaProperty(const QMetaProperty &property, const QpMetaObject &metaObject) :
-    QMetaProperty(property),
     d(new QpMetaPropertyPrivate)
 {
     d->q = this;
+    d->metaProperty = property;
     d->metaObject = metaObject;
+    d->typeName = property.typeName();
+
+    Q_ASSERT(isValid());
 }
+
+//QpMetaProperty::QpMetaProperty(const QString &propertyName, const QpMetaObject &metaObject) :
+//    QMetaProperty(metaObject.property(metaObject.indexOfProperty(propertyName.toLatin1()))),
+//    d(new QpMetaPropertyPrivate)
+//{
+//    d->q = this;
+//    d->metaObject = metaObject;
+//}
+
+//QpMetaProperty::QpMetaProperty(const QMetaProperty &property, const QpMetaObject &metaObject) :
+//    QMetaProperty(property),
+//    d(new QpMetaPropertyPrivate)
+//{
+//    d->q = this;
+//    d->metaObject = metaObject;
+//}
 
 QpMetaProperty::~QpMetaProperty()
 {
 }
 
 QpMetaProperty::QpMetaProperty(const QpMetaProperty &other) :
-    QMetaProperty(other),
     d(other.d)
 {
 }
 
 QpMetaProperty &QpMetaProperty::operator =(const QpMetaProperty &other)
 {
-    QMetaProperty::operator=(other);
-
     if(&other != this)
         d.operator =(other.d);
 
@@ -64,6 +83,11 @@ QpMetaProperty &QpMetaProperty::operator =(const QpMetaProperty &other)
 QpMetaObject QpMetaProperty::metaObject() const
 {
     return d->metaObject;
+}
+
+QMetaProperty QpMetaProperty::metaProperty() const
+{
+    return d->metaProperty;
 }
 
 QString QpMetaProperty::columnName() const
@@ -87,6 +111,21 @@ QString QpMetaProperty::columnName() const
     return QString(name());
 }
 
+bool QpMetaProperty::isStored() const
+{
+    return d->metaProperty.isStored();
+}
+
+bool QpMetaProperty::isValid() const
+{
+    return d->metaProperty.isValid();
+}
+
+QVariant::Type QpMetaProperty::type() const
+{
+    return d->metaProperty.type();
+}
+
 bool QpMetaProperty::isRelationProperty() const
 {
     return isToOneRelationProperty() || isToManyRelationProperty();
@@ -94,8 +133,9 @@ bool QpMetaProperty::isRelationProperty() const
 
 bool QpMetaProperty::isToOneRelationProperty() const
 {
-    return QString(typeName()).startsWith("QSharedPointer<")
-            || QString(typeName()).startsWith("QWeakPointer<");
+    QString type(typeName());
+    return type.startsWith("QSharedPointer<")
+            || type.startsWith("QWeakPointer<");
 }
 
 bool QpMetaProperty::isToManyRelationProperty() const
@@ -131,47 +171,48 @@ bool QpMetaProperty::hasTableForeignKey() const
 
 QpMetaProperty::Cardinality QpMetaProperty::cardinality() const
 {
+    if(d->cardinality != UnknownCardinality)
+        return d->cardinality;
+
     QString reverseName = reverseRelationName();
     if(reverseName.isEmpty()) {
         if(isToOneRelationProperty())
-            return ToOneCardinality;
+            d->cardinality = ToOneCardinality;
         else if(isToManyRelationProperty())
-            return ToManyCardinality;
+            d->cardinality = ToManyCardinality;
     }
     else {
-        QpMetaProperty reverse = reverseMetaObject().metaProperty(reverseName);
-
+        QpMetaProperty r = reverseRelation();
         if(isToOneRelationProperty()) {
-            if(!reverse.isValid() ||
-                    QString(reverse.typeName()).isEmpty()) {
-                return ToOneCardinality;
+            if(QString(r.typeName()).isEmpty()) {
+                d->cardinality = ToOneCardinality;
             }
-            else if(reverse.isToOneRelationProperty()) {
-                return OneToOneCardinality;
+            else if(r.isToOneRelationProperty()) {
+                d->cardinality = OneToOneCardinality;
             }
-            else if(reverse.isToManyRelationProperty()) {
-                return ManyToOneCardinality;
+            else if(r.isToManyRelationProperty()) {
+                d->cardinality = ManyToOneCardinality;
             }
         }
         else if(isToManyRelationProperty()) {
-            if(!reverse.isValid() ||
-                    QString(reverse.typeName()).isEmpty()) {
-                return ToManyCardinality;
+            if(QString(r.typeName()).isEmpty()) {
+                d->cardinality = ToManyCardinality;
             }
-            else if(reverse.isToManyRelationProperty()) {
-                return ManyToManyCardinality;
+            else if(r.isToManyRelationProperty()) {
+                d->cardinality = ManyToManyCardinality;
             }
-            else if(reverse.isToOneRelationProperty()) {
-                return OneToManyCardinality;
+            else if(r.isToOneRelationProperty()) {
+                d->cardinality = OneToManyCardinality;
             }
         }
     }
 
-    Q_ASSERT_X(false, Q_FUNC_INFO,
+    Q_ASSERT_X(d->cardinality != UnknownCardinality, Q_FUNC_INFO,
                QString("The relation %1 has no cardinality. This is an internal error and should never happen.")
                .arg(name())
                .toLatin1());
-    return NoCardinality;
+
+    return d->cardinality;
 }
 
 QString QpMetaProperty::reverseClassName() const
@@ -191,7 +232,7 @@ QString QpMetaProperty::reverseClassName() const
 
 QpMetaObject QpMetaProperty::reverseMetaObject() const
 {
-    return Qp::Private::metaObject(reverseClassName());
+    return QpMetaObject::forClassName(reverseClassName());
 }
 
 QString QpMetaProperty::reverseRelationName() const
@@ -304,17 +345,28 @@ QString QpMetaProperty::setType() const
 
 bool QpMetaProperty::write(QObject *obj, const QVariant &value) const
 {
-    if (!isWritable())
+    if (!d->metaProperty.isWritable())
         return false;
 
-    QVariant::Type t = type();
+    QVariant::Type t = d->metaProperty.type();
     if (value.canConvert(t)) {
         QVariant v(value);
         v.convert(t);
-        return QMetaProperty::write( obj, v );
+        return d->metaProperty.write( obj, v );
     }
 
-    return QMetaProperty::write( obj, value );
+    return d->metaProperty.write( obj, value );
 }
+
+QString QpMetaProperty::name() const
+{
+    return d->metaProperty.name();
+}
+
+QString QpMetaProperty::typeName() const
+{
+    return d->typeName;
+}
+
 
 

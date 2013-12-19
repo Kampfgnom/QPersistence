@@ -8,7 +8,7 @@
 template<class T>
 class QpWeakRelationData : public QSharedData {
 public:
-    QpWeakRelationData(const QpMetaProperty &metaProperty);
+    QpWeakRelationData();
 
     QString name;
     QObject *parent;
@@ -22,9 +22,8 @@ public:
 };
 
 template<class T>
-QpWeakRelationData<T>::QpWeakRelationData(const QpMetaProperty &metaProperty) :
-    QSharedData(),
-    metaProperty(metaProperty)
+QpWeakRelationData<T>::QpWeakRelationData() :
+    QSharedData()
 {
 }
 
@@ -38,11 +37,12 @@ bool QpWeakRelationData<T>::isToMany() const
 
 template<class T>
 QpWeakRelation<T>::QpWeakRelation(const QString &name, QObject *parent) :
-    data(new QpWeakRelationData<T>(QpMetaObject(*parent->metaObject()).metaProperty(name)))
+    data(new QpWeakRelationData<T>)
 {
     data->name = name;
     data->parent = parent;
     data->resolved = false;
+    data->metaProperty = QpMetaObject::forClassName(parent->metaObject()->className()).metaProperty(name);
     data->cardinality = data->metaProperty.cardinality();
 }
 

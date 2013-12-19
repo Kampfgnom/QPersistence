@@ -21,7 +21,7 @@ void registerClass()
     QpDao<T> *dataAccessObject = new QpDao<T>(&guard);
 
     // Register meta object
-    Private::registerDataAccessObject(dataAccessObject, T::staticMetaObject);
+    Private::registerDataAccessObject(dataAccessObject);
 
     // Create converter
     Private::ObjectConverter<T> *converter = new Private::ObjectConverter<T>(&guard);

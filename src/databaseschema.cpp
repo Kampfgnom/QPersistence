@@ -45,7 +45,7 @@ QpDatabaseSchema::~QpDatabaseSchema()
 
 bool QpDatabaseSchema::existsTable(const QMetaObject &metaObject)
 {
-    QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
+    QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
     return existsTable(meta.tableName());
 }
 
@@ -63,7 +63,7 @@ void QpDatabaseSchema::createTableIfNotExists(const QMetaObject &metaObject)
 
 void QpDatabaseSchema::dropTable(const QMetaObject &metaObject)
 {
-    QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
+    QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
 
     dropTable(meta.tableName());
 }
@@ -82,14 +82,13 @@ void QpDatabaseSchema::dropTable(const QString &table)
 
 void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
 {
-    QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
+    QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
 
     d->query.clear();
     d->query.setTable(meta.tableName());
 
-    int count = metaObject.propertyCount();
-    for (int i=1; i < count; ++i) { // start at 1 because 0 is "objectName"
-        QpMetaProperty metaProperty(metaObject.property(i), meta);
+    foreach(QpMetaProperty metaProperty, meta.metaProperties()) {
+        Q_ASSERT(metaProperty.isValid());
 
         if (!metaProperty.isStored())
             continue;
@@ -130,11 +129,12 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
 
 void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
 {
-    QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
+    QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
     QString primaryTable = meta.tableName();
     QString columnType = QpDatabaseSchema::variantTypeToSqlType(QVariant::Int);
 
     foreach(QpMetaProperty property, meta.relationProperties()) {
+        Q_ASSERT(property.isValid());
         if(property.cardinality() != QpMetaProperty::ManyToManyCardinality)
             continue;
 
@@ -168,11 +168,10 @@ void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
 
 bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
 {
-    QpMetaObject meta = Qp::Private::metaObject(metaObject.className());
+    QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
 
-    int count = metaObject.propertyCount();
-    for (int i = 1; i < count; ++i) {
-        QpMetaProperty metaProperty(metaObject.property(i), meta);
+    foreach(QpMetaProperty metaProperty, meta.metaProperties()) {
+        Q_ASSERT(metaProperty.isValid());
         QSqlRecord record = d->database.record(metaProperty.tableName());;
 
         if (!metaProperty.isStored())
@@ -299,17 +298,17 @@ void QpDatabaseSchema::createCleanSchema()
             qCritical() << Q_FUNC_INFO << "Could not re-open database file"<< file.fileName();
     }
 
-    foreach(const QpMetaObject &metaObject, Qp::Private::metaObjects()) {
-        createTable(metaObject);
+    foreach(const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
+        createTable(metaObject.metaObject());
     }
 }
 
 void QpDatabaseSchema::adjustSchema()
 {
-    foreach(const QpMetaObject &metaObject, Qp::Private::metaObjects()) {
-        createTableIfNotExists(metaObject);
-        createRelationTables(metaObject);
-        addMissingColumns(metaObject);
+    foreach(const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
+        createTableIfNotExists(metaObject.metaObject());
+        createRelationTables(metaObject.metaObject());
+        addMissingColumns(metaObject.metaObject());
     }
 }
 

@@ -10,24 +10,7 @@ namespace Qp {
 
 namespace Private {
 
-QHash<QString, QpMetaObject> _metaObjects;
 QHash<QString, QpDaoBase *> daoPerMetaObjectName;
-
-QpMetaObject metaObject(const QString &className)
-{
-    Q_ASSERT_X(Private::_metaObjects.contains(className),
-               Q_FUNC_INFO,
-               QString("The '%1' class has not been registered.")
-               .arg(className)
-               .toLatin1());
-
-    return Private::_metaObjects.value(className);
-}
-
-QList<QpMetaObject> metaObjects()
-{
-    return Private::_metaObjects.values();
-}
 
 QpDaoBase *dataAccessObject(const QMetaObject &metaObject)
 {
@@ -38,11 +21,9 @@ QpDaoBase *dataAccessObject(const QMetaObject &metaObject)
     return Private::daoPerMetaObjectName.value(metaObject.className());
 }
 
-void registerDataAccessObject(QpDaoBase *dataAccessObject,
-                              const QMetaObject &metaObject)
+void registerDataAccessObject(QpDaoBase *dataAccessObject)
 {
-    daoPerMetaObjectName.insert(metaObject.className(), dataAccessObject);
-    _metaObjects.insert(metaObject.className(), dataAccessObject->qpMetaObject());
+    daoPerMetaObjectName.insert(dataAccessObject->qpMetaObject().className(), dataAccessObject);
 }
 
 QList<QpDaoBase *> dataAccessObjects()

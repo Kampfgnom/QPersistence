@@ -9,11 +9,7 @@ namespace Private {
 
 const QString QPERSISTENCE_SHARED_POINTER_PROPERTY("_Qp_sharedpointer");
 
-void registerDataAccessObject(QpDaoBase *dataAccessObject,
-                              const QMetaObject &metaObject);
-
-QpMetaObject metaObject(const QString &className);
-QList<QpMetaObject> metaObjects();
+void registerDataAccessObject(QpDaoBase *dataAccessObject);
 
 QpDaoBase *dataAccessObject(const QMetaObject &metaObject);
 QList<QpDaoBase *> dataAccessObjects();
