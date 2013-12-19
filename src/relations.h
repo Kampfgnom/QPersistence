@@ -4,6 +4,10 @@
 #include <QSharedDataPointer>
 #include <QSharedPointer>
 
+
+template<class T>
+class QpWeakRelationData;
+
 template<class T>
 class QpWeakRelation
 {
@@ -22,19 +26,13 @@ public:
     void clear();
 
 private:
-    class QpWeakRelationData : public QSharedData {
-    public:
-        QString name;
-        QObject *parent;
-        mutable bool resolved;
-        mutable QList<QWeakPointer<T> > relatedList;
-        mutable QWeakPointer<T> related;
-    };
-
     QList<QSharedPointer<T> > resolveFromDatabase() const;
 
-    QSharedDataPointer<QpWeakRelationData> data;
+    QSharedDataPointer<QpWeakRelationData<T> > data;
 };
+
+template<class T>
+class QpStrongRelationData;
 
 template<class T>
 class QpStrongRelation
@@ -54,18 +52,9 @@ public:
     void clear();
 
 private:
-    class QpStrongRelationData : public QSharedData {
-    public:
-        QString name;
-        QObject *parent;
-        mutable bool resolved;
-        mutable QList<QSharedPointer<T> > relatedList;
-        mutable QSharedPointer<T> related;
-    };
-
     void resolveFromDatabase() const;
 
-    QSharedDataPointer<QpStrongRelationData> data;
+    QSharedDataPointer<QpStrongRelationData<T> > data;
 };
 
 #include "relations.cpp"
