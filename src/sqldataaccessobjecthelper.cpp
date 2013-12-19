@@ -544,6 +544,7 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
                                            QpSqlCondition::EqualTo,
                                            key));
     query.addField(foreignColumn);
+    query.setForwardOnly(true);
     if(!sortColumn.isEmpty())
         query.addOrder(sortColumn);
     query.prepareSelect();
