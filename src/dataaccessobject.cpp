@@ -16,7 +16,22 @@ public:
     QpMetaObject metaObject;
     mutable QpError lastError;
     mutable QpCache cache;
+
+    static QHash<QString, QpDaoBase *> daoPerMetaObjectName;
 };
+
+QHash<QString, QpDaoBase *> QpDaoBaseData::daoPerMetaObjectName;
+
+QpDaoBase *QpDaoBase::forClass(const QMetaObject &metaObject)
+{
+    Q_ASSERT(QpDaoBaseData::daoPerMetaObjectName.contains(metaObject.className()));
+    return QpDaoBaseData::daoPerMetaObjectName.value(metaObject.className());
+}
+
+QList<QpDaoBase *> QpDaoBase::dataAccessObjects()
+{
+    return QpDaoBaseData::daoPerMetaObjectName.values();
+}
 
 QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
                      QObject *parent) :
@@ -25,6 +40,7 @@ QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
 {
     d->sqlDataAccessObjectHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
     d->metaObject = QpMetaObject::registerMetaObject(metaObject);
+    QpDaoBaseData::daoPerMetaObjectName.insert(metaObject.className(), this);
 }
 
 QpDaoBase::~QpDaoBase()

@@ -17,6 +17,9 @@ class QpDaoBase : public QObject
 {
     Q_OBJECT
 public:
+    static QpDaoBase *forClass(const QMetaObject &metaObject);
+    static QList<QpDaoBase *> dataAccessObjects();
+
     ~QpDaoBase();
 
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
@@ -31,6 +34,7 @@ public:
     bool removeObject(QSharedPointer<QObject> object);
 
     QpError lastError() const;
+
 
 Q_SIGNALS:
     void objectCreated(QSharedPointer<QObject>);

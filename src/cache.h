@@ -20,6 +20,11 @@ public:
     QSharedPointer<QObject> get(int id) const;
     void remove(int id);
 
+    int size() const;
+
+    int maximumCacheSize() const;
+    void setMaximumCacheSize(int size);
+
 private:
     QSharedDataPointer<QpCacheData> data;
 };

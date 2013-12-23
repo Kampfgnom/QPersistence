@@ -26,8 +26,6 @@ public:
     void clear();
 
 private:
-    QList<QSharedPointer<T> > resolveFromDatabase() const;
-
     QSharedDataPointer<QpWeakRelationData<T> > data;
 };
 
@@ -52,8 +50,6 @@ public:
     void clear();
 
 private:
-    void resolveFromDatabase() const;
-
     QSharedDataPointer<QpStrongRelationData<T> > data;
 };
 

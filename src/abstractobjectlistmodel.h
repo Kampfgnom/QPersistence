@@ -37,6 +37,9 @@ public:
     void fetchMore(const QModelIndex &parent) Q_DECL_OVERRIDE;
     QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const Q_DECL_OVERRIDE;
 
+    int fetchCount() const;
+    void setFetchCount(int fetchCount);
+
 protected:
     void objectInserted(QSharedPointer<QObject>) Q_DECL_OVERRIDE;
     void objectUpdated(QSharedPointer<QObject>) Q_DECL_OVERRIDE;
@@ -72,10 +75,10 @@ QList<QSharedPointer<T> > QpAbstractObjectListModel<T>::objects() const
 
 template<class T>
 QpAbstractObjectListModel<T>::QpAbstractObjectListModel(QObject *parent) :
-    QpAbstractObjectListModelBase(parent)
+    QpAbstractObjectListModelBase(parent),
+    m_dao(Qp::dataAccessObject<T>()),
+    m_fetchCount(std::numeric_limits<int>::max())
 {
-    m_fetchCount = 50;
-    m_dao = Qp::dataAccessObject<T>();
 }
 
 template<class T>
@@ -136,10 +139,7 @@ void QpAbstractObjectListModel<T>::objectRemoved(QSharedPointer<QObject> object)
 template<class T>
 bool QpAbstractObjectListModel<T>::canFetchMore(const QModelIndex &/*parent*/) const
 {
-    if (m_objects.size() < m_dao->count())
-        return true;
-    else
-        return false;
+    return (m_objects.size() < m_dao->count());
 }
 
 template<class T>
@@ -164,6 +164,18 @@ void QpAbstractObjectListModel<T>::adjustExistingRows()
             m_rows.insert(object, i);
         ++i;
     }
+}
+
+template<class T>
+int QpAbstractObjectListModel<T>::fetchCount() const
+{
+    return m_fetchCount;
+}
+
+template<class T>
+void QpAbstractObjectListModel<T>::setFetchCount(int fetchCount)
+{
+    m_fetchCount = fetchCount;
 }
 
 #endif // ABSTRACTOBJECTLISTMODEL_H

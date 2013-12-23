@@ -10,27 +10,6 @@ namespace Qp {
 
 namespace Private {
 
-QHash<QString, QpDaoBase *> daoPerMetaObjectName;
-
-QpDaoBase *dataAccessObject(const QMetaObject &metaObject)
-{
-    QpDaoBase *dao = Private::daoPerMetaObjectName.value(metaObject.className());
-    if(dao)
-        return dao;
-
-    return Private::daoPerMetaObjectName.value(metaObject.className());
-}
-
-void registerDataAccessObject(QpDaoBase *dataAccessObject)
-{
-    daoPerMetaObjectName.insert(dataAccessObject->qpMetaObject().className(), dataAccessObject);
-}
-
-QList<QpDaoBase *> dataAccessObjects()
-{
-    return Private::daoPerMetaObjectName.values();
-}
-
 int primaryKey(QObject *object)
 {
     return object->property("_Qp_ID").toInt();

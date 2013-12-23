@@ -88,3 +88,23 @@ void QpCache::remove(int id)
         }
     }
 }
+
+int QpCache::size() const
+{
+    return data->strongCache.size();
+}
+
+int QpCache::maximumCacheSize() const
+{
+    return data->strongCacheSize;
+}
+
+void QpCache::setMaximumCacheSize(int size)
+{
+    while(size < data->strongCache.size()) {
+        data->strongCache.dequeue();
+        data->pointerCache.dequeue();
+    }
+
+    data->strongCacheSize = size;
+}

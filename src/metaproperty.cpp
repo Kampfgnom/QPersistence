@@ -17,8 +17,8 @@ class QpMetaPropertyPrivate : public QSharedData
 public:
     QpMetaPropertyPrivate() :
         QSharedData(),
-        q(nullptr),
-        cardinality(QpMetaProperty::UnknownCardinality)
+        cardinality(QpMetaProperty::UnknownCardinality),
+        q(nullptr)
     {}
 
     QString typeName;

@@ -10,17 +10,9 @@ class QpRelationResolverData;
 class QpRelationResolver : public QObject
 {
 public:
-    QpRelationResolver();
-    QpRelationResolver(const QpRelationResolver &);
-    QpRelationResolver &operator=(const QpRelationResolver &);
-    ~QpRelationResolver();
-
-    QList<QSharedPointer<QObject > > resolveRelation(const QString &name, const QObject *object);
-    QSharedPointer<QObject> resolveToOneRelation(const QString &name, const QObject *object);
-    QList<QSharedPointer<QObject > > resolveToManyRelation(const QString &name, const QObject *object);
-
-private:
-    QSharedDataPointer<QpRelationResolverData> data;
+    static QList<QSharedPointer<QObject > > resolveRelation(const QString &name, const QObject *object);
+    static QSharedPointer<QObject> resolveToOneRelation(const QString &name, const QObject *object);
+    static QList<QSharedPointer<QObject > > resolveToManyRelation(const QString &name, const QObject *object);
 };
 
 #endif // RELATIONRESOLVER_H

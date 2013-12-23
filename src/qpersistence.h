@@ -27,14 +27,7 @@ template<class T> bool remove(QSharedPointer<T> object);
 template<class K, class V> void registerMappableTypes();
 template<class T> void registerSetType();
 template<class T> QSharedPointer<T> sharedFrom(const QObject *object);
-template<class T> QSharedPointer<T> resolveToOneRelation(const QString &name, const QObject *object);
-template<class T> QList<QSharedPointer<T> > resolveToManyRelation(const QString &name, const QObject *object);
-
-
-template<class T> QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bool *ok = 0);
-template<class T> QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list);
-
-template <typename T> QList<T> reversed( const QList<T> & in );
+template<typename T> QList<T> reversed( const QList<T> & in );
 
 } // namespace Qp
 
