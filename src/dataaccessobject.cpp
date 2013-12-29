@@ -177,9 +177,8 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
         return false;
     }
 
-    d->cache.remove(Qp::Private::primaryKey(object.data()));
+    d->cache.remove(Qp::primaryKey(object));
     emit objectRemoved(object);
-    object.clear();
     return true;
 }
 

@@ -13,12 +13,20 @@ class QpAbstractObjectListModelBase : public QAbstractListModel
 public:
     explicit QpAbstractObjectListModelBase(QObject *parent = 0);
 
+    int columnCount(const QModelIndex &parent) const Q_DECL_OVERRIDE;
     virtual QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const = 0;
+
+    int fetchCount() const;
+    void setFetchCount(int fetchCount);
 
 protected slots:
     virtual void objectInserted(QSharedPointer<QObject>) = 0;
     virtual void objectUpdated(QSharedPointer<QObject>) = 0;
     virtual void objectRemoved(QSharedPointer<QObject>) = 0;
+
+protected:
+    bool m_objectsFromDao;
+    int m_fetchCount;
 };
 
 template<class T>
@@ -32,25 +40,36 @@ public:
 
     QSharedPointer<T> objectByIndex(const QModelIndex &index) const;
     QList<QSharedPointer<T> > objects() const;
+    void setObjects(const QList<QSharedPointer<T> > &objects);
 
-    bool canFetchMore(const QModelIndex &parent) const Q_DECL_OVERRIDE;
-    void fetchMore(const QModelIndex &parent) Q_DECL_OVERRIDE;
+    bool canFetchMore(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    void fetchMore(const QModelIndex &parent = QModelIndex()) Q_DECL_OVERRIDE;
     QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const Q_DECL_OVERRIDE;
 
-    int fetchCount() const;
-    void setFetchCount(int fetchCount);
 
 protected:
     void objectInserted(QSharedPointer<QObject>) Q_DECL_OVERRIDE;
     void objectUpdated(QSharedPointer<QObject>) Q_DECL_OVERRIDE;
     void objectRemoved(QSharedPointer<QObject>) Q_DECL_OVERRIDE;
+
 private:
     mutable QHash<QSharedPointer<T>, int> m_rows;
     QList<QSharedPointer<T> > m_objects;
-    QpDao<T> *m_dao;
-    int m_fetchCount;
     void adjustExistingRows();
 };
+
+template<class T>
+QpAbstractObjectListModel<T>::QpAbstractObjectListModel(QObject *parent) :
+    QpAbstractObjectListModelBase(parent)
+{
+    QpDao<T> *dao = Qp::dataAccessObject<T>();
+    connect(dao, &QpDaoBase::objectCreated,
+            this, &QpAbstractObjectListModel<T>::objectInserted);
+    connect(dao, &QpDaoBase::objectRemoved,
+            this, &QpAbstractObjectListModel<T>::objectRemoved);
+    connect(dao, &QpDaoBase::objectUpdated,
+            this, &QpAbstractObjectListModel<T>::objectUpdated);
+}
 
 template<class T>
 QSharedPointer<QObject> QpAbstractObjectListModel<T>::objectByIndexBase(const QModelIndex &index) const
@@ -74,11 +93,13 @@ QList<QSharedPointer<T> > QpAbstractObjectListModel<T>::objects() const
 }
 
 template<class T>
-QpAbstractObjectListModel<T>::QpAbstractObjectListModel(QObject *parent) :
-    QpAbstractObjectListModelBase(parent),
-    m_dao(Qp::dataAccessObject<T>()),
-    m_fetchCount(std::numeric_limits<int>::max())
+void QpAbstractObjectListModel<T>::setObjects(const QList<QSharedPointer<T> > &objects)
 {
+    beginResetModel();
+    m_objects = objects;
+    m_objectsFromDao = false;
+    disconnect(Qp::dataAccessObject<T>(),&QpDaoBase::objectCreated,this,0);
+    endResetModel();
 }
 
 template<class T>
@@ -102,12 +123,15 @@ int QpAbstractObjectListModel<T>::rowOf(QSharedPointer<T> object) const
 template<class T>
 void QpAbstractObjectListModel<T>::objectInserted(QSharedPointer<QObject> object)
 {
-    int row = rowOf(qSharedPointerCast<T>(object));
-    if(row < 0)
-        return;
+    QSharedPointer<T> t = qSharedPointerCast<T>(object);
+    int row = rowOf(t);
+    while(row < 0 && canFetchMore()) {
+        fetchMore();
+        row = rowOf(t);
+    }
 
     beginInsertRows(QModelIndex(), row, row);
-    m_rows.insert(qSharedPointerCast<T>(object), row);
+    m_rows.insert(t, row);
     adjustExistingRows();
     endInsertRows();
 }
@@ -119,38 +143,45 @@ void QpAbstractObjectListModel<T>::objectUpdated(QSharedPointer<QObject> object)
     if(row < 0)
         return;
 
-    emit dataChanged(index(row), index(row));
+    QModelIndex i = index(row);
+    emit dataChanged(i, i);
 }
 
 template<class T>
 void QpAbstractObjectListModel<T>::objectRemoved(QSharedPointer<QObject> object)
 {
-    int row = rowOf(qSharedPointerCast<T>(object));
-    if(row < 0)
-        return;
+    QSharedPointer<T> t = qSharedPointerCast<T>(object);
+    int row = rowOf(t);
+    if(row >= 0)
+        beginRemoveRows(QModelIndex(), row, row);
 
-    beginRemoveRows(QModelIndex(), row, row);
-    m_rows.remove(qSharedPointerCast<T>(object));
-    m_objects.removeAll(qSharedPointerCast<T>(object));
+    m_rows.remove(t);
+    m_objects.removeAll(t);
     adjustExistingRows();
-    endRemoveRows();
+
+    if(row >= 0)
+        endRemoveRows();
 }
 
 template<class T>
 bool QpAbstractObjectListModel<T>::canFetchMore(const QModelIndex &/*parent*/) const
 {
-    return (m_objects.size() < m_dao->count());
+    if(!m_objectsFromDao)
+        return false;
+
+    return (m_objects.size() < Qp::count<T>());
 }
 
 template<class T>
 void QpAbstractObjectListModel<T>::fetchMore(const QModelIndex &/*parent*/)
 {
-    int remainder = m_dao->count() - m_objects.size();
+    QpDao<T> *dao = Qp::dataAccessObject<T>();
+    int remainder = dao->count() - m_objects.size();
     int itemsToFetch = qMin(m_fetchCount, remainder);
 
     beginInsertRows(QModelIndex(), m_objects.size(), m_objects.size()+itemsToFetch-1);
 
-    m_objects.append(Qp::Private::castList<T>(m_dao->readAllObjects(m_objects.size(), itemsToFetch)));
+    m_objects.append(dao->readAllObjects(m_objects.size(), itemsToFetch));
 
     endInsertRows();
 }
@@ -164,18 +195,6 @@ void QpAbstractObjectListModel<T>::adjustExistingRows()
             m_rows.insert(object, i);
         ++i;
     }
-}
-
-template<class T>
-int QpAbstractObjectListModel<T>::fetchCount() const
-{
-    return m_fetchCount;
-}
-
-template<class T>
-void QpAbstractObjectListModel<T>::setFetchCount(int fetchCount)
-{
-    m_fetchCount = fetchCount;
 }
 
 #endif // ABSTRACTOBJECTLISTMODEL_H

@@ -27,6 +27,7 @@ template<class T>
 QList<QSharedPointer<T> > castList(const QList<QSharedPointer<QObject> >& list)
 {
     QList<QSharedPointer<T> > result;
+    result.reserve(list.size());
     Q_FOREACH(QSharedPointer<QObject> s, list) result.append(qSharedPointerCast<T>(s));
     return result;
 }

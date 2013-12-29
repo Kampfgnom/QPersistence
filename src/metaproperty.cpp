@@ -167,6 +167,7 @@ bool QpMetaProperty::hasTableForeignKey() const
     }
 
     Q_ASSERT(false);
+    return true;
 }
 
 QpMetaProperty::Cardinality QpMetaProperty::cardinality() const

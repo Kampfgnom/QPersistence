@@ -3,6 +3,7 @@
 
 #include <QtCore/QObject>
 
+#include "conversion.h"
 #include <QPersistenceMetaObject.h>
 #include <QtCore/QSharedDataPointer>
 #include <QtCore/QSharedPointer>
@@ -59,6 +60,10 @@ private:
 namespace Qp {
 template<class T>
 void registerClass();
+namespace Private {
+template<class T>
+QList<QSharedPointer<T> > castList(const QList<QSharedPointer<QObject> >&);
+}
 }
 
 template<class T>
@@ -66,6 +71,10 @@ class QpDao : public QpDaoBase
 {
 public:
     QSharedPointer<T> read(int id) { return qSharedPointerCast<T>(readObject(id)); }
+    QList<QSharedPointer<T> > readAllObjects(int skip = -1, int count = -1) const
+    {
+        return Qp::Private::castList<T>(QpDaoBase::readAllObjects(skip, count));
+    }
 
 protected:
     QpDao(QObject *parent) :

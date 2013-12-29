@@ -77,7 +77,7 @@ template<class T> QSharedPointer<T> read(int id)
 template<class T>
 QList<QSharedPointer<T> > readAll()
 {
-    return Private::castList<T>(dataAccessObject<T>()->readAllObjects());
+    return dataAccessObject<T>()->readAllObjects();
 }
 
 template<class T>
