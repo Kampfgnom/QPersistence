@@ -46,7 +46,8 @@ private:
 
     void fillValuesIntoQuery(const QpMetaObject &metaObject,
                              const QObject *object,
-                             QpSqlQuery &queryconst);
+                             QpSqlQuery &queryconst,
+                             bool forInsert = false);
     void readQueryIntoObject(const QSqlQuery &query,
                              QObject *object);
     bool adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object);
