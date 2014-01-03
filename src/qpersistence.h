@@ -14,6 +14,9 @@ QSqlDatabase database();
 void adjustDatabaseSchema();
 void createCleanSchema();
 
+void startBulkDatabaseQueries();
+void commitBulkDatabaseQueries();
+
 template<class T> int primaryKey(QSharedPointer<T> object);
 template<class T> void registerClass();
 template<class T> QpDao<T> *dataAccessObject();

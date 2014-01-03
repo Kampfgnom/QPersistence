@@ -51,6 +51,11 @@ public:
     static QVariant variantToSqlStorableVariant(const QVariant &val);
     static QVariant variantFromSqlStorableVariant(const QVariant &val, QMetaType::Type type);
 
+    static bool isDebugEnabled();
+    static void setDebugEnabled(bool value);
+    static void bulkExec();
+    static void startBulkExec();
+
 private:
     QExplicitlySharedDataPointer<QpSqlQueryPrivate> d;
 
