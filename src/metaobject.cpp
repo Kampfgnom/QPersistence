@@ -21,6 +21,8 @@ public:
 
     QMetaObject metaObject;
     mutable QList<QpMetaProperty> metaProperties;
+    mutable QList<QpMetaProperty> simpleProperties;
+    mutable QList<QpMetaProperty> relationProperties;
     mutable QHash<QString, QpMetaProperty> metaPropertiesByName;
 
     void initProperties() const;
@@ -37,9 +39,19 @@ void QpMetaObjectPrivate::initProperties() const
     int count = metaObject.propertyCount();
     for(int i = 1; i < count; ++i) {
         QMetaProperty p = metaObject.property(i);
+        if(!p.isStored())
+            continue;
+
         QpMetaProperty mp = QpMetaProperty(p, *q);
         metaPropertiesByName.insert(p.name(), mp);
         metaProperties.append(mp);
+
+        if(!mp.isRelationProperty()) {
+            simpleProperties.append(mp);
+        }
+        else {
+            relationProperties.append(mp);
+        }
     }
 }
 
@@ -79,6 +91,7 @@ QpMetaObject::QpMetaObject() :
 QpMetaObject::QpMetaObject(const QMetaObject &metaObject) :
     d(new QpMetaObjectPrivate)
 {
+    d->q = this;
     d->valid = true;
     d->metaObject = metaObject;
 }
@@ -97,6 +110,7 @@ QpMetaObject &QpMetaObject::operator =(const QpMetaObject &other)
 {
     if(this != &other) {
         d.operator =(other.d);
+        d->q = this;
     }
 
     return *this;
@@ -149,30 +163,18 @@ QList<QpMetaProperty> QpMetaObject::metaProperties() const
 
 QList<QpMetaProperty> QpMetaObject::simpleProperties() const
 {
-    QList<QpMetaProperty> result;
-
-    foreach(QpMetaProperty p, metaProperties()) {
-        if(p.isStored()
-                && !p.isRelationProperty()) {
-            result.append(p);
-        }
+    if(d->metaProperties.isEmpty()) {
+        d->initProperties();
     }
-
-    return result;
+    return d->simpleProperties;
 }
 
 QList<QpMetaProperty> QpMetaObject::relationProperties() const
 {
-    QList<QpMetaProperty> result;
-
-    foreach(QpMetaProperty p, metaProperties()) {
-        if(p.isStored()
-                && p.isRelationProperty()) {
-            result.append(p);
-        }
+    if(d->metaProperties.isEmpty()) {
+        d->initProperties();
     }
-
-    return result;
+    return d->relationProperties;
 }
 
 QString QpMetaObject::sqlFilter() const

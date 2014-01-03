@@ -26,9 +26,34 @@ public:
     QpMetaObject metaObject;
     mutable QHash<QString, QString> attributes;
     QpMetaProperty::Cardinality cardinality;
+    mutable QString columnName;
+
+    QString generateColumnName();
 
     QpMetaProperty *q;
 };
+
+QString QpMetaPropertyPrivate::generateColumnName()
+{
+    if(!q->isRelationProperty())
+        return QString(q->name());
+
+    if(q->cardinality() == QpMetaProperty::ManyToManyCardinality) {
+        return QString(q->metaObject().tableName()).prepend("_Qp_FK_");;
+    }
+    else if(q->isToManyRelationProperty()
+            || (q->isToOneRelationProperty()
+                && !q->hasTableForeignKey())) {
+        QpMetaProperty reverse(q->reverseRelation());
+        return QString(reverse.name()).prepend("_Qp_FK_");
+    }
+    else if(q->isToOneRelationProperty()) {
+        return QString(q->name()).prepend("_Qp_FK_");
+    }
+
+    return QString(q->name());
+}
+
 
 QpMetaProperty::QpMetaProperty() :
     d(new QpMetaPropertyPrivate)
@@ -70,6 +95,7 @@ QpMetaProperty::~QpMetaProperty()
 QpMetaProperty::QpMetaProperty(const QpMetaProperty &other) :
     d(other.d)
 {
+    d->q = this;
 }
 
 QpMetaProperty &QpMetaProperty::operator =(const QpMetaProperty &other)
@@ -77,6 +103,7 @@ QpMetaProperty &QpMetaProperty::operator =(const QpMetaProperty &other)
     if(&other != this)
         d.operator =(other.d);
 
+    d->q = this;
     return *this;
 }
 
@@ -92,23 +119,10 @@ QMetaProperty QpMetaProperty::metaProperty() const
 
 QString QpMetaProperty::columnName() const
 {
-    if(!isRelationProperty())
-        return QString(name());
+    if(d->columnName.isEmpty())
+        d->columnName = d->generateColumnName();
 
-    if(cardinality() == ManyToManyCardinality) {
-        return QString(metaObject().tableName()).prepend("_Qp_FK_");;
-    }
-    else if(isToManyRelationProperty()
-            || (isToOneRelationProperty()
-                && !hasTableForeignKey())) {
-        QpMetaProperty reverse(reverseRelation());
-        return QString(reverse.name()).prepend("_Qp_FK_");
-    }
-    else if(isToOneRelationProperty()) {
-        return QString(name()).prepend("_Qp_FK_");
-    }
-
-    return QString(name());
+    return d->columnName;
 }
 
 bool QpMetaProperty::isStored() const
@@ -368,6 +382,3 @@ QString QpMetaProperty::typeName() const
 {
     return d->typeName;
 }
-
-
-
