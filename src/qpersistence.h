@@ -28,6 +28,10 @@ template<class K, class V> void registerMappableTypes();
 template<class T> void registerSetType();
 template<class T> QSharedPointer<T> sharedFrom(const QObject *object);
 template<typename T> QList<T> reversed( const QList<T> & in );
+template<class Source, class Target>
+QList<Target> castList(const QList<Source>& list);
+template<class T, class O>
+QList<QSharedPointer<T> > castList(const QList<QSharedPointer<O> >& list);
 
 } // namespace Qp
 
