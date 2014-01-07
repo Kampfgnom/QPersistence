@@ -2,7 +2,6 @@
 #define QPERSISTENCE_METAPROPERTY_H
 
 #include <QtCore/QMetaProperty>
-
 #include <QtCore/QSharedDataPointer>
 
 struct QMetaObject;
@@ -65,13 +64,12 @@ public:
     QString setType() const;
 
 private:
-    friend class QpMetaObjectPrivate;
+    friend class QpMetaObject;
     explicit QpMetaProperty(const QMetaProperty &property, const QpMetaObject &metaObject);
 
-//    explicit QpMetaProperty(const QString &propertyName, const QpMetaObject &metaObject);
-//    explicit QpMetaProperty(const QMetaProperty &property, const QpMetaObject &metaObject);
+    QString generateColumnName() const;
 
-    QExplicitlySharedDataPointer<QpMetaPropertyPrivate> d;
+    QExplicitlySharedDataPointer<QpMetaPropertyPrivate> data;
 };
 
 #endif // QPERSISTENCE_METAPROPERTY_H

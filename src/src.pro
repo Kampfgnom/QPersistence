@@ -14,37 +14,38 @@ INCLUDEPATH     += $$QPERSISTENCE_INCLUDEPATH
 ### Files ###
 
 HEADERS += \
-    metaproperty.h \
+    cache.h \
+    conversion.h \
+    dataaccessobject.h \
+    databaseschema.h \
     error.h \
     metaobject.h \
-    sqlquery.h \
-    sqldataaccessobjecthelper.h \
-    sqlcondition.h \
-    databaseschema.h \
-    qpersistence.h \
-    conversion.h \
+    metaproperty.h \
+    objectlistmodel.h \
     private.h \
-    dataaccessobject.h \
-    cache.h \
+    qpersistence.h \
     relationresolver.h \
     relations.h \
-    objectlistmodel.h \
-    sortfilterproxyobjectmodel.h
+    sortfilterproxyobjectmodel.h \
+    sqlcondition.h \
+    sqldataaccessobjecthelper.h \
+    sqlquery.h
+
 SOURCES += \
-    metaproperty.cpp \
+        cache.cpp \
+    conversion.cpp \
+    dataaccessobject.cpp \
+    databaseschema.cpp \
     error.cpp \
     metaobject.cpp \
-    sqlquery.cpp \
-    sqldataaccessobjecthelper.cpp \
-    sqlcondition.cpp \
-    databaseschema.cpp \
-    qpersistence.cpp \
-    conversion.cpp \
+    metaproperty.cpp \
+    objectlistmodel.cpp \
     private.cpp \
+    qpersistence.cpp \
     qpersistence_impl.cpp \
-    dataaccessobject.cpp \
-    cache.cpp \
     relationresolver.cpp \
     relations.cpp \
-    objectlistmodel.cpp \
-    sortfilterproxyobjectmodel.cpp
+    sortfilterproxyobjectmodel.cpp \
+    sqlcondition.cpp \
+    sqldataaccessobjecthelper.cpp \
+    sqlquery.cpp

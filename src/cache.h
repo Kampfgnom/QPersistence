@@ -1,13 +1,11 @@
-#ifndef CACHE_H
-#define CACHE_H
+#ifndef QPERSISTENCE_CACHE_H
+#define QPERSISTENCE_CACHE_H
 
-#include <QObject>
-
-#include <QSharedPointer>
-#include <QSharedDataPointer>
+#include <QtCore/QSharedPointer>
+#include <QtCore/QSharedDataPointer>
 
 class QpCacheData;
-class QpCache : public QObject
+class QpCache
 {
 public:
     QpCache();
@@ -29,4 +27,4 @@ private:
     QSharedDataPointer<QpCacheData> data;
 };
 
-#endif // CACHE_H
+#endif // QPERSISTENCE_CACHE_H

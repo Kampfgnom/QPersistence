@@ -1,1 +1,7 @@
 #include "../src/qpersistence.h"
+#include "../src/dataaccessobject.h"
+#include "../src/databaseschema.h"
+#include "../src/error.h"
+#include "../src/objectlistmodel.h"
+#include "../src/relations.h"
+#include "../src/sortfilterproxyobjectmodel.h"

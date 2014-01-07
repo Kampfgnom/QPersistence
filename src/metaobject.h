@@ -2,10 +2,9 @@
 #define QPERSISTENCE_METAOBJECT_H
 
 #include <QtCore/QMetaObject>
-
 #include <QtCore/QObject>
-#include <QtCore/QVariant>
 #include <QtCore/QSharedDataPointer>
+#include <QtCore/QVariant>
 
 template<class K, class V>
 class QHash;
@@ -49,7 +48,8 @@ private:
     static QpMetaObject registerMetaObject(const QMetaObject &metaObject);
     explicit QpMetaObject(const QMetaObject &metaObject);
 
-    QExplicitlySharedDataPointer<QpMetaObjectPrivate> d;
+    void initProperties() const;
+    QExplicitlySharedDataPointer<QpMetaObjectPrivate> data;
 };
 
 #endif // QPERSISTENCE_METAOBJECT_H

@@ -1,13 +1,10 @@
-#ifndef RELATIONRESOLVER_H
-#define RELATIONRESOLVER_H
+#ifndef QPERSISTENCE_RELATIONRESOLVER_H
+#define QPERSISTENCE_RELATIONRESOLVER_H
 
-#include <QObject>
+#include <QtCore/QObject>
+#include <QtCore/QSharedDataPointer>
 
-#include <QSharedDataPointer>
-
-class QpRelationResolverData;
-
-class QpRelationResolver : public QObject
+class QpRelationResolver
 {
 public:
     static QList<QSharedPointer<QObject > > resolveRelation(const QString &name, const QObject *object);
@@ -15,4 +12,4 @@ public:
     static QList<QSharedPointer<QObject > > resolveToManyRelation(const QString &name, const QObject *object);
 };
 
-#endif // RELATIONRESOLVER_H
+#endif // QPERSISTENCE_RELATIONRESOLVER_H

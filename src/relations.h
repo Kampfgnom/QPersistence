@@ -1,9 +1,8 @@
-#ifndef RELATIONS_H
-#define RELATIONS_H
+#ifndef QPERSISTENCE_RELATIONS_H
+#define QPERSISTENCE_RELATIONS_H
 
 #include <QSharedDataPointer>
 #include <QSharedPointer>
-
 
 template<class T>
 class QpWeakRelationData;
@@ -55,4 +54,4 @@ private:
 
 #include "relations.cpp"
 
-#endif // RELATIONS_H
+#endif // QPERSISTENCE_RELATIONS_H

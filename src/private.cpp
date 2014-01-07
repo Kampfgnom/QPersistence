@@ -1,10 +1,10 @@
 #include "private.h"
 
-#include "metaproperty.h"
 #include "databaseschema.h"
+#include "metaproperty.h"
 
-#include <QSharedPointer>
 #include <QDebug>
+#include <QSharedPointer>
 
 namespace Qp {
 

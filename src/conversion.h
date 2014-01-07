@@ -1,15 +1,15 @@
-#ifndef CONVERSION_H
-#define CONVERSION_H
+#ifndef QPERSISTENCE_CONVERSION_H
+#define QPERSISTENCE_CONVERSION_H
 
+#include <QtCore/QDebug>
 #include <QtCore/QHash>
-#include <QtCore/QVariant>
-#include <QtCore/QStringList>
 #include <QtCore/QRegularExpression>
 #include <QtCore/QRegularExpressionMatch>
-#include <QtCore/QDebug>
 #include <QtCore/QSharedPointer>
+#include <QtCore/QStringList>
+#include <QtCore/QVariant>
 
-#include <QPersistencePersistentDataAccessObject.h>
+#include "dataaccessobject.h"
 
 namespace Qp {
 
@@ -28,7 +28,7 @@ template<class T>
 bool canConvertToSqlStorableVariant()
 {
     QVariant v = QVariant::fromValue<T>(T());
-    if(static_cast<QMetaType::Type>(v.type()) != QMetaType::User)
+    if (static_cast<QMetaType::Type>(v.type()) != QMetaType::User)
         return true;
 
     return canConvertToSqlStorableVariant(v);
@@ -40,7 +40,7 @@ template<class T>
 bool canConvertFromSqlStoredVariant()
 {
     QVariant v = QVariant::fromValue<T>(T());
-    if(static_cast<QMetaType::Type>(v.type()) != QMetaType::User)
+    if (static_cast<QMetaType::Type>(v.type()) != QMetaType::User)
         return true;
 
     return canConvertFromSqlStoredVariant(static_cast<QMetaType::Type>(v.userType()));
@@ -127,7 +127,7 @@ public:
         QMap<K, V> map = variant.value<QMap<K,V> >();
         QMapIterator<K,V> it(map);
         QStringList result;
-        while(it.hasNext()) {
+        while (it.hasNext()) {
             it.next();
             QVariant keyVariant = QVariant::fromValue<K>(it.key());
             QVariant valueVariant = QVariant::fromValue<V>(it.value());
@@ -145,7 +145,7 @@ public:
     {
         QMap<K, V> result;
 
-        if(value.isEmpty())
+        if (value.isEmpty())
             return QVariant::fromValue<QMap<K,V> >(result);
 
         Q_ASSERT(canConvertFromSqlStoredVariant<K>());
@@ -155,7 +155,7 @@ public:
         QMetaType::Type keyType = static_cast<QMetaType::Type>(QVariant::fromValue<K>(K()).userType());
         QMetaType::Type valueType = static_cast<QMetaType::Type>(QVariant::fromValue<V>(V()).userType());
 
-        foreach(QString string, list) {
+        foreach (QString string, list) {
             QStringList list2 = string.split('=');
             Q_ASSERT(list2.size() == 2);
             QVariant keyVariant = Private::convertFromSqlStoredVariant(list2.at(0), keyType);
@@ -178,14 +178,14 @@ public:
     QString convertToSqlStorableValue(const QVariant &variant) const
     {
         QVariant v = QVariant::fromValue<T>(T());
-        if(static_cast<QMetaType::Type>(v.type()) == QMetaType::User) {
+        if (static_cast<QMetaType::Type>(v.type()) == QMetaType::User) {
             Q_ASSERT(canConvertToSqlStorableVariant<T>());
         }
 
         QSet<T> set = variant.value<QSet<T> >();
         QSetIterator<T> it(set);
         QStringList result;
-        while(it.hasNext()) {
+        while (it.hasNext()) {
             result.append(Private::convertToSqlStorableVariant(QVariant::fromValue<T>(it.next())));
         }
         return result.join(';');
@@ -194,7 +194,7 @@ public:
     QVariant convertFromSqlStorableValue(const QString &value) const
     {
         QVariant v = QVariant::fromValue<T>(T());
-        if(static_cast<QMetaType::Type>(v.type()) == QMetaType::User) {
+        if (static_cast<QMetaType::Type>(v.type()) == QMetaType::User) {
             Q_ASSERT(canConvertToSqlStorableVariant<T>());
         }
 
@@ -202,7 +202,7 @@ public:
         QSet<T> result;
         QMetaType::Type type = static_cast<QMetaType::Type>(QVariant::fromValue<T>(T()).userType());
 
-        foreach(QString string, list) {
+        foreach (QString string, list) {
             QVariant variant = Private::convertFromSqlStoredVariant(string, type);
             result.insert(variant.value<T>());
         }
@@ -217,7 +217,7 @@ template<typename T>
 void registerConverter(Private::ConverterBase *converter)
 {
     QVariant v = QVariant::fromValue<T>(T());
-    if(static_cast<QMetaType::Type>(v.type()) == QMetaType::User) {
+    if (static_cast<QMetaType::Type>(v.type()) == QMetaType::User) {
         Private::registerConverter(v.userType(), converter);
     }
 }
@@ -226,4 +226,4 @@ void registerConverter(Private::ConverterBase *converter)
 
 } // namespace Qp
 
-#endif // CONVERSION_H
+#endif // QPERSISTENCE_CONVERSION_H
