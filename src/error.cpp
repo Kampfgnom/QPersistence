@@ -2,8 +2,6 @@
 
 #include <QDebug>
 
-
-
 class QpErrorPrivate : public QSharedData
 {
     public:
@@ -23,12 +21,12 @@ class QpErrorPrivate : public QSharedData
 QpError::QpError(const QString &text,
              ErrorType type,
              QVariantMap additionalInformation) :
-    d(new QpErrorPrivate)
+    data(new QpErrorPrivate)
 {
-    d->text = text;
-    d->type = type;
-    d->additionalInformation = additionalInformation;
-    d->isValid = (type != NoError && ! text.isEmpty());
+    data->text = text;
+    data->type = type;
+    data->additionalInformation = additionalInformation;
+    data->isValid = (type != NoError && ! text.isEmpty());
 }
 
 QpError::~QpError()
@@ -37,40 +35,40 @@ QpError::~QpError()
 
 QpError::QpError(const QpError &other)
 {
-    d = other.d;
+    data = other.data;
 }
 
 QpError &QpError::operator =(const QpError &other)
 {
     if (&other != this)
-        d = other.d;
+        data = other.data;
 
     return *this;
 }
 
 bool QpError::isValid() const
 {
-    return d->isValid;
+    return data->isValid;
 }
 
 QString QpError::text() const
 {
-    return d->text;
+    return data->text;
 }
 
 QpError::ErrorType QpError::type() const
 {
-    return d->type;
+    return data->type;
 }
 
 QVariantMap QpError::additionalInformation() const
 {
-    return d->additionalInformation;
+    return data->additionalInformation;
 }
 
 void QpError::addAdditionalInformation(const QString &key, const QVariant &value)
 {
-    d->additionalInformation.insert(key, value);
+    data->additionalInformation.insert(key, value);
 }
 
 

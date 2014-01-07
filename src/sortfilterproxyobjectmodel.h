@@ -1,7 +1,7 @@
-#ifndef SORTFILTERPROXYOBJECTMODEL_H
-#define SORTFILTERPROXYOBJECTMODEL_H
+#ifndef QPERSISTENCE_SORTFILTERPROXYOBJECTMODEL_H
+#define QPERSISTENCE_SORTFILTERPROXYOBJECTMODEL_H
 
-#include <QSortFilterProxyModel>
+#include <QtCore/QSortFilterProxyModel>
 
 #include "objectlistmodel.h"
 
@@ -68,4 +68,4 @@ bool QpSortFilterProxyObjectModel<T>::lessThan(QSharedPointer<T> left, QSharedPo
     return left < right;
 }
 
-#endif // SORTFILTERPROXYOBJECTMODEL_H
+#endif // QPERSISTENCE_SORTFILTERPROXYOBJECTMODEL_H

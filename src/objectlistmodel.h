@@ -1,11 +1,11 @@
-#ifndef ABSTRACTOBJECTLISTMODEL_H
-#define ABSTRACTOBJECTLISTMODEL_H
+#ifndef QPERSISTENCE_OBJECTLISTMODEL_H
+#define QPERSISTENCE_OBJECTLISTMODEL_H
 
-#include <QAbstractListModel>
+#include <QtCore/QAbstractListModel>
 
 #include "dataaccessobject.h"
-#include "qpersistence.h"
 #include "private.h"
+#include "qpersistence.h"
 
 class QpAbstractObjectListModelBase : public QAbstractListModel
 {
@@ -77,7 +77,7 @@ QpObjectListModel<T>::QpObjectListModel(QObject *parent) :
 template<class T>
 int QpObjectListModel<T>::columnCount(const QModelIndex &parent) const
 {
-    if(parent.isValid())
+    if (parent.isValid())
         return 0;
 
     return T::staticMetaObject.propertyCount();
@@ -86,10 +86,10 @@ int QpObjectListModel<T>::columnCount(const QModelIndex &parent) const
 template<class T>
 QVariant QpObjectListModel<T>::data(const QModelIndex &index, int role) const
 {
-    if(!index.isValid())
+    if (!index.isValid())
         return QVariant();
 
-    if(role == Qt::DisplayRole) {
+    if (role == Qt::DisplayRole) {
         QSharedPointer<T> object = QpObjectListModel<T>::objectByIndex(index);
         QMetaObject mo = T::staticMetaObject;
         return mo.property(index.column()).read(object.data());
@@ -101,10 +101,10 @@ QVariant QpObjectListModel<T>::data(const QModelIndex &index, int role) const
 template<class T>
 QVariant QpObjectListModel<T>::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if(orientation == Qt::Vertical)
+    if (orientation == Qt::Vertical)
         return QVariant();
 
-    if(role == Qt::DisplayRole) {
+    if (role == Qt::DisplayRole) {
         QMetaObject mo = T::staticMetaObject;
         return QVariant(mo.property(section).name());
     }
@@ -122,7 +122,7 @@ QSharedPointer<QObject> QpObjectListModel<T>::objectByIndexBase(const QModelInde
 template<class T>
 QSharedPointer<T> QpObjectListModel<T>::objectByIndex(const QModelIndex &index) const
 {
-    if(index.row() >= objects().size())
+    if (index.row() >= objects().size())
         return QSharedPointer<T>();
 
     return objects().at(index.row());
@@ -147,7 +147,7 @@ void QpObjectListModel<T>::setObjects(const QList<QSharedPointer<T> > &objects)
 template<class T>
 int QpObjectListModel<T>::rowCount(const QModelIndex &parent) const
 {
-    if(parent.isValid())
+    if (parent.isValid())
         return 0;
 
     return objects().size();
@@ -156,7 +156,7 @@ int QpObjectListModel<T>::rowCount(const QModelIndex &parent) const
 template<class T>
 int QpObjectListModel<T>::rowOf(QSharedPointer<T> object) const
 {
-    if(!m_rows.contains(object))
+    if (!m_rows.contains(object))
         m_rows.insert(qSharedPointerCast<T>(object), objects().indexOf(object));
 
     return m_rows.value(qSharedPointerCast<T>(object));
@@ -167,7 +167,7 @@ void QpObjectListModel<T>::objectInserted(QSharedPointer<QObject> object)
 {
     QSharedPointer<T> t = qSharedPointerCast<T>(object);
     int row = rowOf(t);
-    while(row < 0 && canFetchMore()) {
+    while (row < 0 && canFetchMore()) {
         fetchMore();
         row = rowOf(t);
     }
@@ -182,7 +182,7 @@ template<class T>
 void QpObjectListModel<T>::objectUpdated(QSharedPointer<QObject> object)
 {
     int row = rowOf(qSharedPointerCast<T>(object));
-    if(row < 0)
+    if (row < 0)
         return;
 
     QModelIndex i = index(row);
@@ -194,21 +194,21 @@ void QpObjectListModel<T>::objectRemoved(QSharedPointer<QObject> object)
 {
     QSharedPointer<T> t = qSharedPointerCast<T>(object);
     int row = rowOf(t);
-    if(row >= 0)
+    if (row >= 0)
         beginRemoveRows(QModelIndex(), row, row);
 
     m_rows.remove(t);
     m_objects.removeAll(t);
     adjustExistingRows();
 
-    if(row >= 0)
+    if (row >= 0)
         endRemoveRows();
 }
 
 template<class T>
 bool QpObjectListModel<T>::canFetchMore(const QModelIndex &/*parent*/) const
 {
-    if(!m_objectsFromDao)
+    if (!m_objectsFromDao)
         return false;
 
     return (m_objects.size() < Qp::count<T>());
@@ -232,11 +232,11 @@ template<class T>
 void QpObjectListModel<T>::adjustExistingRows()
 {
     int i = 0;
-    foreach(QSharedPointer<T> object, objects()) {
-        if(m_rows.contains(object))
+    foreach (QSharedPointer<T> object, objects()) {
+        if (m_rows.contains(object))
             m_rows.insert(object, i);
         ++i;
     }
 }
 
-#endif // ABSTRACTOBJECTLISTMODEL_H
+#endif // QPERSISTENCE_OBJECTLISTMODEL_H

@@ -34,7 +34,7 @@ void ParentObject::setChildObject(QSharedPointer<ChildObject> object)
 {
     m_childObject = object;
 
-    if(object) {
+    if (object) {
         QSharedPointer<ParentObject> sharedThis = Qp::sharedFrom<ParentObject>(this);
         object->setParentObject(sharedThis);
     }
@@ -47,7 +47,7 @@ QList<QSharedPointer<ChildObject> > ParentObject::childObjects() const
 
 void ParentObject::addChildObject(QSharedPointer<ChildObject> object)
 {
-    if(!object || m_childObjects.contains(object))
+    if (!object || m_childObjects.contains(object))
         return;
 
     m_childObjects.append(object);

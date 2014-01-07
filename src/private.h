@@ -1,7 +1,7 @@
-#ifndef PRIVATE_H
-#define PRIVATE_H
+#ifndef QPERSISTENCE_PRIVATE_H
+#define QPERSISTENCE_PRIVATE_H
 
-#include <QPersistencePersistentDataAccessObject.h>
+#include "dataaccessobject.h"
 #include "relationresolver.h"
 #include "conversion.h"
 
@@ -30,10 +30,10 @@ QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bo
 {
     QList<QSharedPointer<T> > result;
     result.reserve(list.size());
-    if(ok) *ok = true;
+    if (ok) *ok = true;
     Q_FOREACH(QWeakPointer<T> s, list) {
         QSharedPointer<T> p = s.toStrongRef();
-        if(ok && !p) *ok = false;
+        if (ok && !p) *ok = false;
         result.append(p);
     }
     return result;
@@ -63,5 +63,5 @@ QList<QSharedPointer<T> > resolveToManyRelation(const QString &name, const QObje
 
 } // namespace Qp
 
-#endif // PRIVATE_H
-    
+#endif // QPERSISTENCE_PRIVATE_H
+

@@ -2,16 +2,14 @@
 #define QPERSISTENCE_SQLDATAACCESSOBJECTHELPER_H
 
 #include <QtCore/QObject>
-
 #include <QtCore/QSharedDataPointer>
 #include <QtSql/QSqlDatabase>
-
 
 class QSqlQuery;
 class QpError;
 class QpMetaObject;
-class QpSqlQuery;
 class QpMetaProperty;
+class QpSqlQuery;
 
 class QpSqlDataAccessObjectHelperPrivate;
 class QpSqlDataAccessObjectHelper : public QObject
@@ -29,7 +27,6 @@ public:
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);
-//    bool readRelatedObjects(const QpMetaObject &metaObject, QObject *object);
 
     QpError lastError() const;
 
@@ -37,7 +34,7 @@ public:
     QList<int> foreignKeys(const QpMetaProperty relation, QObject *object);
 
 private:
-    QSharedDataPointer<QpSqlDataAccessObjectHelperPrivate> d;
+    QSharedDataPointer<QpSqlDataAccessObjectHelperPrivate> data;
 
     explicit QpSqlDataAccessObjectHelper(const QSqlDatabase &database, QObject *parent = 0);
 
@@ -51,10 +48,6 @@ private:
     void readQueryIntoObject(const QSqlQuery &query,
                              QObject *object);
     bool adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object);
-//    bool readRelatedObjects(const QpMetaObject &metaObject,
-//                            QObject *object,
-//                            QHash<QString, QHash<QVariant, QObject *> > &alreadyReadObjectsPerTable);
-
 };
 
 #endif // SQLDATAACCESSOBJECTHELPER_H

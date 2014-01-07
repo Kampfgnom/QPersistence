@@ -22,8 +22,8 @@ public:
     };
 
     QpError(const QString &text = QString(),
-          ErrorType type = NoError,
-          QVariantMap additionalInformation = QVariantMap());
+            ErrorType type = NoError,
+            QVariantMap additionalInformation = QVariantMap());
     ~QpError();
     QpError(const QpError &other);
     QpError &operator = (const QpError &other);
@@ -36,7 +36,7 @@ public:
     void addAdditionalInformation(const QString &key, const QVariant &value);
 
 private:
-    QSharedDataPointer<QpErrorPrivate> d;
+    QSharedDataPointer<QpErrorPrivate> data;
 };
 
 QDebug operator<<(QDebug dbg, const QpError &error);

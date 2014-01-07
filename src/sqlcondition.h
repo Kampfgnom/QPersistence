@@ -2,7 +2,6 @@
 #define QPERSISTENCE_SQLCONDITION_H
 
 #include <QtCore/QSharedDataPointer>
-
 #include <QtCore/QVariantList>
 
 class QVariant;
@@ -48,7 +47,7 @@ public:
     QString comparisonOperator() const;
 
 private:
-    QSharedDataPointer<QpSqlConditionData> d;
+    QSharedDataPointer<QpSqlConditionData> data;
 };
 
 #endif // QPERSISTENCE_SQLCONDITION_H

@@ -3,7 +3,7 @@
 
 #include <QtSql/QSqlDatabase>
 
-#include <QPersistencePersistentDataAccessObject.h>
+#include "dataaccessobject.h"
 
 class QpMetaObject;
 

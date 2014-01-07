@@ -1,13 +1,11 @@
 #include "dataaccessobject.h"
 
+#include "cache.h"
 #include "error.h"
 #include "metaobject.h"
-#include "sqldataaccessobjecthelper.h"
-#include "qpersistence.h"
-#include "cache.h"
 #include "metaproperty.h"
-
-#include <QtCore/QVariant>
+#include "qpersistence.h"
+#include "sqldataaccessobjecthelper.h"
 
 class QpDaoBaseData : public QSharedData
 {
@@ -43,10 +41,10 @@ QList<QpDaoBase *> QpDaoBase::dataAccessObjects()
 QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
                      QObject *parent) :
     QObject(parent),
-    d(new QpDaoBaseData)
+    data(new QpDaoBaseData)
 {
-    d->sqlDataAccessObjectHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
-    d->metaObject = QpMetaObject::registerMetaObject(metaObject);
+    data->sqlDataAccessObjectHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
+    data->metaObject = QpMetaObject::registerMetaObject(metaObject);
     QpDaoBaseData::daoPerMetaObjectName.insert(metaObject.className(), this);
 }
 
@@ -56,12 +54,12 @@ QpDaoBase::~QpDaoBase()
 
 QpError QpDaoBase::lastError() const
 {
-    return d->lastError;
+    return data->lastError;
 }
 
 void QpDaoBase::setLastError(const QpError &error) const
 {
-    d->lastError = error;
+    data->lastError = error;
 }
 
 void QpDaoBase::resetLastError() const
@@ -71,28 +69,28 @@ void QpDaoBase::resetLastError() const
 
 QpSqlDataAccessObjectHelper *QpDaoBase::sqlDataAccessObjectHelper() const
 {
-    return d->sqlDataAccessObjectHelper;
+    return data->sqlDataAccessObjectHelper;
 }
 
 QpMetaObject QpDaoBase::qpMetaObject() const
 {
-    return d->metaObject;
+    return data->metaObject;
 }
 
 int QpDaoBase::count() const
 {
-    if(d->count < 0)
-        d->count = d->sqlDataAccessObjectHelper->count(d->metaObject);;
+    if (data->count < 0)
+        data->count = data->sqlDataAccessObjectHelper->count(data->metaObject);;
 
-    return d->count;
+    return data->count;
 }
 
 QList<int> QpDaoBase::allKeys(int skip, int count) const
 {
-    QList<int> result = d->sqlDataAccessObjectHelper->allKeys(d->metaObject, skip, count);
+    QList<int> result = data->sqlDataAccessObjectHelper->allKeys(data->metaObject, skip, count);
 
-    if(d->sqlDataAccessObjectHelper->lastError().isValid())
-        setLastError(d->sqlDataAccessObjectHelper->lastError());
+    if (data->sqlDataAccessObjectHelper->lastError().isValid())
+        setLastError(data->sqlDataAccessObjectHelper->lastError());
 
     return result;
 }
@@ -101,20 +99,20 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count) c
 {
     int myCount = this->count();
 
-    if(d->cache.size() == myCount)
-        return d->cache.objects(skip,count);
+    if (data->cache.size() == myCount)
+        return data->cache.objects(skip,count);
 
-    if(count <= 0)
+    if (count <= 0)
         count = myCount;
 
     QList<QObject *> objects;
 
-    for(int i = 0; i < count; ++i)
+    for (int i = 0; i < count; ++i)
         objects.append(createInstance());
 
-    if(!d->sqlDataAccessObjectHelper->readAllObjects(d->metaObject, objects, skip, count)) {
-        setLastError(d->sqlDataAccessObjectHelper->lastError());
-        for(int i = 0; i < count; ++i)
+    if (!data->sqlDataAccessObjectHelper->readAllObjects(data->metaObject, objects, skip, count)) {
+        setLastError(data->sqlDataAccessObjectHelper->lastError());
+        for (int i = 0; i < count; ++i)
             delete objects.at(i);
 
         return QList<QSharedPointer<QObject> >();
@@ -122,15 +120,15 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count) c
 
     QList<QSharedPointer<QObject> > result;
     result.reserve(count);
-    for(int i = 0; i < count; ++i) {
+    for (int i = 0; i < count; ++i) {
         QObject *object = objects.at(i);
         int key = Qp::Private::primaryKey(object);
-        if(d->cache.contains(key)) {
-            result.append(d->cache.get(key));
+        if (data->cache.contains(key)) {
+            result.append(data->cache.get(key));
             delete object;
         }
         else {
-            QSharedPointer<QObject> obj = d->cache.insert(Qp::Private::primaryKey(object), object);
+            QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
             Qp::Private::enableSharedFromThis(obj);
             result.append(obj);
         }
@@ -141,19 +139,19 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count) c
 
 QSharedPointer<QObject> QpDaoBase::readObject(int id) const
 {
-    QSharedPointer<QObject> p = d->cache.get(id);
+    QSharedPointer<QObject> p = data->cache.get(id);
 
-    if(p)
+    if (p)
         return p;
 
     QObject *object = createInstance();
 
-    if(!d->sqlDataAccessObjectHelper->readObject(d->metaObject, id, object)) {
-        setLastError(d->sqlDataAccessObjectHelper->lastError());
+    if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, object)) {
+        setLastError(data->sqlDataAccessObjectHelper->lastError());
         delete object;
         return QSharedPointer<QObject>();
     }
-    QSharedPointer<QObject> obj = d->cache.insert(Qp::Private::primaryKey(object), object);
+    QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
     Qp::Private::enableSharedFromThis(obj);
 
     return obj;
@@ -163,13 +161,13 @@ QSharedPointer<QObject> QpDaoBase::createObject()
 {
     QObject *object = createInstance();
 
-    if(!d->sqlDataAccessObjectHelper->insertObject(d->metaObject, object)) {
-        setLastError(d->sqlDataAccessObjectHelper->lastError());
+    if (!data->sqlDataAccessObjectHelper->insertObject(data->metaObject, object)) {
+        setLastError(data->sqlDataAccessObjectHelper->lastError());
         return QSharedPointer<QObject>();
     }
-    QSharedPointer<QObject> obj = d->cache.insert(Qp::Private::primaryKey(object), object);
+    QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
     Qp::Private::enableSharedFromThis(obj);
-    ++d->count;
+    ++data->count;
 
     emit objectCreated(obj);
     return obj;
@@ -177,8 +175,8 @@ QSharedPointer<QObject> QpDaoBase::createObject()
 
 bool QpDaoBase::updateObject(QSharedPointer<QObject> object)
 {
-    if(!d->sqlDataAccessObjectHelper->updateObject(d->metaObject, object.data())) {
-        setLastError(d->sqlDataAccessObjectHelper->lastError());
+    if (!data->sqlDataAccessObjectHelper->updateObject(data->metaObject, object.data())) {
+        setLastError(data->sqlDataAccessObjectHelper->lastError());
         return false;
     }
 
@@ -188,13 +186,13 @@ bool QpDaoBase::updateObject(QSharedPointer<QObject> object)
 
 bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
 {
-    if(!d->sqlDataAccessObjectHelper->removeObject(d->metaObject, object.data())) {
-        setLastError(d->sqlDataAccessObjectHelper->lastError());
+    if (!data->sqlDataAccessObjectHelper->removeObject(data->metaObject, object.data())) {
+        setLastError(data->sqlDataAccessObjectHelper->lastError());
         return false;
     }
 
-    --d->count;
-    d->cache.remove(Qp::primaryKey(object));
+    --data->count;
+    data->cache.remove(Qp::primaryKey(object));
     emit objectRemoved(object);
     return true;
 }

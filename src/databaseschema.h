@@ -1,8 +1,7 @@
-#ifndef QPERSISTENCE_DATABASESCHEMAHELPER_H
-#define QPERSISTENCE_DATABASESCHEMAHELPER_H
+#ifndef QPERSISTENCE_DATABASESCHEMA_H
+#define QPERSISTENCE_DATABASESCHEMA_H
 
 #include <QtCore/QObject>
-
 #include <QtCore/QVariant>
 #include <QtCore/QSharedDataPointer>
 #include <QtSql/QSqlDatabase>
@@ -50,7 +49,7 @@ public:
     static QString variantTypeToSqlType(QVariant::Type type);
 
 private:
-    QSharedDataPointer<QpDatabaseSchemaPrivate> d;
+    QSharedDataPointer<QpDatabaseSchemaPrivate> data;
 
     void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;
@@ -60,4 +59,4 @@ private:
 
 
 
-#endif // QPERSISTENCE_DATABASESCHEMAHELPER_H
+#endif // QPERSISTENCE_DATABASESCHEMA_H

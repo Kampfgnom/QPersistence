@@ -72,14 +72,14 @@ void CacheTest::testMaximumCacheSize()
     QWeakPointer<QObject> weakRef4;
     QWeakPointer<QObject> weakRef5;
 
-    for(int i = 1; i < cacheSize; ++i) {
+    for (int i = 1; i < cacheSize; ++i) {
         QWeakPointer<QObject> weak = cache.insert(i, new QObject()).toWeakRef();
         QVERIFY(weakRef.toStrongRef());
 
-        if(i == 4) {
+        if (i == 4) {
             weakRef4 = weak;
         }
-        if(i == 5) {
+        if (i == 5) {
             weakRef5 = weak;
         }
     }
@@ -99,12 +99,12 @@ void CacheTest::testSize()
     int cacheSize = 10;
     cache.setMaximumCacheSize(cacheSize);
 
-    for(int i = 1; i < cacheSize; ++i) {
+    for (int i = 1; i < cacheSize; ++i) {
         cache.insert(i, new QObject());
         QVERIFY(cache.size() == i);
     }
 
-    for(int i = cacheSize; i < cacheSize * 2; ++i) {
+    for (int i = cacheSize; i < cacheSize * 2; ++i) {
         cache.insert(i, new QObject());
         QVERIFY(cache.size() == cacheSize);
     }
@@ -118,10 +118,10 @@ void CacheTest::setCacheOrder()
 
     QWeakPointer<QObject> weakRef5;
 
-    for(int i = 1; i < cacheSize; ++i) {
+    for (int i = 1; i < cacheSize; ++i) {
         QWeakPointer<QObject> weak = cache.insert(i, new QObject()).toWeakRef();
 
-        if(i == 5) {
+        if (i == 5) {
             weakRef5 = weak;
         }
     }

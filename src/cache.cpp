@@ -1,8 +1,8 @@
 #include "cache.h"
 #include <QSharedData>
 
-#include <QQueue>
 #include <QDebug>
+#include <QQueue>
 
 class QpCacheData : public QSharedData {
 public:
@@ -12,13 +12,14 @@ public:
     int strongCacheSize;
 };
 
-
-QpCache::QpCache() : data(new QpCacheData)
+QpCache::QpCache() :
+    data(new QpCacheData)
 {
     data->strongCacheSize = 50;
 }
 
-QpCache::QpCache(const QpCache &rhs) : data(rhs.data)
+QpCache::QpCache(const QpCache &rhs) :
+    data(rhs.data)
 {
 }
 
@@ -41,7 +42,7 @@ bool QpCache::contains(int id) const
 QSharedPointer<QObject> QpCache::insert(int id, QObject *object)
 {
     QSharedPointer<QObject> p = data->cache.value(id);
-    if(p) {
+    if (p) {
         Q_ASSERT_X(false,
                    Q_FUNC_INFO,
                    QString("The cache already contains an object with the id '%1'")
@@ -53,7 +54,7 @@ QSharedPointer<QObject> QpCache::insert(int id, QObject *object)
     data->strongCache.enqueue(p);
     data->pointerCache.enqueue(p.data());
 
-    if(data->strongCacheSize < data->strongCache.size()) {
+    if (data->strongCacheSize < data->strongCache.size()) {
         data->strongCache.dequeue();
         data->pointerCache.dequeue();
     }
@@ -64,9 +65,9 @@ QSharedPointer<QObject> QpCache::insert(int id, QObject *object)
 QSharedPointer<QObject> QpCache::get(int id) const
 {
     QSharedPointer<QObject> p = data->cache.value(id).toStrongRef();
-    if(p) {
+    if (p) {
         int i = data->pointerCache.indexOf(p.data());
-        if(i != -1) {
+        if (i != -1) {
             data->strongCache.removeAt(i);
             data->pointerCache.removeAt(i);
         }
@@ -80,9 +81,9 @@ QSharedPointer<QObject> QpCache::get(int id) const
 void QpCache::remove(int id)
 {
     QSharedPointer<QObject> p = data->cache.take(id).toStrongRef();
-    if(p) {
+    if (p) {
         int i = data->pointerCache.indexOf(p.data());
-        if(i != -1) {
+        if (i != -1) {
             data->strongCache.removeAt(i);
             data->pointerCache.removeAt(i);
         }
@@ -91,7 +92,7 @@ void QpCache::remove(int id)
 
 QList<QSharedPointer<QObject> > QpCache::objects(int skip, int count) const
 {
-    if(skip > 0)
+    if (skip > 0)
         return data->strongCache.mid(skip, count);
 
     return data->strongCache;
@@ -109,7 +110,7 @@ int QpCache::maximumCacheSize() const
 
 void QpCache::setMaximumCacheSize(int size)
 {
-    while(size < data->strongCache.size()) {
+    while (size < data->strongCache.size()) {
         data->strongCache.dequeue();
         data->pointerCache.dequeue();
     }

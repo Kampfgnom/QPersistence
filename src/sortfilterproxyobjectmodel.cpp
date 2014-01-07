@@ -3,7 +3,6 @@
 QpSortFilterProxyObjectModelBase::QpSortFilterProxyObjectModelBase(QObject *parent) :
     QSortFilterProxyModel(parent)
 {
-
 }
 
 int QpSortFilterProxyObjectModelBase::sortRoleCount() const

@@ -1,13 +1,13 @@
-#ifndef QPERSISTENCE_PERSISTENTDATAACCESSOBJECT_H
-#define QPERSISTENCE_PERSISTENTDATAACCESSOBJECT_H
+#ifndef QPERSISTENCE_DATAACCESSOBJECT_H
+#define QPERSISTENCE_DATAACCESSOBJECT_H
 
 #include <QtCore/QObject>
-
-#include "conversion.h"
-#include <QPersistenceMetaObject.h>
 #include <QtCore/QSharedDataPointer>
 #include <QtCore/QSharedPointer>
 #include <QtSql/QSqlDatabase>
+
+#include "conversion.h"
+#include "metaobject.h"
 
 class QSqlQuery;
 class QpError;
@@ -36,7 +36,6 @@ public:
 
     QpError lastError() const;
 
-
 Q_SIGNALS:
     void objectCreated(QSharedPointer<QObject>);
     void objectUpdated(QSharedPointer<QObject>);
@@ -49,7 +48,7 @@ protected:
     virtual QObject *createInstance() const = 0;
 
 private:
-    QSharedDataPointer<QpDaoBaseData> d;
+    QSharedDataPointer<QpDaoBaseData> data;
 
     void setLastError(const QpError &error) const;
     void resetLastError() const;
@@ -88,4 +87,4 @@ private:
 
 uint qHash(const QVariant &var);
 
-#endif // QPERSISTENCE_PERSISTENTDATAACCESSOBJECT_H
+#endif // QPERSISTENCE_DATAACCESSOBJECT_H

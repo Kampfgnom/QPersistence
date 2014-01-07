@@ -1,13 +1,13 @@
 #include "metaobject.h"
 
+#include "databaseschema.h"
 #include "metaproperty.h"
 #include "qpersistence.h"
-#include "databaseschema.h"
 
-#include <QString>
 #include <QDebug>
-#include <QMetaClassInfo>
 #include <QHash>
+#include <QMetaClassInfo>
+#include <QString>
 
 class QpMetaObjectPrivate : public QSharedData
 {
@@ -18,50 +18,23 @@ public:
     {}
 
     bool valid;
-
     QMetaObject metaObject;
     mutable QList<QpMetaProperty> metaProperties;
     mutable QList<QpMetaProperty> simpleProperties;
     mutable QList<QpMetaProperty> relationProperties;
     mutable QHash<QString, QpMetaProperty> metaPropertiesByName;
 
-    void initProperties() const;
-
-    QpMetaObject *q;
-
     static QHash<QString, QpMetaObject> metaObjects;
-
 };
+
 QHash<QString, QpMetaObject> QpMetaObjectPrivate::metaObjects;
-
-void QpMetaObjectPrivate::initProperties() const
-{
-    int count = metaObject.propertyCount();
-    for(int i = 1; i < count; ++i) {
-        QMetaProperty p = metaObject.property(i);
-        if(!p.isStored())
-            continue;
-
-        QpMetaProperty mp = QpMetaProperty(p, *q);
-        metaPropertiesByName.insert(p.name(), mp);
-        metaProperties.append(mp);
-
-        if(!mp.isRelationProperty()) {
-            simpleProperties.append(mp);
-        }
-        else {
-            relationProperties.append(mp);
-        }
-    }
-}
-
 
 QpMetaObject QpMetaObject::registerMetaObject(const QMetaObject &metaObject)
 {
     QString className(metaObject.className());
     auto it = QpMetaObjectPrivate::metaObjects.find(className);
 
-    if(it != QpMetaObjectPrivate::metaObjects.end()) {
+    if (it != QpMetaObjectPrivate::metaObjects.end()) {
         return it.value();
     }
 
@@ -83,17 +56,36 @@ QList<QpMetaObject> QpMetaObject::registeredMetaObjects()
 }
 
 QpMetaObject::QpMetaObject() :
-    d(new QpMetaObjectPrivate)
+    data(new QpMetaObjectPrivate)
 {
-    d->q = this;
 }
 
 QpMetaObject::QpMetaObject(const QMetaObject &metaObject) :
-    d(new QpMetaObjectPrivate)
+    data(new QpMetaObjectPrivate)
 {
-    d->q = this;
-    d->valid = true;
-    d->metaObject = metaObject;
+    data->valid = true;
+    data->metaObject = metaObject;
+}
+
+void QpMetaObject::initProperties() const
+{
+    int count = data->metaObject.propertyCount();
+    for (int i = 1; i < count; ++i) {
+        QMetaProperty p = data->metaObject.property(i);
+        if (!p.isStored())
+            continue;
+
+        QpMetaProperty mp = QpMetaProperty(p, *this);
+        data->metaPropertiesByName.insert(p.name(), mp);
+        data->metaProperties.append(mp);
+
+        if (!mp.isRelationProperty()) {
+            data->simpleProperties.append(mp);
+        }
+        else {
+            data->relationProperties.append(mp);
+        }
+    }
 }
 
 QpMetaObject::~QpMetaObject()
@@ -101,16 +93,14 @@ QpMetaObject::~QpMetaObject()
 }
 
 QpMetaObject::QpMetaObject(const QpMetaObject &other) :
-    d(other.d)
+    data(other.data)
 {
-    d->q = this;
 }
 
 QpMetaObject &QpMetaObject::operator =(const QpMetaObject &other)
 {
-    if(this != &other) {
-        d.operator =(other.d);
-        d->q = this;
+    if (this != &other) {
+        data.operator =(other.data);
     }
 
     return *this;
@@ -118,31 +108,31 @@ QpMetaObject &QpMetaObject::operator =(const QpMetaObject &other)
 
 QMetaObject QpMetaObject::metaObject() const
 {
-    return d->metaObject;
+    return data->metaObject;
 }
 
 QString QpMetaObject::className() const
 {
-    return d->metaObject.className();
+    return data->metaObject.className();
 }
 
 bool QpMetaObject::isValid() const
 {
-    return d->valid;
+    return data->valid;
 }
 
 QpMetaProperty QpMetaObject::metaProperty(const QString &name) const
 {
-    if(d->metaProperties.isEmpty()) {
-        d->initProperties();
+    if (data->metaProperties.isEmpty()) {
+        initProperties();
     }
 
-    auto it = d->metaPropertiesByName.find(name);
+    auto it = data->metaPropertiesByName.find(name);
 
-    Q_ASSERT_X(it != d->metaPropertiesByName.end(),
+    Q_ASSERT_X(it != data->metaPropertiesByName.end(),
                Q_FUNC_INFO,
                qPrintable(QString("The '%1' class has no property '%2'.")
-                          .arg(d->metaObject.className())
+                          .arg(data->metaObject.className())
                           .arg(name)));
 
     return it.value();
@@ -150,31 +140,31 @@ QpMetaProperty QpMetaObject::metaProperty(const QString &name) const
 
 QString QpMetaObject::tableName() const
 {
-    return QString(d->metaObject.className()).toLower();
+    return QString(data->metaObject.className()).toLower();
 }
 
 QList<QpMetaProperty> QpMetaObject::metaProperties() const
 {
-    if(d->metaProperties.isEmpty()) {
-        d->initProperties();
+    if (data->metaProperties.isEmpty()) {
+        initProperties();
     }
-    return d->metaProperties;
+    return data->metaProperties;
 }
 
 QList<QpMetaProperty> QpMetaObject::simpleProperties() const
 {
-    if(d->metaProperties.isEmpty()) {
-        d->initProperties();
+    if (data->metaProperties.isEmpty()) {
+        initProperties();
     }
-    return d->simpleProperties;
+    return data->simpleProperties;
 }
 
 QList<QpMetaProperty> QpMetaObject::relationProperties() const
 {
-    if(d->metaProperties.isEmpty()) {
-        d->initProperties();
+    if (data->metaProperties.isEmpty()) {
+        initProperties();
     }
-    return d->relationProperties;
+    return data->relationProperties;
 }
 
 QString QpMetaObject::sqlFilter() const
@@ -184,23 +174,23 @@ QString QpMetaObject::sqlFilter() const
 
 QString QpMetaObject::classInformation(const QString &name, const QString &defaultValue) const
 {
-    int index = d->metaObject.indexOfClassInfo(name.toLatin1());
+    int index = data->metaObject.indexOfClassInfo(name.toLatin1());
 
     if (index < 0)
         return defaultValue;
 
-    return QLatin1String(d->metaObject.classInfo(index).value());
+    return QLatin1String(data->metaObject.classInfo(index).value());
 }
 
 QString QpMetaObject::classInformation(const QString &informationName, bool assertNotEmpty) const
 {
     QString value = classInformation(informationName, QString());
 
-    if(assertNotEmpty) {
+    if (assertNotEmpty) {
         Q_ASSERT_X(!value.isEmpty(),
                    Q_FUNC_INFO,
                    qPrintable(QString("The %1 class does not define a %2.")
-                              .arg(d->metaObject.className())
+                              .arg(data->metaObject.className())
                               .arg(informationName)));
     }
 

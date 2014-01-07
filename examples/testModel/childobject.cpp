@@ -31,7 +31,7 @@ QSharedPointer<ParentObject> ChildObject::parentObject() const
 {
     QSharedPointer<ParentObject> ref = m_parentObject.toStrongRef();
 
-    if(!ref) {
+    if (!ref) {
         ref = Qp::Private::resolveToOneRelation<ParentObject>("parentObject", this);
         m_parentObject = ref.toWeakRef();
     }
@@ -48,7 +48,7 @@ QSharedPointer<ParentObject> ChildObject::parentObject2() const
 {
     QSharedPointer<ParentObject> ref = m_parentObject2.toStrongRef();
 
-    if(!ref) {
+    if (!ref) {
         ref = Qp::Private::resolveToOneRelation<ParentObject>("parentObject2", this);
         m_parentObject2 = ref.toWeakRef();
     }

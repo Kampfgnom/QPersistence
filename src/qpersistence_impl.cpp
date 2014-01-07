@@ -1,8 +1,8 @@
 #include "qpersistence.h"
 
-#include "private.h"
 #include "conversion.h"
 #include "metaproperty.h"
+#include "private.h"
 #include "relationresolver.h"
 
 #include <QSharedPointer>
@@ -49,9 +49,9 @@ void registerMappableTypes()
     static QObject guard;
     Private::registerConverter<QMap<K,V> >(new Private::MapConverter<K,V>(&guard));
 
-    if(!Private::canConvertFromSqlStoredVariant<K>())
+    if (!Private::canConvertFromSqlStoredVariant<K>())
         Private::registerConverter<K>(new Private::SqlConverter<K>(&guard));
-    if(!Private::canConvertFromSqlStoredVariant<V>())
+    if (!Private::canConvertFromSqlStoredVariant<V>())
         Private::registerConverter<V>(new Private::SqlConverter<V>(&guard));
 }
 
@@ -65,7 +65,7 @@ void registerSetType()
     static QObject guard;
     Private::registerConverter<QSet<T> >(new Private::SetConverter<T>(&guard));
 
-    if(!Private::canConvertFromSqlStoredVariant<T>())
+    if (!Private::canConvertFromSqlStoredVariant<T>())
         Private::registerConverter<T>(new Private::SqlConverter<T>(&guard));
 }
 
