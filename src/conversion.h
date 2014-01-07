@@ -15,22 +15,6 @@ namespace Qp {
 
 namespace Private {
 
-template<class Source, class Target>
-QList<Target> castList(const QList<Source>& list)
-{
-    QList<Target> result;
-    Q_FOREACH(Source s, list) result.append(static_cast<Target>(s));
-    return result;
-}
-
-template<class T>
-QList<QSharedPointer<T> > castList(const QList<QSharedPointer<QObject> >& list)
-{
-    QList<QSharedPointer<T> > result;
-    Q_FOREACH(QSharedPointer<QObject> s, list) result.append(qSharedPointerCast<T>(s));
-    return result;
-}
-
 class ConverterBase;
 
 QSharedPointer<QObject> objectCast(const QVariant &variant);

@@ -44,4 +44,14 @@ void createCleanSchema()
     schema.createCleanSchema();
 }
 
+void startBulkDatabaseQueries()
+{
+    QpSqlQuery::startBulkExec();
+}
+
+void commitBulkDatabaseQueries()
+{
+    QpSqlQuery::bulkExec();
+}
+
 }

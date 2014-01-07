@@ -89,6 +89,14 @@ void QpCache::remove(int id)
     }
 }
 
+QList<QSharedPointer<QObject> > QpCache::objects(int skip, int count) const
+{
+    if(skip > 0)
+        return data->strongCache.mid(skip, count);
+
+    return data->strongCache;
+}
+
 int QpCache::size() const
 {
     return data->strongCache.size();

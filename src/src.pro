@@ -28,8 +28,8 @@ HEADERS += \
     cache.h \
     relationresolver.h \
     relations.h \
-    abstractobjectlistmodel.h \
-    objectlistmodel.h
+    objectlistmodel.h \
+    sortfilterproxyobjectmodel.h
 SOURCES += \
     metaproperty.cpp \
     error.cpp \
@@ -46,5 +46,5 @@ SOURCES += \
     cache.cpp \
     relationresolver.cpp \
     relations.cpp \
-    abstractobjectlistmodel.cpp \
-    objectlistmodel.cpp
+    objectlistmodel.cpp \
+    sortfilterproxyobjectmodel.cpp

@@ -77,7 +77,7 @@ template<class T> QSharedPointer<T> read(int id)
 template<class T>
 QList<QSharedPointer<T> > readAll()
 {
-    return Private::castList<T>(dataAccessObject<T>()->readAllObjects());
+    return dataAccessObject<T>()->readAllObjects();
 }
 
 template<class T>
@@ -123,6 +123,23 @@ template<class T>
 int primaryKey(QSharedPointer<T> object)
 {
     return Qp::Private::primaryKey(object.data());
+}
+
+template<class Target, class Source>
+QList<Target> castList(const QList<Source>& list)
+{
+    QList<Target> result;
+    Q_FOREACH(Source s, list) result.append(static_cast<Target>(s));
+    return result;
+}
+
+template<class Target, class Source>
+QList<QSharedPointer<Target> > castList(const QList<QSharedPointer<Source> >& list)
+{
+    QList<QSharedPointer<Target> > result;
+    result.reserve(list.size());
+    Q_FOREACH(QSharedPointer<Source> s, list) result.append(qSharedPointerCast<Target>(s));
+    return result;
 }
 
 } // namespace Qp

@@ -12,10 +12,17 @@
 class QpDaoBaseData : public QSharedData
 {
 public:
+    QpDaoBaseData() :
+        QSharedData(),
+        count(-1)
+    {
+    }
+
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper;
     QpMetaObject metaObject;
     mutable QpError lastError;
     mutable QpCache cache;
+    mutable int count;
 
     static QHash<QString, QpDaoBase *> daoPerMetaObjectName;
 };
@@ -74,7 +81,10 @@ QpMetaObject QpDaoBase::qpMetaObject() const
 
 int QpDaoBase::count() const
 {
-    return d->sqlDataAccessObjectHelper->count(d->metaObject);
+    if(d->count < 0)
+        d->count = d->sqlDataAccessObjectHelper->count(d->metaObject);;
+
+    return d->count;
 }
 
 QList<int> QpDaoBase::allKeys(int skip, int count) const
@@ -89,8 +99,13 @@ QList<int> QpDaoBase::allKeys(int skip, int count) const
 
 QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count) const
 {
+    int myCount = this->count();
+
+    if(d->cache.size() == myCount)
+        return d->cache.objects(skip,count);
+
     if(count <= 0)
-        count = this->count();
+        count = myCount;
 
     QList<QObject *> objects;
 
@@ -154,6 +169,7 @@ QSharedPointer<QObject> QpDaoBase::createObject()
     }
     QSharedPointer<QObject> obj = d->cache.insert(Qp::Private::primaryKey(object), object);
     Qp::Private::enableSharedFromThis(obj);
+    ++d->count;
 
     emit objectCreated(obj);
     return obj;
@@ -177,9 +193,9 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
         return false;
     }
 
-    d->cache.remove(Qp::Private::primaryKey(object.data()));
+    --d->count;
+    d->cache.remove(Qp::primaryKey(object));
     emit objectRemoved(object);
-    object.clear();
     return true;
 }
 

@@ -20,7 +20,8 @@ public:
     QpSqlQueryPrivate() :
         QSharedData(),
         count(-1),
-        skip(-1)
+        skip(-1),
+        canBulkExec(false)
     {}
 
     QString table;
@@ -30,7 +31,16 @@ public:
     QpSqlCondition whereCondition;
     QList<QPair<QString, QpSqlQuery::Order> > orderBy;
     QList<QStringList> foreignKeys;
+    bool canBulkExec;
+
+    static bool debugEnabled;
+    static QList<QpSqlQuery> bulkQueries;
+    static bool bulkExec;
 };
+
+bool QpSqlQueryPrivate::bulkExec = false;
+bool QpSqlQueryPrivate::debugEnabled = false;
+QList<QpSqlQuery> QpSqlQueryPrivate::bulkQueries;
 
 QpSqlQuery::QpSqlQuery() :
     QSqlQuery(),
@@ -66,28 +76,37 @@ QpSqlQuery::~QpSqlQuery()
 
 bool QpSqlQuery::exec(const QString &queryString)
 {
-    bool ok;
+    bool ok = true;
     QString query = queryString;
     if(query.isEmpty()) {
-        ok = QSqlQuery::exec();
-        query = executedQuery();
+        if(QpSqlQueryPrivate::bulkExec
+                && d->canBulkExec) {
+            QpSqlQueryPrivate::bulkQueries.append(*this);
+        }
+        else {
+            ok = QSqlQuery::exec();
+        }
     }
     else {
         ok = QSqlQuery::exec(queryString);
     }
 
-    int index = query.indexOf('?');
-    int i = 0;
-    QList<QVariant> values = boundValues().values();
-    while (index >= 0) {
-        QString value = values.at(i).toString();
-        if(value.isEmpty())
-            value = QLatin1String("NULL");
-        query.replace(index, 1, value);
-        index = query.indexOf('?', index + value.length());
-        ++i;
+    if(!ok || d->debugEnabled) {
+        query = executedQuery();
+        int index = query.indexOf('?');
+        int i = 0;
+        QList<QVariant> values = boundValues().values();
+        while (index >= 0) {
+            QString value = values.at(i).toString();
+            if(value.isEmpty())
+                value = QLatin1String("NULL");
+            query.replace(index, 1, value);
+            index = query.indexOf('?', index + value.length());
+            ++i;
+        }
+        qDebug() << qPrintable(query);
     }
-//    qDebug() << qPrintable(query);
+
     return ok;
 }
 
@@ -113,6 +132,22 @@ void QpSqlQuery::clear()
     d->orderBy.clear();
     d->foreignKeys.clear();
 }
+
+bool QpSqlQuery::isDebugEnabled()
+{
+    return QpSqlQueryPrivate::debugEnabled;
+}
+
+void QpSqlQuery::setDebugEnabled(bool value)
+{
+    QpSqlQueryPrivate::debugEnabled = value;
+}
+
+void QpSqlQuery::startBulkExec()
+{
+    QpSqlQueryPrivate::bulkExec = true;
+}
+
 
 void QpSqlQuery::setTable(const QString &table)
 {
@@ -271,6 +306,7 @@ bool QpSqlQuery::prepareUpdate()
         addBindValue(value);
     }
 
+    d->canBulkExec = true;
     return true;
 }
 
@@ -317,6 +353,7 @@ void QpSqlQuery::prepareDelete()
     foreach(const QVariant value, d->whereCondition.bindValues()) {
         addBindValue(value);
     }
+    d->canBulkExec = true;
 }
 
 void QpSqlQuery::addBindValue(const QVariant &val)
@@ -364,6 +401,18 @@ QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaTyp
     return value;
 }
 
+void QpSqlQuery::bulkExec()
+{
+    Qp::database().transaction();
+    QpSqlQueryPrivate::bulkExec = false;
+    foreach(QpSqlQuery query, QpSqlQueryPrivate::bulkQueries) {
+        query.exec();
+    }
+    Qp::database().commit();
+
+    QpSqlQueryPrivate::bulkQueries.clear();
+    QpSqlQueryPrivate::bulkExec = false;
+}
 
 
 #undef COMMA

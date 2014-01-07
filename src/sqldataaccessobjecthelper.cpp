@@ -170,7 +170,7 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
     // Create main INSERT query
     QpSqlQuery query(d->database);
     query.setTable(metaObject.tableName());
-    fillValuesIntoQuery(metaObject, object, query);
+    fillValuesIntoQuery(metaObject, object, query, true);
 
     // Insert the object itself
     query.prepareInsert();
@@ -212,29 +212,33 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
 
 void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaObject,
                                                       const QObject *object,
-                                                      QpSqlQuery &query)
+                                                      QpSqlQuery &query,
+                                                      bool forInsert)
 {
     // Add simple properties
     foreach(const QpMetaProperty property, metaObject.simpleProperties()) {
         query.addField(property.columnName(), property.metaProperty().read(object));
     }
 
-    // Add relation properties
-    foreach(const QpMetaProperty property, metaObject.relationProperties()) {
-        QpMetaProperty::Cardinality cardinality = property.cardinality();
+    // There can not be any relations at insert time!
+    if(!forInsert) {
+        // Add relation properties
+        foreach(const QpMetaProperty property, metaObject.relationProperties()) {
+            QpMetaProperty::Cardinality cardinality = property.cardinality();
 
-        // Only care for "XtoOne" relations, since only they have to be inserted into our table
-        if(cardinality == QpMetaProperty::ToOneCardinality
-                || cardinality == QpMetaProperty::ManyToOneCardinality
-                || (QpMetaProperty::OneToOneCardinality
-                    && property.hasTableForeignKey())) {
-            QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.metaProperty().read(object));
+            // Only care for "XtoOne" relations, since only they have to be inserted into our table
+            if(cardinality == QpMetaProperty::ToOneCardinality
+                    || cardinality == QpMetaProperty::ManyToOneCardinality
+                    || (QpMetaProperty::OneToOneCardinality
+                        && property.hasTableForeignKey())) {
+                QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.metaProperty().read(object));
 
-            if(!relatedObject)
-                continue;
+                if(!relatedObject)
+                    continue;
 
-            QVariant foreignKey = Qp::Private::primaryKey(relatedObject.data());
-            query.addField(property.columnName(), foreignKey);
+                QVariant foreignKey = Qp::Private::primaryKey(relatedObject.data());
+                query.addField(property.columnName(), foreignKey);
+            }
         }
     }
 }

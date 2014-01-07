@@ -56,7 +56,7 @@ QSharedPointer<T> resolveToOneRelation(const QString &name, const QObject *objec
 template<class T>
 QList<QSharedPointer<T> > resolveToManyRelation(const QString &name, const QObject *object)
 {
-    return Qp::Private::castList<T>(QpRelationResolver::resolveToOneRelation(name, object));
+    return Qp::castList<T>(QpRelationResolver::resolveToOneRelation(name, object));
 }
 
 } // namespace Private
