@@ -245,7 +245,16 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery &query, QO
         QByteArray fieldName = record.fieldName(i).toLatin1();
         QVariant value = query.value(i);
 
-        value = QpSqlQuery::variantFromSqlStorableVariant(value, static_cast<QMetaType::Type>(object->property(fieldName).userType()));
+        int propertyIndex = object->metaObject()->indexOfProperty(fieldName);
+        QMetaProperty property = object->metaObject()->property(propertyIndex);
+        if(propertyIndex > 0 && property.isEnumType()) {
+            value = value.toInt();
+        }
+        else {
+            QMetaType::Type type = static_cast<QMetaType::Type>(property.userType());
+            value = QpSqlQuery::variantFromSqlStorableVariant(value, type);
+        }
+
         object->setProperty(fieldName, value);
     }
 }
