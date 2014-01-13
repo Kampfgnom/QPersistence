@@ -2,39 +2,37 @@
 #define QPERSISTENCE_SQLBACKEND_H
 
 #include <QExplicitlySharedDataPointer>
+#include <QObject>
+#include <QVariant>
 
 class QSqlDatabase;
 
-class QpSqlBackendData;
-class QpSqlBackend
+class QpSqlBackend : public QObject
 {
 public:
-    static QpSqlBackend forDatabase(const QSqlDatabase &database);
+    static QpSqlBackend *forDatabase(const QSqlDatabase &database);
 
-    QpSqlBackend();
-    QpSqlBackend(const QpSqlBackend &);
-    QpSqlBackend &operator=(const QpSqlBackend &);
+    QpSqlBackend(QObject *parent);
     ~QpSqlBackend();
 
-    QString primaryKeyType() const;
-
-protected:
-    void setPrimaryKeyType(const QString &type);
-
-private:
-    QExplicitlySharedDataPointer<QpSqlBackendData> data;
+    virtual QString primaryKeyType() const = 0;
+    virtual QString variantTypeToSqlType(QVariant::Type type) const = 0;
 };
 
 class QpSqliteBackend : public QpSqlBackend
 {
 public:
-    QpSqliteBackend();
+    QpSqliteBackend(QObject *parent);
+    QString primaryKeyType() const Q_DECL_OVERRIDE;
+    QString variantTypeToSqlType(QVariant::Type type) const Q_DECL_OVERRIDE;
 };
 
 class QpMySqlBackend : public QpSqlBackend
 {
 public:
-    QpMySqlBackend();
+    QpMySqlBackend(QObject *parent);
+    QString primaryKeyType() const Q_DECL_OVERRIDE;
+    QString variantTypeToSqlType(QVariant::Type type) const Q_DECL_OVERRIDE;
 };
 
 #endif // QPERSISTENCE_SQLBACKEND_H

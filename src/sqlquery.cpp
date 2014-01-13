@@ -25,7 +25,7 @@ public:
     {}
 
     QSqlDatabase database;
-    QpSqlBackend backend;
+    QpSqlBackend *backend;
     QString table;
     QHash<QString, QVariant> fields;
     int count;
@@ -159,7 +159,7 @@ void QpSqlQuery::setTable(const QString &table)
 
 void QpSqlQuery::addPrimaryKey(const QString &name)
 {
-    addField(name, data->backend.primaryKeyType());
+    addField(name, data->backend->primaryKeyType());
 }
 
 void QpSqlQuery::addField(const QString &name, const QVariant &value)

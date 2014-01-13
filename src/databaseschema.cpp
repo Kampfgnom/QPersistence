@@ -4,6 +4,7 @@
 #include "metaobject.h"
 #include "metaproperty.h"
 #include "qpersistence.h"
+#include "sqlbackend.h"
 #include "sqlquery.h"
 
 #include <QDebug>
@@ -16,7 +17,9 @@
 #include <QStringList>
 #include <QSqlDriver>
 
-const QString QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME("_Qp_ID");
+const QString QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
+const QString QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
+const QString QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME("_Qp_updateTime");
 
 class QpDatabaseSchemaPrivate : public QSharedData
 {
@@ -28,8 +31,6 @@ public:
     QSqlDatabase database;
     mutable QpError lastError;
     QpSqlQuery query;
-
-    QString metaPropertyToColumnDefinition(const QpMetaProperty &property);
 };
 
 QpDatabaseSchema::QpDatabaseSchema(const QSqlDatabase &database, QObject *parent) :
@@ -99,25 +100,29 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
                 if (reverseRelation.isValid()) {
                     QpMetaObject reverseMetaObject = reverseRelation.metaObject();
                     QString columnName = metaProperty.columnName();
-                    QString columnType = QpDatabaseSchema::variantTypeToSqlType(QVariant::Int);
+                    QString columnType = variantTypeToSqlType(QVariant::Int);
 
                     data->query.addField(columnName, columnType);
                     data->query.addForeignKey(metaProperty.columnName(),
-                                           PRIMARY_KEY_COLUMN_NAME,
+                                           COLUMN_NAME_PRIMARY_KEY,
                                            reverseMetaObject.tableName());
                 }
             }
         }
         else {
             QString columnName = metaProperty.columnName();
-            QString columnType = QpDatabaseSchema::variantTypeToSqlType(metaProperty.type());
+            QString columnType = variantTypeToSqlType(metaProperty.type());
 
             data->query.addField(columnName, columnType);
         }
     }
 
     // Add the primary key
-    data->query.addPrimaryKey(PRIMARY_KEY_COLUMN_NAME);
+    data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
+
+    // Add timestamp columns
+    data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
+    data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
 
     data->query.prepareCreateTable();
 
@@ -131,7 +136,7 @@ void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
 {
     QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
     QString primaryTable = meta.tableName();
-    QString columnType = QpDatabaseSchema::variantTypeToSqlType(QVariant::Int);
+    QString columnType = variantTypeToSqlType(QVariant::Int);
 
     foreach (QpMetaProperty property, meta.relationProperties()) {
         Q_ASSERT(property.isValid());
@@ -151,12 +156,12 @@ void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
         createTableQuery.addField(columnName, columnType);
         createTableQuery.addField(foreignColumnName, columnType);
         createTableQuery.addForeignKey(columnName,
-                                       PRIMARY_KEY_COLUMN_NAME,
+                                       COLUMN_NAME_PRIMARY_KEY,
                                        primaryTable);
         createTableQuery.addForeignKey(foreignColumnName,
-                                       PRIMARY_KEY_COLUMN_NAME,
+                                       COLUMN_NAME_PRIMARY_KEY,
                                        foreignTable);
-        createTableQuery.addPrimaryKey(PRIMARY_KEY_COLUMN_NAME);
+        createTableQuery.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
         createTableQuery.prepareCreateTable();
         if ( !createTableQuery.exec()
              || createTableQuery.lastError().isValid()) {
@@ -172,7 +177,7 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
 
     foreach (QpMetaProperty metaProperty, meta.metaProperties()) {
         Q_ASSERT(metaProperty.isValid());
-        QSqlRecord record = data->database.record(metaProperty.tableName());;
+        QSqlRecord record = data->database.record(metaProperty.tableName());
 
         if (!metaProperty.isStored())
             continue;
@@ -195,6 +200,15 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
             return false;
     }
 
+    QSqlRecord record = data->database.record(meta.tableName());
+
+    // Add timestamp columns
+    if(!record.contains(COLUMN_NAME_CREATION_TIME))
+        data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
+
+    if(!record.contains(COLUMN_NAME_UPDATE_TIME))
+        data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
+
     return true;
 }
 
@@ -207,7 +221,7 @@ void QpDatabaseSchema::addColumn(const QpMetaProperty &metaProperty)
     if (metaProperty.isRelationProperty()) {
         name = metaProperty.columnName();
         tableName = metaProperty.tableName();
-        type = QpDatabaseSchema::variantTypeToSqlType(QVariant::Int);
+        type = variantTypeToSqlType(QVariant::Int);
 
         qWarning("The relation %s will be added to the %s table. "
                  "But SQLite does not support adding foreign key contraints after a table has been created. "
@@ -218,7 +232,7 @@ void QpDatabaseSchema::addColumn(const QpMetaProperty &metaProperty)
     else {
         tableName = metaProperty.metaObject().tableName();
         name = metaProperty.columnName();
-        type = QpDatabaseSchema::variantTypeToSqlType(metaProperty.type());
+        type = variantTypeToSqlType(metaProperty.type());
     }
 
     addColumn(tableName, name, type);
@@ -398,7 +412,7 @@ bool QpDatabaseSchema::createColumnCopy(const QString &sourceTable,
     QSqlRecord record = data->database.record(sourceTable);
     int i = record.indexOf(sourceColumn);
 
-    QString type = QpDatabaseSchema::variantTypeToSqlType(record.field(i).type());
+    QString type = variantTypeToSqlType(record.field(i).type());
 
     query.exec(QString("ALTER TABLE %1 ADD COLUMN %2 %3")
                .arg(sourceTable)
@@ -422,26 +436,7 @@ bool QpDatabaseSchema::createColumnCopy(const QString &sourceTable,
 
 QString QpDatabaseSchema::variantTypeToSqlType(QVariant::Type type)
 {
-    switch (type) {
-    case QVariant::UInt:
-    case QVariant::Int:
-    case QVariant::Bool:
-    case QVariant::ULongLong:
-        return QLatin1String("INTEGER");
-    case QVariant::String:
-    case QVariant::StringList:
-    case QVariant::Date:
-    case QVariant::DateTime:
-    case QVariant::Time:
-    case QVariant::Char:
-    case QVariant::Url:
-        return QLatin1String("TEXT");
-    case QVariant::Double:
-        return QLatin1String("REAL");
-    case QVariant::UserType:
-    default:
-        return QLatin1String("BLOB");
-    }
+    return QpSqlBackend::forDatabase(data->database)->variantTypeToSqlType(type);
 }
 
 void QpDatabaseSchema::setLastError(const QpError &error) const
@@ -455,14 +450,15 @@ void QpDatabaseSchema::setLastError(const QSqlQuery &query) const
 {
     setLastError(QpError(query.lastError().text().append(": ").append(query.executedQuery()), QpError::SqlError));
 }
-QString QpDatabaseSchemaPrivate::metaPropertyToColumnDefinition(const QpMetaProperty &metaProperty)
+
+QString QpDatabaseSchema::metaPropertyToColumnDefinition(const QpMetaProperty &metaProperty)
 {
     QString name;
     QString type;
 
     if (metaProperty.isRelationProperty()) {
         name = metaProperty.columnName();
-        type = QpDatabaseSchema::variantTypeToSqlType(QVariant::Int);
+        type = variantTypeToSqlType(QVariant::Int);
 
         switch (metaProperty.cardinality()) {
         case QpMetaProperty::ToOneCardinality:
@@ -490,7 +486,7 @@ QString QpDatabaseSchemaPrivate::metaPropertyToColumnDefinition(const QpMetaProp
     }
     else {
         name = metaProperty.columnName();
-        type = QpDatabaseSchema::variantTypeToSqlType(metaProperty.type());
+        type = variantTypeToSqlType(metaProperty.type());
     }
 
     if (name.isEmpty()

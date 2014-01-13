@@ -78,7 +78,7 @@ QList<int> QpSqlDataAccessObjectHelper::allKeys(const QpMetaObject &metaObject, 
     QpSqlQuery query(data->database);
     query.clear();
     query.setTable(metaObject.tableName());
-    query.addField(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
     query.setCount(count);
     query.setSkip(skip);
     query.prepareSelect();
@@ -111,7 +111,7 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
     query.setCount(1);
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
                                            key));
     query.prepareSelect();
@@ -187,7 +187,7 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
     // Create main UPDATE query
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
                                            Qp::Private::primaryKey(object)));
     fillValuesIntoQuery(metaObject, object, query);
@@ -282,7 +282,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
             QList<QpSqlCondition> relatedObjectsWhereClauses;
             int count = 0;
             foreach (QSharedPointer<QObject> relatedObject, relatedObjects) {
-                relatedObjectsWhereClauses.append(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+                relatedObjectsWhereClauses.append(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                                                  QpSqlCondition::EqualTo,
                                                                  Qp::Private::primaryKey(relatedObject.data())));
 
@@ -325,7 +325,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
             QpSqlQuery setForeignKeysQuery(data->database);
             setForeignKeysQuery.setTable(property.tableName());
             setForeignKeysQuery.addField(property.columnName(), primary);
-            setForeignKeysQuery.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+            setForeignKeysQuery.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                                                  QpSqlCondition::EqualTo,
                                                                  foreign));
             setForeignKeysQuery.prepareUpdate();
@@ -375,7 +375,7 @@ bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, Q
 
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
                                            Qp::Private::primaryKey(object)));
     query.prepareDelete();
@@ -417,7 +417,7 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
     if (cardinality == QpMetaProperty::OneToManyCardinality
             || cardinality == QpMetaProperty::OneToOneCardinality) {
         keyColumn = relation.reverseRelation().columnName();
-        foreignColumn = QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME;
+        foreignColumn = QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY;
 
         if (relation.hasTableForeignKey()) {
             qSwap(keyColumn, foreignColumn);
@@ -426,13 +426,13 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
         sortColumn = foreignColumn;
     }
     else if (cardinality == QpMetaProperty::ManyToOneCardinality) {
-        keyColumn = QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME;
+        keyColumn = QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY;
         foreignColumn = relation.reverseRelation().columnName();
     }
     else if (cardinality == QpMetaProperty::ManyToManyCardinality) {
         keyColumn = relation.columnName();
         foreignColumn = relation.reverseRelation().columnName();
-        sortColumn = QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME;
+        sortColumn = QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY;
     }
 
     Q_ASSERT(!foreignColumn.isEmpty());
