@@ -14,6 +14,7 @@ QSqlDatabase database();
 void adjustDatabaseSchema();
 void createCleanSchema();
 
+void setSqlDebugEnabled(bool enable);
 void startBulkDatabaseQueries();
 void commitBulkDatabaseQueries();
 

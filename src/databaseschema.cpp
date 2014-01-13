@@ -14,6 +14,7 @@
 #include <QSqlQuery>
 #include <QSqlRecord>
 #include <QStringList>
+#include <QSqlDriver>
 
 const QString QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME("_Qp_ID");
 
@@ -53,7 +54,6 @@ bool QpDatabaseSchema::existsTable(const QString &table)
 {
     return data->database.tables().contains(table);
 }
-
 
 void QpDatabaseSchema::createTableIfNotExists(const QMetaObject &metaObject)
 {
@@ -117,7 +117,7 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
     }
 
     // Add the primary key
-    data->query.addField(PRIMARY_KEY_COLUMN_NAME, "INTEGER PRIMARY KEY AUTOINCREMENT");
+    data->query.addPrimaryKey(PRIMARY_KEY_COLUMN_NAME);
 
     data->query.prepareCreateTable();
 
@@ -156,7 +156,7 @@ void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
         createTableQuery.addForeignKey(foreignColumnName,
                                        PRIMARY_KEY_COLUMN_NAME,
                                        foreignTable);
-        createTableQuery.addField(PRIMARY_KEY_COLUMN_NAME, "INTEGER PRIMARY KEY AUTOINCREMENT");
+        createTableQuery.addPrimaryKey(PRIMARY_KEY_COLUMN_NAME);
         createTableQuery.prepareCreateTable();
         if ( !createTableQuery.exec()
              || createTableQuery.lastError().isValid()) {
@@ -288,15 +288,27 @@ bool QpDatabaseSchema::dropColumns(const QString &table, const QStringList &colu
     return true;
 }
 
+void QpDatabaseSchema::cleanSchema()
+{
+    if(data->database.driverName() == QLatin1String("QSQLITE")) {
+        QFile file(data->database.databaseName());
+        if (file.exists()) {
+            if (!file.remove())
+                qCritical() << Q_FUNC_INFO << "Could not remove database file"<< file.fileName();
+            if (!data->database.open())
+                qCritical() << Q_FUNC_INFO << "Could not re-open database file"<< file.fileName();
+        }
+    }
+    else {
+        foreach(QString table, data->database.tables(QSql::Tables)) {
+            dropTable(table);
+        }
+    }
+}
+
 void QpDatabaseSchema::createCleanSchema()
 {
-    QFile file(data->database.databaseName());
-    if (file.exists()) {
-        if (!file.remove())
-            qCritical() << Q_FUNC_INFO << "Could not remove database file"<< file.fileName();
-        if (!data->database.open())
-            qCritical() << Q_FUNC_INFO << "Could not re-open database file"<< file.fileName();
-    }
+    cleanSchema();
 
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
         createTable(metaObject.metaObject());

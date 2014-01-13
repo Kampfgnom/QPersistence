@@ -29,6 +29,7 @@ public:
 
     void clear();
     void setTable(const QString &table);
+    void addPrimaryKey(const QString &name);
     void addField(const QString &name, const QVariant &value = QVariant());
     void addForeignKey(const QString &columnName, const QString &keyName, const QString &foreignTableName);
     void setCount(int limit);

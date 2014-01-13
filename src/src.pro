@@ -29,7 +29,8 @@ HEADERS += \
     sortfilterproxyobjectmodel.h \
     sqlcondition.h \
     sqldataaccessobjecthelper.h \
-    sqlquery.h
+    sqlquery.h \
+    sqlbackend.h
 
 SOURCES += \
         cache.cpp \
@@ -48,4 +49,5 @@ SOURCES += \
     sortfilterproxyobjectmodel.cpp \
     sqlcondition.cpp \
     sqldataaccessobjecthelper.cpp \
-    sqlquery.cpp
+    sqlquery.cpp \
+    sqlbackend.cpp

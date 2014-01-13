@@ -19,11 +19,13 @@ void setDatabase(const QSqlDatabase &database)
 
     QSqlDatabase::cloneDatabase(database, "Qp");
 
-    QpSqlQuery query(database);
-    query.prepare("PRAGMA foreign_keys = 1;");
-    if (!query.exec()
-         || query.lastError().isValid()) {
-        qCritical() << "The PRAGMA foreign_keys could not be set to 1:" << query.lastError();
+    if(database.driverName() == QLatin1String("QSQLITE")) {
+        QpSqlQuery query(database);
+        query.prepare("PRAGMA foreign_keys = 1;");
+        if (!query.exec()
+             || query.lastError().isValid()) {
+            qCritical() << "The PRAGMA foreign_keys could not be set to 1:" << query.lastError();
+        }
     }
 }
 
@@ -52,6 +54,11 @@ void startBulkDatabaseQueries()
 void commitBulkDatabaseQueries()
 {
     QpSqlQuery::bulkExec();
+}
+
+void setSqlDebugEnabled(bool enable)
+{
+    QpSqlQuery::setDebugEnabled(enable);
 }
 
 }

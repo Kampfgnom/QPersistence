@@ -2,6 +2,7 @@
 
 #include "qpersistence.h"
 #include "sqlcondition.h"
+#include "sqlbackend.h"
 
 #include <QBuffer>
 #include <QByteArray>
@@ -11,6 +12,7 @@
 #include <QRegularExpressionMatchIterator>
 #include <QSharedData>
 #include <QStringList>
+#include <QSqlDriver>
 #define COMMA ,
 
 class QpSqlQueryPrivate : public QSharedData {
@@ -22,6 +24,8 @@ public:
         canBulkExec(false)
     {}
 
+    QSqlDatabase database;
+    QpSqlBackend backend;
     QString table;
     QHash<QString, QVariant> fields;
     int count;
@@ -50,6 +54,8 @@ QpSqlQuery::QpSqlQuery(const QSqlDatabase &database) :
     QSqlQuery(database),
     data(new QpSqlQueryPrivate)
 {
+    data->database = database;
+    data->backend = QpSqlBackend::forDatabase(database);
 }
 
 QpSqlQuery::QpSqlQuery(const QpSqlQuery &rhs) :
@@ -146,10 +152,14 @@ void QpSqlQuery::startBulkExec()
     QpSqlQueryPrivate::bulkExec = true;
 }
 
-
 void QpSqlQuery::setTable(const QString &table)
 {
     data->table = table;
+}
+
+void QpSqlQuery::addPrimaryKey(const QString &name)
+{
+    addField(name, data->backend.primaryKeyType());
 }
 
 void QpSqlQuery::addField(const QString &name, const QVariant &value)
@@ -184,14 +194,14 @@ void QpSqlQuery::addOrder(const QString &field, QpSqlQuery::Order order)
 
 void QpSqlQuery::prepareCreateTable()
 {
-    QString query("CREATE TABLE \"");
-    query.append(data->table).append("\" (\n\t");
+    QString query("CREATE TABLE ");
+    query.append(data->table).append(" (\n\t");
 
     QStringList fields;
     QHashIterator<QString, QVariant> it(data->fields);
     while (it.hasNext()) {
         it.next();
-        fields.append(QString("\"%1\" %2")
+        fields.append(QString("%1 %2")
                       .arg(it.key())
                       .arg(it.value().toString()));
     }
@@ -211,15 +221,15 @@ void QpSqlQuery::prepareCreateTable()
 
 void QpSqlQuery::prepareDropTable()
 {
-    QString query("DROP TABLE \"");
-    query.append(data->table).append("\";");
+    QString query("DROP TABLE ");
+    query.append(data->table).append(";");
 
     QSqlQuery::prepare(query);
 }
 
 void QpSqlQuery::prepareAlterTable()
 {
-    QSqlQuery::prepare(QString("ALTER TABLE \"%1\" ADD COLUMN \"%2\" %3;")
+    QSqlQuery::prepare(QString("ALTER TABLE %1 ADD COLUMN %2 %3;")
                        .arg(data->table)
                        .arg(data->fields.keys().first())
                        .arg(data->fields.values().first().toString()));
@@ -235,12 +245,12 @@ void QpSqlQuery::prepareSelect()
     else {
         QStringList fields;
         foreach (const QString &field, data->fields.keys()) {
-            fields.append(QString("\"%1\"").arg(field));
+            fields.append(QString("%1").arg(field));
         }
         query.append(fields.join(", "));
     }
 
-    query.append(" FROM \"").append(data->table).append("\"");
+    query.append(" FROM ").append(data->table).append("");
 
     if (data->whereCondition.isValid()) {
         query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
@@ -281,12 +291,12 @@ bool QpSqlQuery::prepareUpdate()
     if (data->fields.isEmpty())
         return false;
 
-    QString query("UPDATE \"");
-    query.append(data->table).append("\" SET\n\t");
+    QString query("UPDATE ");
+    query.append(data->table).append(" SET\n\t");
 
     QStringList fields;
     foreach (const QString &field, data->fields.keys()) {
-        fields.append(QString("\"%1\" = ?").arg(field));
+        fields.append(QString("%1 = ?").arg(field));
     }
     query.append(fields.join(",\n\t"));
 
@@ -310,12 +320,12 @@ bool QpSqlQuery::prepareUpdate()
 
 void QpSqlQuery::prepareInsert()
 {
-    QString query("INSERT INTO \"");
-    query.append(data->table).append("\"\n\t(");
+    QString query("INSERT INTO ");
+    query.append(data->table).append("\n\t(");
 
     QStringList fields;
     foreach (const QString &field, data->fields.keys()) {
-        fields.append(QString("\"%1\"").arg(field));
+        fields.append(QString("%1").arg(field));
     }
     query.append(fields.join(", "));
 
@@ -338,8 +348,8 @@ void QpSqlQuery::prepareInsert()
 
 void QpSqlQuery::prepareDelete()
 {
-    QString query("DELETE FROM \"");
-    query.append(data->table).append("\"\n\tWHERE ");
+    QString query("DELETE FROM ");
+    query.append(data->table).append("\n\tWHERE ");
 
     if (data->whereCondition.isValid()) {
         query.append(data->whereCondition.toWhereClause());

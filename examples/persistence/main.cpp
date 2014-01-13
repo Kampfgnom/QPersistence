@@ -3,20 +3,28 @@
 #include <testModel/parentobject.h>
 #include <testModel/childobject.h>
 
+#include "../../src/sqlquery.h"
 #include <QPersistence.h>
 
 #include <QDebug>
 #include <QSqlError>
+#include <QPluginLoader>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
+    QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
+    db.setHostName("192.168.100.100");
+    db.setDatabaseName("niklas");
+    db.setUserName("niklas");
+    db.setPassword("niklas");
+    if(!db.open()) {
+        qDebug() << db.lastError();
+        return 0;
+    }
 
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName("test.sqlite");
-    db.open();
-
+    Qp::setSqlDebugEnabled(true);
     Qp::setDatabase(db);
     Qp::registerClass<ParentObject>();
     Qp::registerClass<ChildObject>();
@@ -39,13 +47,11 @@ int main(int argc, char *argv[])
         Qp::remove(p);
     }
 
-
     qDebug() << "######################################";
     {
         QSharedPointer<ParentObject> p = child1->parentObject();
         qDebug() << p.data();
     }
-
 
     Qp::remove(child1);
 

@@ -1,6 +1,8 @@
 #ifndef CHILDOBJECT_H
 #define CHILDOBJECT_H
 
+#include <QPersistence.h>
+
 #include <QObject>
 
 #include <QSharedPointer>
@@ -32,8 +34,8 @@ public:
 
 private:
     int m_someInt;
-    mutable QWeakPointer<ParentObject> m_parentObject;
-    mutable QWeakPointer<ParentObject> m_parentObject2;
+    QpWeakRelation<ParentObject> m_parentObject;
+    QpWeakRelation<ParentObject> m_parentObject2;
 
     friend class ParentObject;
     void setParentObject(const QSharedPointer<ParentObject> &parentObject);

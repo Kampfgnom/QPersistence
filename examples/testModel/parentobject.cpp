@@ -6,7 +6,9 @@
 #include <QPersistence.h>
 
 ParentObject::ParentObject(QObject *parent) :
-    QObject(parent)
+    QObject(parent),
+    m_childObject("childObject", this),
+    m_childObjects("childObjects", this)
 {
 }
 
@@ -27,30 +29,25 @@ void ParentObject::setAString(const QString &value)
 
 QSharedPointer<ChildObject> ParentObject::childObject() const
 {
-    return m_childObject;
+    return m_childObject.resolve();
 }
 
 void ParentObject::setChildObject(QSharedPointer<ChildObject> object)
 {
-    m_childObject = object;
-
-    if (object) {
-        QSharedPointer<ParentObject> sharedThis = Qp::sharedFrom<ParentObject>(this);
-        object->setParentObject(sharedThis);
-    }
+    object->setParentObject(Qp::sharedFrom(this));
+    m_childObject.relate(object);
 }
 
 QList<QSharedPointer<ChildObject> > ParentObject::childObjects() const
 {
-    return m_childObjects;
+    return m_childObjects.resolveList();
 }
 
 void ParentObject::addChildObject(QSharedPointer<ChildObject> object)
 {
-    if (!object || m_childObjects.contains(object))
+    if (m_childObjects.contains(object))
         return;
 
-    m_childObjects.append(object);
-    QSharedPointer<ParentObject> sharedThis = Qp::sharedFrom<ParentObject>(this);
-    object->setParentObject2(sharedThis);
+    object->setParentObject2(Qp::sharedFrom(this));
+    m_childObjects.relate(object);
 }

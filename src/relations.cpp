@@ -108,6 +108,12 @@ QSharedPointer<T> QpWeakRelation<T>::resolve() const
 }
 
 template<class T>
+bool QpWeakRelation<T>::contains(QSharedPointer<T> object) const
+{
+    return resolveList().contains(object);
+}
+
+template<class T>
 void QpWeakRelation<T>::relate(QSharedPointer<T> related)
 {
     if (data->isToMany()) {
@@ -227,6 +233,12 @@ QSharedPointer<T> QpStrongRelation<T>::resolve() const
         data->resolveFromDatabase();
 
     return data->related;
+}
+
+template<class T>
+bool QpStrongRelation<T>::contains(QSharedPointer<T> object) const
+{
+    return resolveList().contains(object);
 }
 
 template<class T>

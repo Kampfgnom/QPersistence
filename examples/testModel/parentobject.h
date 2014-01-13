@@ -1,6 +1,8 @@
 #ifndef PARENTOBJECT_H
 #define PARENTOBJECT_H
 
+#include <QPersistence.h>
+
 #include <QObject>
 
 #include <QSharedPointer>
@@ -34,9 +36,9 @@ public:
 
 private:
     QString m_astring;
-    QSharedPointer<ChildObject> m_childObject;
+    QpStrongRelation<ChildObject> m_childObject;
 
-    QList<QSharedPointer<ChildObject> > m_childObjects;
+    QpStrongRelation<ChildObject> m_childObjects;
 };
 
 #endif // PARENTOBJECT_H

@@ -24,35 +24,41 @@ public:
     mutable QList<QpMetaProperty> relationProperties;
     mutable QHash<QString, QpMetaProperty> metaPropertiesByName;
 
-    static QHash<QString, QpMetaObject> metaObjects;
+    static QHash<QString, QpMetaObject> metaObjectForName;
+
+    // also use list, so that register order is preserved
+    static QList<QpMetaObject> metaObjects;
 };
 
-QHash<QString, QpMetaObject> QpMetaObjectPrivate::metaObjects;
+QHash<QString, QpMetaObject> QpMetaObjectPrivate::metaObjectForName;
+QList<QpMetaObject> QpMetaObjectPrivate::metaObjects;
 
 QpMetaObject QpMetaObject::registerMetaObject(const QMetaObject &metaObject)
 {
     QString className(metaObject.className());
-    auto it = QpMetaObjectPrivate::metaObjects.find(className);
+    auto it = QpMetaObjectPrivate::metaObjectForName.find(className);
 
-    if (it != QpMetaObjectPrivate::metaObjects.end()) {
+    if (it != QpMetaObjectPrivate::metaObjectForName.end()) {
         return it.value();
     }
 
     QpMetaObject result = QpMetaObject(metaObject);
-    QpMetaObjectPrivate::metaObjects.insert(className, result);
+    QpMetaObjectPrivate::metaObjectForName.insert(className, result);
+    QpMetaObjectPrivate::metaObjects.append(result);
+
     return result;
 }
 
 QpMetaObject QpMetaObject::forClassName(const QString &className)
 {
-    auto it = QpMetaObjectPrivate::metaObjects.find(className);
-    Q_ASSERT(it != QpMetaObjectPrivate::metaObjects.end());
+    auto it = QpMetaObjectPrivate::metaObjectForName.find(className);
+    Q_ASSERT(it != QpMetaObjectPrivate::metaObjectForName.end());
     return it.value();
 }
 
 QList<QpMetaObject> QpMetaObject::registeredMetaObjects()
 {
-    return QpMetaObjectPrivate::metaObjects.values();
+    return QpMetaObjectPrivate::metaObjects;
 }
 
 QpMetaObject::QpMetaObject() :

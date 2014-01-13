@@ -37,6 +37,7 @@ public:
     template<class O> void dropTable() { dropTable(&O::staticMetaObject); }
     template<class O> void addMissingColumns() { addMissingColumns(&O::staticMetaObject); }
 
+    void cleanSchema();
     void createCleanSchema();
     void adjustSchema();
 

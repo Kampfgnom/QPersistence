@@ -19,6 +19,7 @@ public:
     QList<QSharedPointer<T> > resolveList() const;
     QSharedPointer<T> resolve() const;
 
+    bool contains(QSharedPointer<T> object) const;
     void relate(QSharedPointer<T> related);
     void relate(QList<QSharedPointer<T> > related);
     void unrelate(QSharedPointer<T> related);
@@ -43,6 +44,7 @@ public:
     QList<QSharedPointer<T> > resolveList() const;
     QSharedPointer<T> resolve() const;
 
+    bool contains(QSharedPointer<T> object) const;
     void relate(QSharedPointer<T> related);
     void relate(QList<QSharedPointer<T> > related);
     void unrelate(QSharedPointer<T> related);

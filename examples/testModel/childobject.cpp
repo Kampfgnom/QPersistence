@@ -8,7 +8,9 @@
 
 ChildObject::ChildObject(QObject *parent) :
     QObject(parent),
-    m_someInt(0)
+    m_someInt(0),
+    m_parentObject("parentObject", this),
+    m_parentObject2("parentObject2", this)
 {
 }
 
@@ -29,34 +31,20 @@ void ChildObject::setSomeInt(int arg)
 
 QSharedPointer<ParentObject> ChildObject::parentObject() const
 {
-    QSharedPointer<ParentObject> ref = m_parentObject.toStrongRef();
-
-    if (!ref) {
-        ref = Qp::Private::resolveToOneRelation<ParentObject>("parentObject", this);
-        m_parentObject = ref.toWeakRef();
-    }
-
-    return ref;
+    return m_parentObject.resolve();
 }
 
 void ChildObject::setParentObject(const QSharedPointer<ParentObject> &parentObject)
 {
-    m_parentObject = parentObject.toWeakRef();
+    m_parentObject.relate(parentObject);
 }
 
 QSharedPointer<ParentObject> ChildObject::parentObject2() const
 {
-    QSharedPointer<ParentObject> ref = m_parentObject2.toStrongRef();
-
-    if (!ref) {
-        ref = Qp::Private::resolveToOneRelation<ParentObject>("parentObject2", this);
-        m_parentObject2 = ref.toWeakRef();
-    }
-
-    return ref;
+    return m_parentObject2.resolve();
 }
 
 void ChildObject::setParentObject2(const QSharedPointer<ParentObject> &parentObject)
 {
-    m_parentObject2 = parentObject.toWeakRef();
+    m_parentObject2.relate(parentObject);
 }
