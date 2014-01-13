@@ -13,6 +13,7 @@ void setDatabase(const QSqlDatabase &database);
 QSqlDatabase database();
 void adjustDatabaseSchema();
 void createCleanSchema();
+QpError lastError();
 
 void setSqlDebugEnabled(bool enable);
 void startBulkDatabaseQueries();

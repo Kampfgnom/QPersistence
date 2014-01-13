@@ -448,6 +448,7 @@ void QpDatabaseSchema::setLastError(const QpError &error) const
 {
     qDebug() << error;
     data->lastError = error;
+    Qp::Private::setLastError(error);
 }
 
 void QpDatabaseSchema::setLastError(const QSqlQuery &query) const

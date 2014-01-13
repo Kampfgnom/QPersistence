@@ -2,6 +2,7 @@
 
 #include "dataaccessobject.h"
 #include "databaseschema.h"
+#include "error.h"
 #include "metaobject.h"
 #include "sqlquery.h"
 
@@ -59,6 +60,11 @@ void commitBulkDatabaseQueries()
 void setSqlDebugEnabled(bool enable)
 {
     QpSqlQuery::setDebugEnabled(enable);
+}
+
+QpError lastError()
+{
+    return QpError::lastError();
 }
 
 }

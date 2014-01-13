@@ -13,6 +13,8 @@ const QString QPERSISTENCE_SHARED_POINTER_PROPERTY("_Qp_sharedpointer");
 
 void enableSharedFromThis(QSharedPointer<QObject> object);
 
+void setLastError(const QpError &error);
+
 int primaryKey(QObject *object);
 void setPrimaryKey(QObject *object, int key);
 
@@ -20,7 +22,6 @@ template<class T> QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPoin
 template<class T> QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list);
 template<class T> QSharedPointer<T> resolveToOneRelation(const QString &name, const QObject *object);
 template<class T> QList<QSharedPointer<T> > resolveToManyRelation(const QString &name, const QObject *object);
-
 
 /*
  * Implementation:

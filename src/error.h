@@ -5,6 +5,14 @@
 #include <QtCore/QString>
 #include <QtCore/QVariantMap>
 
+class QpError;
+
+namespace Qp {
+namespace Private {
+void setLastError(const QpError &);
+}
+}
+
 class QSqlQuery;
 
 class QpErrorPrivate;
@@ -21,6 +29,8 @@ public:
         UserError = 1024
     };
 
+    static QpError lastError();
+
     QpError(const QString &text = QString(),
             ErrorType type = NoError,
             QVariantMap additionalInformation = QVariantMap());
@@ -36,6 +46,9 @@ public:
     void addAdditionalInformation(const QString &key, const QVariant &value);
 
 private:
+    friend void Qp::Private::setLastError(const QpError &);
+    static void setLastError(const QpError error);
+
     QSharedDataPointer<QpErrorPrivate> data;
 };
 

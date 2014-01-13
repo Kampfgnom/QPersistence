@@ -16,7 +16,16 @@ class QpErrorPrivate : public QSharedData
         bool isValid;
         QVariantMap additionalInformation;
         QpError::ErrorType type;
+
+        static QpError lastError;
 };
+
+QpError QpErrorPrivate::lastError;
+
+QpError QpError::lastError()
+{
+    return QpErrorPrivate::lastError;
+}
 
 QpError::QpError(const QString &text,
              ErrorType type,
@@ -71,7 +80,10 @@ void QpError::addAdditionalInformation(const QString &key, const QVariant &value
     data->additionalInformation.insert(key, value);
 }
 
-
+void QpError::setLastError(const QpError error)
+{
+    QpErrorPrivate::lastError = error;
+}
 
 QDebug operator<<(QDebug dbg, const QpError &error)
 {

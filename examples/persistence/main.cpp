@@ -3,7 +3,6 @@
 #include <testModel/parentobject.h>
 #include <testModel/childobject.h>
 
-#include "../../src/sqlquery.h"
 #include <QPersistence.h>
 
 #include <QDebug>
@@ -20,7 +19,7 @@ int main(int argc, char *argv[])
     db.setUserName("niklas");
     db.setPassword("niklas");
     if(!db.open()) {
-        qDebug() << db.lastError();
+        qWarning() << db.lastError();
         return 0;
     }
 
@@ -29,6 +28,11 @@ int main(int argc, char *argv[])
     Qp::registerClass<ParentObject>();
     Qp::registerClass<ChildObject>();
     Qp::createCleanSchema();
+
+    if(Qp::lastError().isValid()) {
+        qWarning() << Qp::lastError();
+        return 0;
+    }
 
     QSharedPointer<ChildObject> child1 = Qp::create<ChildObject>();
 

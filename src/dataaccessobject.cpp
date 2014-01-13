@@ -60,6 +60,7 @@ QpError QpDaoBase::lastError() const
 void QpDaoBase::setLastError(const QpError &error) const
 {
     data->lastError = error;
+    Qp::Private::setLastError(error);
 }
 
 void QpDaoBase::resetLastError() const

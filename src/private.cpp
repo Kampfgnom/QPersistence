@@ -3,6 +3,8 @@
 #include "databaseschema.h"
 #include "metaproperty.h"
 
+#include "error.h"
+
 #include <QDebug>
 #include <QSharedPointer>
 
@@ -26,6 +28,11 @@ void enableSharedFromThis(QSharedPointer<QObject> object)
     QVariant variant = QVariant::fromValue<QWeakPointer<QObject> >(weak);
     object->setProperty(QPERSISTENCE_SHARED_POINTER_PROPERTY.toLatin1(),
                         variant);
+}
+
+void setLastError(const QpError &error)
+{
+    QpError::setLastError(error);
 }
 
 }

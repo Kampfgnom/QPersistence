@@ -469,9 +469,9 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
 
 void QpSqlDataAccessObjectHelper::setLastError(const QpError &error) const
 {
-    qDebug() << error;
-    qFatal("Aborting due to SQL errors");
+    qWarning() << error;
     data->lastError = error;
+    Qp::Private::setLastError(error);
 }
 
 void QpSqlDataAccessObjectHelper::setLastError(const QSqlQuery &query) const
