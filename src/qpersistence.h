@@ -1,6 +1,7 @@
 #ifndef QPERSISTENCE_H
 #define QPERSISTENCE_H
 
+#include <QtCore/QDateTime>
 #include <QtSql/QSqlDatabase>
 
 #include "dataaccessobject.h"
@@ -38,6 +39,8 @@ template<class T> int count();
 template<class T> QSharedPointer<T> create();
 template<class T> bool update(QSharedPointer<T> object);
 template<class T> bool remove(QSharedPointer<T> object);
+template<class T> QDateTime creationTime(QSharedPointer<T> object);
+template<class T> QDateTime updateTime(QSharedPointer<T> object);
 
 template<class K, class V> void registerMappableTypes();
 template<class T> void registerSetType();

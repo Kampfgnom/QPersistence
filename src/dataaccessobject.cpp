@@ -148,7 +148,10 @@ QSharedPointer<QObject> QpDaoBase::readObject(int id) const
     QObject *object = createInstance();
 
     if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, object)) {
-        setLastError(data->sqlDataAccessObjectHelper->lastError());
+        QpError error = data->sqlDataAccessObjectHelper->lastError();
+        if(error.isValid())
+            setLastError(error);
+
         delete object;
         return QSharedPointer<QObject>();
     }

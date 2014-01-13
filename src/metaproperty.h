@@ -69,6 +69,8 @@ private:
 
     QString generateColumnName() const;
 
+    QString shortName(const QString &name) const;
+
     QExplicitlySharedDataPointer<QpMetaPropertyPrivate> data;
 };
 

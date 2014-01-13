@@ -6,6 +6,7 @@
 #include "metaobject.h"
 #include "metaproperty.h"
 #include "qpersistence.h"
+#include "sqlbackend.h"
 #include "sqlcondition.h"
 #include "sqlquery.h"
 
@@ -78,7 +79,7 @@ QList<int> QpSqlDataAccessObjectHelper::allKeys(const QpMetaObject &metaObject, 
     QpSqlQuery query(data->database);
     query.clear();
     query.setTable(metaObject.tableName());
-    query.addField(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
     query.setCount(count);
     query.setSkip(skip);
     query.prepareSelect();
@@ -111,17 +112,19 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
     query.setCount(1);
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
                                            key));
     query.prepareSelect();
 
     if (!query.exec()
-            || !query.first()
             || query.lastError().isValid()) {
         setLastError(query);
         return false;
     }
+
+    if(!query.first())
+        return false;
 
     readQueryIntoObject(query, object);
     return object;
@@ -166,6 +169,8 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
     fillValuesIntoQuery(metaObject, object, query, true);
+    query.addRawField(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+    query.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
 
     // Insert the object itself
     query.prepareInsert();
@@ -176,6 +181,7 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
     }
 
     Qp::Private::setPrimaryKey(object, query.lastInsertId().toInt());
+    readDatabaseTimes(metaObject, object);
 
     return true;
 }
@@ -187,10 +193,11 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
     // Create main UPDATE query
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
                                            Qp::Private::primaryKey(object)));
     fillValuesIntoQuery(metaObject, object, query);
+    query.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
 
     // Insert the object itself
     query.prepareUpdate();
@@ -256,6 +263,8 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
 
     QList<QpSqlQuery> queries;
 
+    QString updateTimeQueryString ;
+
     foreach (const QpMetaProperty property, metaObject.relationProperties()) {
         QpMetaProperty::Cardinality cardinality = property.cardinality();
 
@@ -267,6 +276,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
             QpSqlQuery resetRelationQuery(data->database);
             resetRelationQuery.setTable(property.tableName());
             resetRelationQuery.addField(property.columnName(), QVariant());
+            resetRelationQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
             resetRelationQuery.setWhereCondition(QpSqlCondition(property.columnName(),
                                                                 QpSqlCondition::EqualTo,
                                                                 primaryKey));
@@ -282,7 +292,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
             QList<QpSqlCondition> relatedObjectsWhereClauses;
             int count = 0;
             foreach (QSharedPointer<QObject> relatedObject, relatedObjects) {
-                relatedObjectsWhereClauses.append(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+                relatedObjectsWhereClauses.append(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                                                  QpSqlCondition::EqualTo,
                                                                  Qp::Private::primaryKey(relatedObject.data())));
 
@@ -292,6 +302,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
                     QpSqlQuery setForeignKeysQuery(data->database);
                     setForeignKeysQuery.setTable(property.tableName());
                     setForeignKeysQuery.addField(property.columnName(), primaryKey);
+                    setForeignKeysQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
                     setForeignKeysQuery.setWhereCondition(relatedObjectsWhereClause);
                     setForeignKeysQuery.prepareUpdate();
                     queries.append(setForeignKeysQuery);
@@ -307,6 +318,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
             QpSqlQuery setForeignKeysQuery(data->database);
             setForeignKeysQuery.setTable(property.tableName());
             setForeignKeysQuery.addField(property.columnName(), primaryKey);
+            setForeignKeysQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
             setForeignKeysQuery.setWhereCondition(relatedObjectsWhereClause);
             setForeignKeysQuery.prepareUpdate();
             queries.append(setForeignKeysQuery);
@@ -325,13 +337,36 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
             QpSqlQuery setForeignKeysQuery(data->database);
             setForeignKeysQuery.setTable(property.tableName());
             setForeignKeysQuery.addField(property.columnName(), primary);
-            setForeignKeysQuery.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+            setForeignKeysQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+            setForeignKeysQuery.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                                                  QpSqlCondition::EqualTo,
                                                                  foreign));
             setForeignKeysQuery.prepareUpdate();
             queries.append(setForeignKeysQuery);
         }
         else if (cardinality == QpMetaProperty::ManyToManyCardinality) {
+            // Prepare a query, which sets the update times of all related objects accordingly
+            // This query will be executed twice: First for all previously related object, then for the new ones.
+            // TODO: Make use of other SQL backends. This is MySQL only!
+            updateTimeQueryString = QString("UPDATE %1"
+                                                    "\n\tINNER JOIN %2 "
+                                                    "\n\t\tON %2.%3 = %1.%4 "
+                                                    "\n\tSET %1.%5 = %6 "
+                                                    "\n\tWHERE %2.%7 = %8 ")
+                    .arg(property.reverseRelation().metaObject().tableName())
+                    .arg(property.tableName())
+                    .arg(property.reverseRelation().columnName())
+                    .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
+                    .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
+                    .arg(QpSqlBackend::forDatabase(data->database)->nowTimestamp())
+                    .arg(property.columnName())
+                    .arg(primaryKey);
+
+            QpSqlQuery setUpdateTimeOnRelatedObjectsQuery;
+            setUpdateTimeOnRelatedObjectsQuery.prepare(updateTimeQueryString);
+            queries.append(setUpdateTimeOnRelatedObjectsQuery);
+
+
             // Prepare a query, which resets the relation (deletes all relation rows)
             QpSqlQuery resetRelationQuery(data->database);
             resetRelationQuery.setTable(property.tableName());
@@ -366,6 +401,12 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
         }
     }
 
+    if(!updateTimeQueryString.isEmpty()) {
+        QpSqlQuery query(data->database);
+        query.prepare(updateTimeQueryString);
+        query.exec();
+    }
+
     return true;
 }
 
@@ -375,7 +416,7 @@ bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, Q
 
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME,
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
                                            Qp::Private::primaryKey(object)));
     query.prepareDelete();
@@ -386,6 +427,33 @@ bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, Q
         return false;
     }
 
+    return true;
+}
+
+bool QpSqlDataAccessObjectHelper::readDatabaseTimes(const QpMetaObject &metaObject, QObject *object)
+{
+    Q_ASSERT(object);
+
+    QpSqlQuery query(data->database);
+    query.setTable(metaObject.tableName());
+    query.setCount(1);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpSqlCondition::EqualTo,
+                                           Qp::Private::primaryKey(object)));
+    query.prepareSelect();
+
+    if (!query.exec()
+            || query.lastError().isValid()) {
+        setLastError(query);
+        return false;
+    }
+
+    if(!query.first())
+        return false;
+
+    readQueryIntoObject(query, object);
     return true;
 }
 
@@ -417,7 +485,7 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
     if (cardinality == QpMetaProperty::OneToManyCardinality
             || cardinality == QpMetaProperty::OneToOneCardinality) {
         keyColumn = relation.reverseRelation().columnName();
-        foreignColumn = QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME;
+        foreignColumn = QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY;
 
         if (relation.hasTableForeignKey()) {
             qSwap(keyColumn, foreignColumn);
@@ -426,13 +494,13 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
         sortColumn = foreignColumn;
     }
     else if (cardinality == QpMetaProperty::ManyToOneCardinality) {
-        keyColumn = QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME;
+        keyColumn = QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY;
         foreignColumn = relation.reverseRelation().columnName();
     }
     else if (cardinality == QpMetaProperty::ManyToManyCardinality) {
         keyColumn = relation.columnName();
         foreignColumn = relation.reverseRelation().columnName();
-        sortColumn = QpDatabaseSchema::PRIMARY_KEY_COLUMN_NAME;
+        sortColumn = QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY;
     }
 
     Q_ASSERT(!foreignColumn.isEmpty());

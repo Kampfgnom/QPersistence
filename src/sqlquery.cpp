@@ -25,9 +25,11 @@ public:
     {}
 
     QSqlDatabase database;
-    QpSqlBackend backend;
+    QpSqlBackend *backend;
     QString table;
     QHash<QString, QVariant> fields;
+    // inserted directly into query instead of using bindValue
+    QHash<QString, QString> rawFields;
     int count;
     int skip;
     QpSqlCondition whereCondition;
@@ -108,6 +110,7 @@ bool QpSqlQuery::exec(const QString &queryString)
             index = query.indexOf('?', index + value.length());
             ++i;
         }
+        query.append(";");
         qDebug() << qPrintable(query);
     }
 
@@ -159,7 +162,12 @@ void QpSqlQuery::setTable(const QString &table)
 
 void QpSqlQuery::addPrimaryKey(const QString &name)
 {
-    addField(name, data->backend.primaryKeyType());
+    addField(name, data->backend->primaryKeyType());
+}
+
+void QpSqlQuery::addRawField(const QString &name, const QString &value)
+{
+    data->rawFields.insert(name, value);
 }
 
 void QpSqlQuery::addField(const QString &name, const QVariant &value)
@@ -167,9 +175,13 @@ void QpSqlQuery::addField(const QString &name, const QVariant &value)
     data->fields.insert(name, value);
 }
 
-void QpSqlQuery::addForeignKey(const QString &columnName, const QString &keyName, const QString &foreignTableName)
+void QpSqlQuery::addForeignKey(const QString &columnName,
+                               const QString &keyName,
+                               const QString &foreignTableName,
+                               const QString &onDelete,
+                               const QString &onUpdate)
 {
-    data->foreignKeys.append(QStringList() << columnName << keyName << foreignTableName);
+    data->foreignKeys.append(QStringList() << columnName << keyName << foreignTableName << onDelete << onUpdate);
 }
 
 void QpSqlQuery::setCount(int count)
@@ -210,9 +222,19 @@ void QpSqlQuery::prepareCreateTable()
     foreach (const QStringList foreignKey, data->foreignKeys) {
         query.append(QString(",\n\tFOREIGN KEY (%1) REFERENCES %2(%3)")
                      .arg(foreignKey.first())
-                     .arg(foreignKey.last())
+                     .arg(foreignKey.at(2))
                      .arg(foreignKey.at(1)));
+
+        QString onDelete = foreignKey.at(3);
+        if(!onDelete.isEmpty()) {
+            query.append(QString("\n\t\tON DELETE %1").arg(onDelete));
+        }
+        QString onUpdate = foreignKey.at(4);
+        if(!onUpdate.isEmpty()) {
+            query.append(QString("\n\t\tON UPDATE %1").arg(onUpdate));
+        }
     }
+
 
     query.append("\n);");
 
@@ -323,21 +345,30 @@ void QpSqlQuery::prepareInsert()
     QString query("INSERT INTO ");
     query.append(data->table).append("\n\t(");
 
+    QStringList rawFieldKeys = data->rawFields.keys();
+
     QStringList fields;
     foreach (const QString &field, data->fields.keys()) {
-        fields.append(QString("%1").arg(field));
+        fields.append(field);
+    }
+    foreach (QString field, rawFieldKeys) {
+        fields.append(field);
     }
     query.append(fields.join(", "));
 
-    query.append(")\n\tVALUES ");
-    query.append("(");
-    query.append(QString("?, ").repeated(fields.size() - 1));
-    if (fields.size() > 0)
-        query.append("?");
-    query.append("),");
+    query.append(")\n\tVALUES (");
 
-    // Remove the last comma
-    query.remove(query.length() - 1, 1);
+    fields = QStringList();
+    int s = data->fields.size();
+    for (int i = 0; i < s; ++i) {
+        fields.append(QLatin1String("?"));
+    }
+    foreach (QString field, rawFieldKeys) {
+        fields.append(data->rawFields.value(field));
+    }
+
+    query.append(fields.join(", "));
+    query.append(")");
 
     QSqlQuery::prepare(query);
 

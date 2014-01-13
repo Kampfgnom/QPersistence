@@ -2,9 +2,12 @@
 
 #include "databaseschema.h"
 #include "metaproperty.h"
+#include "sqldataaccessobjecthelper.h"
+#include "qpersistence.h"
 
 #include "error.h"
 
+#include <QDateTime>
 #include <QDebug>
 #include <QSharedPointer>
 
@@ -20,6 +23,16 @@ int primaryKey(QObject *object)
 void setPrimaryKey(QObject *object, int key)
 {
     object->setProperty("_Qp_ID",key);
+}
+
+QDateTime creationTime(QObject *object)
+{
+    return object->property(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME.toLatin1()).toDateTime();
+}
+
+QDateTime updateTime(QObject *object)
+{
+    return object->property(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME.toLatin1()).toDateTime();
 }
 
 void enableSharedFromThis(QSharedPointer<QObject> object)

@@ -33,31 +33,43 @@ int main(int argc, char *argv[])
         qWarning() << Qp::lastError();
         return 0;
     }
+//    QSharedPointer<ChildObject> child1 = Qp::create<ChildObject>();
+//    qDebug() << Qp::creationTime(child1).toString();
 
-    QSharedPointer<ChildObject> child1 = Qp::create<ChildObject>();
+//    qDebug() << "######################################";
+//    {
+//        QSharedPointer<ParentObject> parent1 = Qp::create<ParentObject>();
+//        parent1->setChildObject(child1);
+//        qDebug() << parent1.data();
+//        qDebug() << Qp::creationTime(parent1).toString();
+//        Qp::update(parent1);
+//    }
+//    qDebug() << "######################################";
+//    {
+//        QSharedPointer<ParentObject> p = child1->parentObjectOneToOne();
+//        qDebug() << p.data();
+//        Qp::remove(p);
+//    }
 
-    qDebug() << "######################################";
+//    qDebug() << "######################################";
+//    {
+//        QSharedPointer<ParentObject> p = child1->parentObjectOneToOne();
+//        qDebug() << p.data();
+//    }
+
+//    Qp::remove(child1);
+
     {
-        QSharedPointer<ParentObject> parent1 = Qp::create<ParentObject>();
-        parent1->setChildObject(child1);
-        qDebug() << parent1.data();
-        Qp::update(parent1);
+        for(int i = 0; i < 2; ++i) {
+            QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+            for(int j = 0; j < 4; ++j) {
+                QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+                parent->addChildObjectManyToMany(child);
+                Qp::update(child);
+            }
+        }
     }
 
-    qDebug() << "######################################";
-    {
-        QSharedPointer<ParentObject> p = child1->parentObject();
-        qDebug() << p.data();
-        Qp::remove(p);
-    }
-
-    qDebug() << "######################################";
-    {
-        QSharedPointer<ParentObject> p = child1->parentObject();
-        qDebug() << p.data();
-    }
-
-    Qp::remove(child1);
 
     db.close();
 

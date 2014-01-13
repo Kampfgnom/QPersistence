@@ -27,6 +27,7 @@ public:
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);
+    bool readDatabaseTimes(const QpMetaObject &metaObject, QObject *object);
 
     QpError lastError() const;
 

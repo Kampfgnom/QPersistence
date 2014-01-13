@@ -4,22 +4,23 @@
 #include <QHash>
 #include <QSqlDatabase>
 
-
-class QpSqlBackendData : public QSharedData
+class QpSqlBackendData
 {
 public:
-    QpSqlBackendData() : QSharedData()
-    {}
+    static QHash<QString, QpSqlBackend *> backends;
 
-    QString primaryKeyType;
+    static QpSqlBackend *createForDatabase(const QSqlDatabase &database);
 };
+QHash<QString, QpSqlBackend *> QpSqlBackendData::backends;
 
-QpSqlBackend QpSqlBackend::forDatabase(const QSqlDatabase &database)
+QpSqlBackend *QpSqlBackendData::createForDatabase(const QSqlDatabase &database)
 {
+    static QObject GUARD;
+
     if(database.driverName() == QLatin1String("QSQLITE"))
-        return QpSqliteBackend();
+        return new QpSqliteBackend(&GUARD);
     if(database.driverName() == QLatin1String("QMYSQL"))
-        return QpMySqlBackend();
+        return new QpMySqlBackend(&GUARD);
 
 
     Q_ASSERT_X(false, Q_FUNC_INFO,
@@ -27,49 +28,110 @@ QpSqlBackend QpSqlBackend::forDatabase(const QSqlDatabase &database)
                .arg(database.driverName())
                .toLatin1());
 
-    return QpSqlBackend(); // Never reached
+    return nullptr; // Never reached
 }
 
-QpSqlBackend::QpSqlBackend() :
-    data(new QpSqlBackendData)
+QpSqlBackend *QpSqlBackend::forDatabase(const QSqlDatabase &database)
 {
+    auto it = QpSqlBackendData::backends.find(database.driverName());
+
+    if(it != QpSqlBackendData::backends.end())
+        return it.value();
+
+    QpSqlBackend *backend = QpSqlBackendData::createForDatabase(database);
+    QpSqlBackendData::backends.insert(database.driverName(),backend);
+    return backend;
 }
 
-QpSqlBackend::QpSqlBackend(const QpSqlBackend &rhs) :
-    data(rhs.data)
+QpSqlBackend::QpSqlBackend(QObject *parent) :
+    QObject(parent)
 {
-}
-
-QpSqlBackend &QpSqlBackend::operator=(const QpSqlBackend &rhs)
-{
-    if (this != &rhs)
-        data.operator=(rhs.data);
-
-    return *this;
 }
 
 QpSqlBackend::~QpSqlBackend()
 {
 }
 
-QString QpSqlBackend::primaryKeyType() const
+QpSqliteBackend::QpSqliteBackend(QObject *parent) :
+    QpSqlBackend(parent)
 {
-    Q_ASSERT(!data->primaryKeyType.isEmpty());
-    return data->primaryKeyType;
 }
 
-void QpSqlBackend::setPrimaryKeyType(const QString &type)
+QString QpSqliteBackend::primaryKeyType() const
 {
-    data->primaryKeyType = type;
+    return QLatin1String("INTEGER PRIMARY KEY AUTOINCREMENT");
 }
 
-QpSqliteBackend::QpSqliteBackend()
+QString QpSqliteBackend::variantTypeToSqlType(QVariant::Type type) const
 {
-    setPrimaryKeyType(QLatin1String("INTEGER PRIMARY KEY AUTOINCREMENT"));
+    switch (type) {
+    case QVariant::UInt:
+    case QVariant::Int:
+    case QVariant::Bool:
+    case QVariant::ULongLong:
+        return QLatin1String("INTEGER");
+    case QVariant::String:
+    case QVariant::StringList:
+    case QVariant::Date:
+    case QVariant::DateTime:
+    case QVariant::Time:
+    case QVariant::Char:
+    case QVariant::Url:
+        return QLatin1String("TEXT");
+    case QVariant::Double:
+        return QLatin1String("REAL");
+    case QVariant::UserType:
+    default:
+        return QLatin1String("BLOB");
+    }
+}
+
+QpMySqlBackend::QpMySqlBackend(QObject *parent) :
+    QpSqlBackend(parent)
+{
+}
+
+QString QpMySqlBackend::primaryKeyType() const
+{
+    return QLatin1String("INTEGER PRIMARY KEY AUTO_INCREMENT");
+}
+
+QString QpMySqlBackend::variantTypeToSqlType(QVariant::Type type) const
+{
+    switch (type) {
+    case QVariant::UInt:
+    case QVariant::Int:
+        return QLatin1String("INTEGER");
+    case QVariant::Bool:
+    case QVariant::ULongLong:
+        return QLatin1String("BIGINT");
+    case QVariant::String:
+    case QVariant::StringList:
+    case QVariant::Url:
+        return QLatin1String("TEXT");
+    case QVariant::Date:
+        return QLatin1String("DATE");
+    case QVariant::DateTime:
+        return QLatin1String("DATETIME");
+    case QVariant::Time:
+        return QLatin1String("TIMESTAMP");
+    case QVariant::Char:
+        return QLatin1String("CHAR");
+    case QVariant::Double:
+        return QLatin1String("FLOAT");
+    case QVariant::UserType:
+    default:
+        return QLatin1String("BLOB");
+    }
 }
 
 
-QpMySqlBackend::QpMySqlBackend()
+QString QpSqliteBackend::nowTimestamp() const
 {
-    setPrimaryKeyType(QLatin1String("INTEGER PRIMARY KEY AUTO_INCREMENT"));
+    return QLatin1String("now");
+}
+
+QString QpMySqlBackend::nowTimestamp() const
+{
+    return QLatin1String("NOW()");
 }

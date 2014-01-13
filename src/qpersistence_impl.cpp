@@ -102,7 +102,7 @@ template<class T>
 bool update(QSharedPointer<T> object)
 {
     beginTransaction();
-    QpDaoBase::forClass(*object->metaObject())->updateObject(object);
+    return QpDaoBase::forClass(*object->metaObject())->updateObject(object);
     return commitOrRollbackTransaction() == CommitSuccessful;
 }
 
@@ -110,7 +110,7 @@ template<class T>
 bool remove(QSharedPointer<T> object)
 {
     beginTransaction();
-    return QpDaoBase::forClass(*object->metaObject())->removeObject(object);
+    QpDaoBase::forClass(*object->metaObject())->removeObject(object);
     return commitOrRollbackTransaction() == CommitSuccessful;
 }
 
@@ -127,6 +127,16 @@ template<class T>
 int primaryKey(QSharedPointer<T> object)
 {
     return Qp::Private::primaryKey(object.data());
+}
+
+template<class T> QDateTime creationTime(QSharedPointer<T> object)
+{
+    return Qp::Private::creationTime(object.data());
+}
+
+template<class T> QDateTime updateTime(QSharedPointer<T> object)
+{
+    return Qp::Private::updateTime(object.data());
 }
 
 template<class Target, class Source>

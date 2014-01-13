@@ -111,7 +111,7 @@ QString QpSqlCondition::toWhereClause(bool bindValues) const
 
     Q_ASSERT(!data->key.isEmpty());
 
-    return comparisonOperator().prepend(QString("\"%1\"").arg(data->key)).append("?");
+    return comparisonOperator().prepend(QString("%1").arg(data->key)).append("?");
 }
 
 QVariantList QpSqlCondition::bindValues() const

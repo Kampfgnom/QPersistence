@@ -15,7 +15,9 @@ class QpDatabaseSchema : public QObject
 {
     Q_OBJECT
 public:
-    static const QString PRIMARY_KEY_COLUMN_NAME;
+    static const QString COLUMN_NAME_PRIMARY_KEY;
+    static const QString COLUMN_NAME_CREATION_TIME;
+    static const QString COLUMN_NAME_UPDATE_TIME;
 
     explicit QpDatabaseSchema(const QSqlDatabase &database = QSqlDatabase::database(), QObject *parent = 0);
     ~QpDatabaseSchema();
@@ -47,7 +49,7 @@ public:
     bool renameTable(const QString &oldTableName, const QString &newTableName);
     bool createColumnCopy(const QString &sourceTable, const QString &sourceColumn, const QString &destColumn);
 
-    static QString variantTypeToSqlType(QVariant::Type type);
+    QString variantTypeToSqlType(QVariant::Type type);
 
 private:
     QSharedDataPointer<QpDatabaseSchemaPrivate> data;
@@ -56,6 +58,8 @@ private:
     void setLastError(const QSqlQuery &query) const;
 
     void createRelationTables(const QMetaObject &metaObject);
+
+    QString metaPropertyToColumnDefinition(const QpMetaProperty &metaProperty);
 };
 
 
