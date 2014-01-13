@@ -101,13 +101,17 @@ QpDao<T> *dataAccessObject()
 template<class T>
 bool update(QSharedPointer<T> object)
 {
-    return QpDaoBase::forClass(*object->metaObject())->updateObject(object);
+    beginTransaction();
+    QpDaoBase::forClass(*object->metaObject())->updateObject(object);
+    return commitOrRollbackTransaction() == CommitSuccessful;
 }
 
 template<class T>
 bool remove(QSharedPointer<T> object)
 {
+    beginTransaction();
     return QpDaoBase::forClass(*object->metaObject())->removeObject(object);
+    return commitOrRollbackTransaction() == CommitSuccessful;
 }
 
 template<class T>

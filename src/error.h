@@ -13,6 +13,7 @@ void setLastError(const QpError &);
 }
 }
 
+class QSqlError;
 class QSqlQuery;
 
 class QpErrorPrivate;
@@ -34,6 +35,7 @@ public:
     QpError(const QString &text = QString(),
             ErrorType type = NoError,
             QVariantMap additionalInformation = QVariantMap());
+    QpError(const QSqlError &error);
     ~QpError();
     QpError(const QpError &other);
     QpError &operator = (const QpError &other);

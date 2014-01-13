@@ -1,6 +1,7 @@
 #include "error.h"
 
 #include <QDebug>
+#include <QSqlError>
 
 class QpErrorPrivate : public QSharedData
 {
@@ -12,6 +13,7 @@ class QpErrorPrivate : public QSharedData
             type(QpError::NoError)
         {}
 
+        QSqlError sqlError;
         QString text;
         bool isValid;
         QVariantMap additionalInformation;
@@ -36,6 +38,15 @@ QpError::QpError(const QString &text,
     data->type = type;
     data->additionalInformation = additionalInformation;
     data->isValid = (type != NoError && ! text.isEmpty());
+}
+
+QpError::QpError(const QSqlError &error) :
+    data(new QpErrorPrivate)
+{
+    data->sqlError = error;
+    data->text = error.text();
+    data->type = SqlError;
+    data->isValid = error.isValid();
 }
 
 QpError::~QpError()

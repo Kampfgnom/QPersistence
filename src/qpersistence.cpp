@@ -35,16 +35,20 @@ QSqlDatabase database()
     return QSqlDatabase::database("Qp");
 }
 
-void adjustDatabaseSchema()
+bool adjustDatabaseSchema()
 {
+    beginTransaction();
     QpDatabaseSchema schema(Qp::database());
     schema.adjustSchema();
+    return commitOrRollbackTransaction() == CommitSuccessful;
 }
 
-void createCleanSchema()
+bool createCleanSchema()
 {
+    beginTransaction();
     QpDatabaseSchema schema(Qp::database());
     schema.createCleanSchema();
+    return commitOrRollbackTransaction() == CommitSuccessful;
 }
 
 void startBulkDatabaseQueries()
@@ -64,7 +68,33 @@ void setSqlDebugEnabled(bool enable)
 
 QpError lastError()
 {
-    return QpError::lastError();
+    if(QpError::lastError().isValid())
+        return QpError::lastError();
+
+    if(Qp::database().lastError().isValid())
+        return QpError(Qp::database().lastError());
+
+    return QpError();
+}
+
+bool beginTransaction()
+{
+    return Qp::database().transaction();
+}
+
+CommitResult commitOrRollbackTransaction()
+{
+    if(lastError().isValid()) {
+        if(Qp::database().rollback())
+            return RollbackSuccessful;
+        else
+            return RollbackFailed;
+    }
+
+    if(Qp::database().commit())
+        return CommitSuccessful;
+    else
+        return CommitFailed;
 }
 
 }

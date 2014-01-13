@@ -9,11 +9,21 @@ class QpMetaObject;
 
 namespace Qp {
 
+enum CommitResult {
+    RollbackSuccessful,
+    RollbackFailed,
+    CommitSuccessful,
+    CommitFailed
+};
+
 void setDatabase(const QSqlDatabase &database);
 QSqlDatabase database();
-void adjustDatabaseSchema();
-void createCleanSchema();
+bool adjustDatabaseSchema();
+bool createCleanSchema();
 QpError lastError();
+
+bool beginTransaction();
+CommitResult commitOrRollbackTransaction();
 
 void setSqlDebugEnabled(bool enable);
 void startBulkDatabaseQueries();
