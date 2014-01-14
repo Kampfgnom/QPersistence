@@ -263,7 +263,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
 
     QList<QpSqlQuery> queries;
 
-    QString updateTimeQueryString ;
+    QStringList updateTimeQueryStrings;
 
     foreach (const QpMetaProperty property, metaObject.relationProperties()) {
         QpMetaProperty::Cardinality cardinality = property.cardinality();
@@ -348,7 +348,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
             // Prepare a query, which sets the update times of all related objects accordingly
             // This query will be executed twice: First for all previously related object, then for the new ones.
             // TODO: Make use of other SQL backends. This is MySQL only!
-            updateTimeQueryString = QString("UPDATE %1"
+            QString updateTimeQueryString = QString("UPDATE %1"
                                                     "\n\tINNER JOIN %2 "
                                                     "\n\t\tON %2.%3 = %1.%4 "
                                                     "\n\tSET %1.%5 = %6 "
@@ -362,6 +362,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
                     .arg(property.columnName())
                     .arg(primaryKey);
 
+            updateTimeQueryStrings << updateTimeQueryString;
             QpSqlQuery setUpdateTimeOnRelatedObjectsQuery;
             setUpdateTimeOnRelatedObjectsQuery.prepare(updateTimeQueryString);
             queries.append(setUpdateTimeOnRelatedObjectsQuery);
@@ -401,10 +402,13 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
         }
     }
 
-    if(!updateTimeQueryString.isEmpty()) {
+    foreach(QString q, updateTimeQueryStrings) {
         QpSqlQuery query(data->database);
-        query.prepare(updateTimeQueryString);
-        query.exec();
+        if (!query.exec(q)
+                || query.lastError().isValid()) {
+            setLastError(query);
+            return false;
+        }
     }
 
     return true;
