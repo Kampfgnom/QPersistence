@@ -93,23 +93,6 @@ void CacheTest::testMaximumCacheSize()
     QVERIFY(weakRef5.toStrongRef());
 }
 
-void CacheTest::testSize()
-{
-    QpCache cache;
-    int cacheSize = 10;
-    cache.setMaximumCacheSize(cacheSize);
-
-    for (int i = 1; i < cacheSize; ++i) {
-        cache.insert(i, new QObject());
-        QVERIFY(cache.size() == i);
-    }
-
-    for (int i = cacheSize; i < cacheSize * 2; ++i) {
-        cache.insert(i, new QObject());
-        QVERIFY(cache.size() == cacheSize);
-    }
-}
-
 void CacheTest::setCacheOrder()
 {
     QpCache cache;
