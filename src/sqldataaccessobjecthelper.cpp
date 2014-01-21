@@ -167,7 +167,6 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
     }
 
     Qp::Private::setPrimaryKey(object, query.lastInsertId().toInt());
-    readDatabaseTimes(metaObject, object);
 
     return true;
 }
@@ -320,15 +319,32 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
         }
         else if (cardinality == QpMetaProperty::OneToOneCardinality
                  && !property.hasTableForeignKey()) {
+
             QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.metaProperty().read(object));
             if (!relatedObject)
                 continue;
 
             relatedObject->setProperty(property.columnName().toLatin1(), primaryKey);
+            QVariant relatedPrimary = Qp::Private::primaryKey(relatedObject.data());
 
-            QVariant primary = Qp::Private::primaryKey(relatedObject.data());
+
+            QVariant primary = relatedPrimary;
             QVariant foreign = primaryKey;
+            if(property.tableName() != metaObject.tableName())
+                qSwap(primary, foreign);
 
+            // Prepare a query, which resets the relation (set old foreign key to NULL)
+            QpSqlQuery resetRelationQuery(data->database);
+            resetRelationQuery.setTable(property.tableName());
+            resetRelationQuery.addField(property.columnName(), QVariant());
+            resetRelationQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+            resetRelationQuery.setWhereCondition(QpSqlCondition(property.columnName(),
+                                                                QpSqlCondition::EqualTo,
+                                                                primaryKey));
+            resetRelationQuery.prepareUpdate();
+            queries.append(resetRelationQuery);
+
+            // Prepare actual update
             QpSqlQuery setForeignKeysQuery(data->database);
             setForeignKeysQuery.setTable(property.tableName());
             setForeignKeysQuery.addField(property.columnName(), primary);
@@ -347,7 +363,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
                                                     "\n\tINNER JOIN %2 "
                                                     "\n\t\tON %2.%3 = %1.%4 "
                                                     "\n\tSET %1.%5 = %6 "
-                                                    "\n\tWHERE %2.%7 = %8 ")
+                                                    "\n\tWHERE %2.%7 = %8")
                     .arg(property.reverseRelation().metaObject().tableName())
                     .arg(property.tableName())
                     .arg(property.reverseRelation().columnName())
@@ -357,11 +373,9 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
                     .arg(property.columnName())
                     .arg(primaryKey);
 
-            updateTimeQueryStrings << updateTimeQueryString;
-            QpSqlQuery setUpdateTimeOnRelatedObjectsQuery;
+            QpSqlQuery setUpdateTimeOnRelatedObjectsQuery(data->database);
             setUpdateTimeOnRelatedObjectsQuery.prepare(updateTimeQueryString);
             queries.append(setUpdateTimeOnRelatedObjectsQuery);
-
 
             // Prepare a query, which resets the relation (deletes all relation rows)
             QpSqlQuery resetRelationQuery(data->database);
@@ -386,20 +400,15 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
                 createRelationQuery.prepareInsert();
                 queries.append(createRelationQuery);
             }
+
+            QpSqlQuery setUpdateTimeOnRelatedObjectsQuery2(data->database);
+            setUpdateTimeOnRelatedObjectsQuery2.prepare(updateTimeQueryString);
+            queries.append(setUpdateTimeOnRelatedObjectsQuery2);
         }
     }
 
     foreach (QpSqlQuery query, queries) {
         if (!query.exec()
-                || query.lastError().isValid()) {
-            setLastError(query);
-            return false;
-        }
-    }
-
-    foreach(QString q, updateTimeQueryStrings) {
-        QpSqlQuery query(data->database);
-        if (!query.exec(q)
                 || query.lastError().isValid()) {
             setLastError(query);
             return false;

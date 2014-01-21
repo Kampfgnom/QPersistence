@@ -103,7 +103,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count) c
 {
     int myCount = this->count();
 
-    if (count <= 0)
+    if (count <= 0 && myCount != 0)
         count = myCount;
 
     QpSqlQuery query = data->sqlDataAccessObjectHelper->readAllObjects(data->metaObject, skip, count);

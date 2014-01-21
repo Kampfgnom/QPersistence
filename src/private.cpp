@@ -27,11 +27,15 @@ void setPrimaryKey(QObject *object, int key)
 
 QDateTime creationTime(QObject *object)
 {
+    // TODO: Remove this line, once the times are automatically consistent with the database
+    QpSqlDataAccessObjectHelper::forDatabase(Qp::database())->readDatabaseTimes(QpMetaObject::forClassName(object->metaObject()->className()), object);
     return object->property(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME.toLatin1()).toDateTime();
 }
 
 QDateTime updateTime(QObject *object)
 {
+    // TODO: Remove this line, once the times are automatically consistent with the database
+    QpSqlDataAccessObjectHelper::forDatabase(Qp::database())->readDatabaseTimes(QpMetaObject::forClassName(object->metaObject()->className()), object);
     return object->property(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME.toLatin1()).toDateTime();
 }
 

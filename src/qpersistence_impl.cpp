@@ -102,7 +102,7 @@ template<class T>
 bool update(QSharedPointer<T> object)
 {
     beginTransaction();
-    return QpDaoBase::forClass(*object->metaObject())->updateObject(object);
+    QpDaoBase::forClass(*object->metaObject())->updateObject(object);
     return commitOrRollbackTransaction() == CommitSuccessful;
 }
 

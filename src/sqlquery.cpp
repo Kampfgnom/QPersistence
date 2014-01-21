@@ -320,6 +320,11 @@ bool QpSqlQuery::prepareUpdate()
     foreach (const QString &field, data->fields.keys()) {
         fields.append(QString("%1 = ?").arg(field));
     }
+    foreach (const QString &field, data->rawFields.keys()) {
+        fields.append(QString("%1 = %2")
+                      .arg(field)
+                      .arg(data->rawFields.value(field)));
+    }
     query.append(fields.join(",\n\t"));
 
     if (data->whereCondition.isValid()) {

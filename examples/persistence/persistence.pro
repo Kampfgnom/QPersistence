@@ -9,7 +9,7 @@ include(../testModel/testModel.pri)
 TARGET          = persistence_example
 VERSION         = 0.0.0
 TEMPLATE        = app
-QT              += sql widgets
+QT              += sql widgets testlib
 CONFIG          += c++11
 QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
 

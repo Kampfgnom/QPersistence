@@ -79,25 +79,38 @@ QpError lastError()
 
 bool beginTransaction()
 {
+    bool transaction = Qp::database().transaction();
+    if(!transaction)
+        qFatal("START TRANSACTION failed.");
+
     if(QpSqlQuery::isDebugEnabled())
         qDebug() << "START TRANSACTION;";
-    return Qp::database().transaction();
+
+    return transaction;
 }
 
 CommitResult commitOrRollbackTransaction()
 {
     if(lastError().isValid()) {
+        bool rollback = Qp::database().rollback();
+        if(!rollback)
+            qFatal("ROLLBACK failed.");
+
         if(QpSqlQuery::isDebugEnabled())
             qDebug() << "ROLLBACK;";
-        if(Qp::database().rollback())
+        if(rollback)
             return RollbackSuccessful;
         else
             return RollbackFailed;
     }
 
+    bool commit = Qp::database().commit();
+    if(!commit)
+        qFatal("COMMIT failed.");
+
     if(QpSqlQuery::isDebugEnabled())
         qDebug() << "COMMIT;";
-    if(Qp::database().commit())
+    if(commit)
         return CommitSuccessful;
     else
         return CommitFailed;
