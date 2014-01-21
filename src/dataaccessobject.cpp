@@ -100,9 +100,6 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count) c
 {
     int myCount = this->count();
 
-    if (data->cache.size() == myCount)
-        return data->cache.objects(skip,count);
-
     if (count <= 0)
         count = myCount;
 

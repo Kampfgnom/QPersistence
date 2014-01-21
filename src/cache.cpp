@@ -1,16 +1,35 @@
 #include "cache.h"
 #include <QSharedData>
 
+#include "private.h"
+
 #include <QDebug>
 #include <QQueue>
 
 class QpCacheData : public QSharedData {
 public:
-    QHash<int, QWeakPointer<QObject> > cache;
+    QHash<int, QWeakPointer<QObject> > weakCacheById;
     mutable QQueue<QSharedPointer<QObject> > strongCache;
-    mutable QQueue<QObject *> pointerCache; // is always in sync with strong cache. will be used to keep track of indizes.
+
+    // is always in sync with strong cache. will be used to keep track of indizes,
+    // because indexOf(QObject*) is much faster than indexOf(QSharedPointer)
+    mutable QQueue<QObject *> pointerCache;
+
     int strongCacheSize;
+
+    void adjustQueue(QSharedPointer<QObject> accessedObject) const;
 };
+
+void QpCacheData::adjustQueue(QSharedPointer<QObject> accessedObject) const
+{
+    int i = pointerCache.indexOf(accessedObject.data());
+    if (i != -1) {
+        strongCache.removeAt(i);
+        pointerCache.removeAt(i);
+    }
+    strongCache.enqueue(accessedObject);
+    pointerCache.enqueue(accessedObject.data());
+}
 
 QpCache::QpCache() :
     data(new QpCacheData)
@@ -36,12 +55,12 @@ QpCache::~QpCache()
 
 bool QpCache::contains(int id) const
 {
-    return data->cache.contains(id);
+    return data->weakCacheById.contains(id);
 }
 
 QSharedPointer<QObject> QpCache::insert(int id, QObject *object)
 {
-    QSharedPointer<QObject> p = data->cache.value(id);
+    QSharedPointer<QObject> p = data->weakCacheById.value(id).toStrongRef();
     if (p) {
         Q_ASSERT_X(false,
                    Q_FUNC_INFO,
@@ -50,7 +69,9 @@ QSharedPointer<QObject> QpCache::insert(int id, QObject *object)
     }
 
     p = QSharedPointer<QObject>(object);
-    data->cache.insert(id, p.toWeakRef());
+    QWeakPointer<QObject> weak = p.toWeakRef();
+    data->weakCacheById.insert(id, weak);
+
     data->strongCache.enqueue(p);
     data->pointerCache.enqueue(p.data());
 
@@ -64,15 +85,9 @@ QSharedPointer<QObject> QpCache::insert(int id, QObject *object)
 
 QSharedPointer<QObject> QpCache::get(int id) const
 {
-    QSharedPointer<QObject> p = data->cache.value(id).toStrongRef();
+    QSharedPointer<QObject> p = data->weakCacheById.value(id).toStrongRef();
     if (p) {
-        int i = data->pointerCache.indexOf(p.data());
-        if (i != -1) {
-            data->strongCache.removeAt(i);
-            data->pointerCache.removeAt(i);
-        }
-        data->strongCache.enqueue(p);
-        data->pointerCache.enqueue(p.data());
+        data->adjustQueue(p);
     }
 
     return p;
@@ -80,7 +95,7 @@ QSharedPointer<QObject> QpCache::get(int id) const
 
 void QpCache::remove(int id)
 {
-    QSharedPointer<QObject> p = data->cache.take(id).toStrongRef();
+    QSharedPointer<QObject> p = data->weakCacheById.take(id).toStrongRef();
     if (p) {
         int i = data->pointerCache.indexOf(p.data());
         if (i != -1) {
@@ -88,19 +103,6 @@ void QpCache::remove(int id)
             data->pointerCache.removeAt(i);
         }
     }
-}
-
-QList<QSharedPointer<QObject> > QpCache::objects(int skip, int count) const
-{
-    if (skip > 0)
-        return data->strongCache.mid(skip, count);
-
-    return data->strongCache;
-}
-
-int QpCache::size() const
-{
-    return data->strongCache.size();
 }
 
 int QpCache::maximumCacheSize() const
