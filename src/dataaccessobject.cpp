@@ -6,6 +6,9 @@
 #include "metaproperty.h"
 #include "qpersistence.h"
 #include "sqldataaccessobjecthelper.h"
+#include "sqlquery.h"
+
+#include <QSqlError>
 
 class QpDaoBaseData : public QSharedData
 {
@@ -100,39 +103,39 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count) c
 {
     int myCount = this->count();
 
-    if (data->cache.size() == myCount)
-        return data->cache.objects(skip,count);
-
     if (count <= 0)
         count = myCount;
 
-    QList<QObject *> objects;
+    QpSqlQuery query = data->sqlDataAccessObjectHelper->readAllObjects(data->metaObject, skip, count);
 
-    for (int i = 0; i < count; ++i)
-        objects.append(createInstance());
-
-    if (!data->sqlDataAccessObjectHelper->readAllObjects(data->metaObject, objects, skip, count)) {
+    if (data->sqlDataAccessObjectHelper->lastError().isValid()) {
         setLastError(data->sqlDataAccessObjectHelper->lastError());
-        for (int i = 0; i < count; ++i)
-            delete objects.at(i);
-
         return QList<QSharedPointer<QObject> >();
     }
 
     QList<QSharedPointer<QObject> > result;
     result.reserve(count);
-    for (int i = 0; i < count; ++i) {
-        QObject *object = objects.at(i);
-        int key = Qp::Private::primaryKey(object);
+    while(query.next()) {
+        int key = query.value(QLatin1String("_Qp_ID")).toInt();
+
+        QSharedPointer<QObject> currentObject;
         if (data->cache.contains(key)) {
-            result.append(data->cache.get(key));
-            delete object;
+            currentObject = data->cache.get(key);
         }
-        else {
-            QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
-            Qp::Private::enableSharedFromThis(obj);
-            result.append(obj);
+
+        if(!currentObject) {
+            QObject *object = createInstance();
+            currentObject = data->cache.insert(key, object);
+            data->sqlDataAccessObjectHelper->readQueryIntoObject(query, object);
+            Qp::Private::enableSharedFromThis(currentObject);
         }
+
+        result.append(currentObject);
+    }
+
+    if (data->sqlDataAccessObjectHelper->lastError().isValid()) {
+        setLastError(data->sqlDataAccessObjectHelper->lastError());
+        return QList<QSharedPointer<QObject> >();
     }
 
     return result;

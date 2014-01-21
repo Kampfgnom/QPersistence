@@ -1,13 +1,13 @@
 #include "objectlistmodel.h"
 
-QpAbstractObjectListModelBase::QpAbstractObjectListModelBase(QObject *parent) :
+QpObjectListModelBase::QpObjectListModelBase(QObject *parent) :
     QAbstractListModel(parent),
     m_objectsFromDao(true),
     m_fetchCount(std::numeric_limits<int>::max())
 {
 }
 
-int QpAbstractObjectListModelBase::columnCount(const QModelIndex &parent) const
+int QpObjectListModelBase::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
     int index = metaObject()->indexOfEnumerator("Columns");
@@ -18,12 +18,12 @@ int QpAbstractObjectListModelBase::columnCount(const QModelIndex &parent) const
 }
 
 
-int QpAbstractObjectListModelBase::fetchCount() const
+int QpObjectListModelBase::fetchCount() const
 {
     return m_fetchCount;
 }
 
-void QpAbstractObjectListModelBase::setFetchCount(int fetchCount)
+void QpObjectListModelBase::setFetchCount(int fetchCount)
 {
     m_fetchCount = fetchCount;
 }

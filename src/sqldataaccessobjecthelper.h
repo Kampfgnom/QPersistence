@@ -23,11 +23,13 @@ public:
     int count(const QpMetaObject &metaObject) const;
     QList<int> allKeys(const QpMetaObject &metaObject, int skip, int count) const;
     bool readObject(const QpMetaObject &metaObject, const QVariant &key, QObject *object);
-    bool readAllObjects(const QpMetaObject &metaObject, QList<QObject *> objects, int skip, int count);
+    QpSqlQuery readAllObjects(const QpMetaObject &metaObject, int skip, int count);
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);
     bool readDatabaseTimes(const QpMetaObject &metaObject, QObject *object);
+    void readQueryIntoObject(const QSqlQuery &query,
+                             QObject *object);
 
     QpError lastError() const;
 
@@ -46,8 +48,6 @@ private:
                              const QObject *object,
                              QpSqlQuery &queryconst,
                              bool forInsert = false);
-    void readQueryIntoObject(const QSqlQuery &query,
-                             QObject *object);
     bool adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object);
 };
 

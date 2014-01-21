@@ -17,7 +17,6 @@ private Q_SLOTS:
     void testBasics();
     void testRemove();
     void testMaximumCacheSize();
-    void testSize();
     void setCacheOrder();
 };
 

@@ -7,11 +7,11 @@
 #include "private.h"
 #include "qpersistence.h"
 
-class QpAbstractObjectListModelBase : public QAbstractListModel
+class QpObjectListModelBase : public QAbstractListModel
 {
     Q_OBJECT
 public:
-    explicit QpAbstractObjectListModelBase(QObject *parent = 0);
+    explicit QpObjectListModelBase(QObject *parent = 0);
 
     int columnCount(const QModelIndex &parent) const Q_DECL_OVERRIDE;
     virtual QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const = 0;
@@ -30,7 +30,7 @@ protected:
 };
 
 template<class T>
-class QpObjectListModel : public QpAbstractObjectListModelBase
+class QpObjectListModel : public QpObjectListModelBase
 {
 public:
     explicit QpObjectListModel(QObject *parent = 0);
@@ -63,7 +63,7 @@ private:
 
 template<class T>
 QpObjectListModel<T>::QpObjectListModel(QObject *parent) :
-    QpAbstractObjectListModelBase(parent)
+    QpObjectListModelBase(parent)
 {
     QpDao<T> *dao = Qp::dataAccessObject<T>();
     connect(dao, &QpDaoBase::objectCreated,

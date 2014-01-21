@@ -17,8 +17,6 @@ public:
     QSharedPointer<QObject> insert(int id, QObject *object);
     QSharedPointer<QObject> get(int id) const;
     void remove(int id);
-    QList<QSharedPointer<QObject> > objects(int skip, int count) const;
-    int size() const;
 
     int maximumCacheSize() const;
     void setMaximumCacheSize(int size);
