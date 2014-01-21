@@ -127,10 +127,8 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
     return object;
 }
 
-bool QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject, QList<QObject *> objects, int skip, int count)
+QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject, int skip, int count)
 {
-    Q_ASSERT(objects.size() == count);
-
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
     query.setCount(count);
@@ -141,21 +139,9 @@ bool QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject,
     if ( !query.exec()
          || query.lastError().isValid()) {
         setLastError(query);
-        return false;
     }
 
-    int i = 0;
-    for (; i < objects.size() && query.next(); ++i) {
-        readQueryIntoObject(query, objects.at(i));
-    }
-    Q_ASSERT(i == count);
-
-    if (query.lastError().isValid()) {
-        setLastError(query);
-        return false;
-    }
-
-    return true;
+    return query;
 }
 
 bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, QObject *object)
