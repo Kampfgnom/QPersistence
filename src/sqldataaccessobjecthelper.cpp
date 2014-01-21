@@ -127,10 +127,8 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
     return object;
 }
 
-bool QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject, QList<QObject *> objects, int skip, int count)
+QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject, int skip, int count)
 {
-    Q_ASSERT(objects.size() == count);
-
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
     query.setCount(count);
@@ -141,21 +139,9 @@ bool QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject,
     if ( !query.exec()
          || query.lastError().isValid()) {
         setLastError(query);
-        return false;
     }
 
-    int i = 0;
-    for (; i < objects.size() && query.next(); ++i) {
-        readQueryIntoObject(query, objects.at(i));
-    }
-    Q_ASSERT(i == count);
-
-    if (query.lastError().isValid()) {
-        setLastError(query);
-        return false;
-    }
-
-    return true;
+    return query;
 }
 
 bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, QObject *object)
@@ -245,7 +231,16 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery &query, QO
         QByteArray fieldName = record.fieldName(i).toLatin1();
         QVariant value = query.value(i);
 
-        value = QpSqlQuery::variantFromSqlStorableVariant(value, static_cast<QMetaType::Type>(object->property(fieldName).userType()));
+        int propertyIndex = object->metaObject()->indexOfProperty(fieldName);
+        QMetaProperty property = object->metaObject()->property(propertyIndex);
+        if(propertyIndex > 0 && property.isEnumType()) {
+            value = value.toInt();
+        }
+        else {
+            QMetaType::Type type = static_cast<QMetaType::Type>(property.userType());
+            value = QpSqlQuery::variantFromSqlStorableVariant(value, type);
+        }
+
         object->setProperty(fieldName, value);
     }
 }
