@@ -110,6 +110,11 @@ QSharedPointer<T> QpWeakRelation<T>::resolve() const
 template<class T>
 void QpWeakRelation<T>::relate(QSharedPointer<T> related)
 {
+    if(!related) {
+        clear();
+        return;
+    }
+
     if (data->isToMany()) {
         if (!data->resolved)
             data->resolveFromDatabase();
@@ -232,6 +237,11 @@ QSharedPointer<T> QpStrongRelation<T>::resolve() const
 template<class T>
 void QpStrongRelation<T>::relate(QSharedPointer<T> related)
 {
+    if(!related) {
+        clear();
+        return;
+    }
+
     data->relatedList.append(related);
     data->related = related;
 }
