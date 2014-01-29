@@ -111,6 +111,7 @@ bool QpSqlQuery::exec(const QString &queryString)
             ++i;
         }
         query.append(";");
+        query.append(QString("\n%1 rows affected.").arg(this->numRowsAffected()));
         qDebug() << qPrintable(query);
     }
 
@@ -310,7 +311,8 @@ void QpSqlQuery::prepareSelect()
 
 bool QpSqlQuery::prepareUpdate()
 {
-    if (data->fields.isEmpty())
+    if (data->fields.isEmpty()
+            && data->rawFields.isEmpty())
         return false;
 
     QString query("UPDATE ");
@@ -331,7 +333,6 @@ bool QpSqlQuery::prepareUpdate()
         query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
     }
 
-    query.append(';');
     QSqlQuery::prepare(query);
 
     foreach (const QVariant value, data->fields.values()) {

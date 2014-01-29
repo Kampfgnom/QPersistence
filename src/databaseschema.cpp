@@ -187,8 +187,7 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
 
         if (metaProperty.isRelationProperty()) {
             QpMetaProperty::Cardinality cardinality = metaProperty.cardinality();
-            if (cardinality == QpMetaProperty::ToManyCardinality
-                    || cardinality == QpMetaProperty::OneToManyCardinality) {
+            if (cardinality == QpMetaProperty::OneToManyCardinality) {
                 // The other table is responsible for adding this column
                 continue;
             }
@@ -468,12 +467,10 @@ QString QpDatabaseSchema::metaPropertyToColumnDefinition(const QpMetaProperty &m
         type = variantTypeToSqlType(QVariant::Int);
 
         switch (metaProperty.cardinality()) {
-        case QpMetaProperty::ToOneCardinality:
         case QpMetaProperty::OneToOneCardinality:
         case QpMetaProperty::ManyToOneCardinality:
             // My table gets a foreign key column
             break;
-        case QpMetaProperty::ToManyCardinality:
         case QpMetaProperty::OneToManyCardinality:
             // The related table gets a foreign key column
             return QString();
@@ -482,7 +479,6 @@ QString QpDatabaseSchema::metaPropertyToColumnDefinition(const QpMetaProperty &m
             break;
 
         default:
-        case QpMetaProperty::NoCardinality:
             // This is BAD
             Q_ASSERT_X(false, Q_FUNC_INFO,
                        QString("The relation %1 has no cardinality. This is an internal error and should never happen.")

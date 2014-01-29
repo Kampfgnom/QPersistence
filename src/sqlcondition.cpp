@@ -36,6 +36,14 @@ QpSqlCondition::QpSqlCondition(const QString &key, QpSqlCondition::ComparisonOpe
     data->value = value;
 }
 
+QpSqlCondition::QpSqlCondition(QpSqlCondition::BooleanOperator op, QpSqlCondition &condition) :
+    data(new QpSqlConditionData)
+{
+    data->booleanOperator = op;
+    data->conditions << condition;
+    data->comparisonOperator = EqualTo;
+}
+
 QpSqlCondition::QpSqlCondition(QpSqlCondition::BooleanOperator op, const QList<QpSqlCondition> &conditions) :
     data(new QpSqlConditionData)
 {

@@ -154,7 +154,7 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
     // Create main INSERT query
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
-    fillValuesIntoQuery(metaObject, object, query, true);
+    fillValuesIntoQuery(metaObject, object, query);
     query.addRawField(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
     query.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
 
@@ -181,7 +181,7 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
     query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
                                            Qp::Private::primaryKey(object)));
-    fillValuesIntoQuery(metaObject, object, query);
+    QList<QpSqlQuery> additionalQueries = fillValuesIntoQuery(metaObject, object, query);
     query.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
 
     // Insert the object itself
@@ -192,41 +192,54 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
         return false;
     }
 
+    foreach (QpSqlQuery query, additionalQueries) {
+        if (!query.exec()
+                || query.lastError().isValid()) {
+            setLastError(query);
+            return false;
+        }
+    }
+
     // Update related objects
     return adjustRelationsInDatabase(metaObject, object);
 }
 
-void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaObject,
-                                                      const QObject *object,
-                                                      QpSqlQuery &query,
-                                                      bool forInsert)
+QList<QpSqlQuery> QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaObject,
+                                                                   const QObject *object,
+                                                                   QpSqlQuery &query)
 {
     // Add simple properties
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
         query.addField(property.columnName(), property.metaProperty().read(object));
     }
 
-    // There can not be any relations at insert time!
-    if (!forInsert) {
-        // Add relation properties
-        foreach (const QpMetaProperty property, metaObject.relationProperties()) {
-            QpMetaProperty::Cardinality cardinality = property.cardinality();
+    QList<QpSqlQuery> additionalQueries;
 
-            // Only care for "XtoOne" relations, since only they have to be inserted into our table
-            if (cardinality == QpMetaProperty::ToOneCardinality
-                    || cardinality == QpMetaProperty::ManyToOneCardinality
-                    || (QpMetaProperty::OneToOneCardinality
-                        && property.hasTableForeignKey())) {
-                QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.metaProperty().read(object));
+    //    // There can not be any relations at insert time!
+    //    if (!forInsert) {
+    //        // Add relation properties
+    //        foreach (const QpMetaProperty property, metaObject.relationProperties()) {
+    //            QpMetaProperty::Cardinality cardinality = property.cardinality();
 
-                if (!relatedObject)
-                    continue;
+    //            // Only care for "XtoOne" relations, since only they have to be inserted into our table
+    //            if (cardinality == QpMetaProperty::ManyToOneCardinality
+    //                    || (QpMetaProperty::OneToOneCardinality
+    //                        && property.hasTableForeignKey())) {
+    //                QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.metaProperty().read(object));
 
-                QVariant foreignKey = Qp::Private::primaryKey(relatedObject.data());
-                query.addField(property.columnName(), foreignKey);
-            }
-        }
-    }
+    //                if (!relatedObject)
+    //                    continue;
+
+    //                QVariant foreignKey = Qp::Private::primaryKey(relatedObject.data());
+    //                query.addField(property.columnName(), foreignKey);
+
+    //                // If the foreign key is in my table, we also have to adjust the update time of the related object
+    //                additionalQueries.append(queryToAdjustUpdateTimeQueryForObject(relatedObject));
+    //            }
+    //        }
+    //    }
+
+    return additionalQueries;
 }
 
 void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery &query, QObject *object)
@@ -257,103 +270,20 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
 
     QList<QpSqlQuery> queries;
 
-    QStringList updateTimeQueryStrings;
-
     foreach (const QpMetaProperty property, metaObject.relationProperties()) {
         QpMetaProperty::Cardinality cardinality = property.cardinality();
 
-        // Only care for "XtoMany" relations, because these reside in other tables
-        if (cardinality == QpMetaProperty::ToManyCardinality
-                || cardinality == QpMetaProperty::OneToManyCardinality) {
+        // Here we only have to handle relations, for which foreign key column is in other tables,
+        // because the foreign keys in the object's table have already been updated whith its normal UPDATE query
 
-            // Prepare a query, which resets the relation (set all foreign keys to NULL)
-            QpSqlQuery resetRelationQuery(data->database);
-            resetRelationQuery.setTable(property.tableName());
-            resetRelationQuery.addField(property.columnName(), QVariant());
-            resetRelationQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
-            resetRelationQuery.setWhereCondition(QpSqlCondition(property.columnName(),
-                                                                QpSqlCondition::EqualTo,
-                                                                primaryKey));
-            resetRelationQuery.prepareUpdate();
-            queries.append(resetRelationQuery);
-
-            // Check if there are related objects
-            QList<QSharedPointer<QObject> > relatedObjects = Qp::Private::objectListCast(property.metaProperty().read(object));
-            if (relatedObjects.isEmpty())
-                continue;
-
-            // Build an OR'd where clause, which matches all related objects
-            QList<QpSqlCondition> relatedObjectsWhereClauses;
-            int count = 0;
-            foreach (QSharedPointer<QObject> relatedObject, relatedObjects) {
-                relatedObjectsWhereClauses.append(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                                                 QpSqlCondition::EqualTo,
-                                                                 Qp::Private::primaryKey(relatedObject.data())));
-
-                relatedObject->setProperty(property.columnName().toLatin1(), primaryKey);
-                if (count > 990) {
-                    QpSqlCondition relatedObjectsWhereClause(QpSqlCondition::Or, relatedObjectsWhereClauses);
-                    QpSqlQuery setForeignKeysQuery(data->database);
-                    setForeignKeysQuery.setTable(property.tableName());
-                    setForeignKeysQuery.addField(property.columnName(), primaryKey);
-                    setForeignKeysQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
-                    setForeignKeysQuery.setWhereCondition(relatedObjectsWhereClause);
-                    setForeignKeysQuery.prepareUpdate();
-                    queries.append(setForeignKeysQuery);
-                    relatedObjectsWhereClauses.clear();
-                    count = 0;
-                }
-
-                ++count;
-            }
-            QpSqlCondition relatedObjectsWhereClause(QpSqlCondition::Or, relatedObjectsWhereClauses);
-
-            // Prepare a query, which sets the foreign keys of the related objects to our objects key
-            QpSqlQuery setForeignKeysQuery(data->database);
-            setForeignKeysQuery.setTable(property.tableName());
-            setForeignKeysQuery.addField(property.columnName(), primaryKey);
-            setForeignKeysQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
-            setForeignKeysQuery.setWhereCondition(relatedObjectsWhereClause);
-            setForeignKeysQuery.prepareUpdate();
-            queries.append(setForeignKeysQuery);
+        if (cardinality == QpMetaProperty::OneToOneCardinality) {
+            queries.append(queriesThatAdjustOneToOneRelation(property, object));
         }
-        else if (cardinality == QpMetaProperty::OneToOneCardinality
-                 && !property.hasTableForeignKey()) {
-
-            QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.metaProperty().read(object));
-            if (!relatedObject)
-                continue;
-
-            relatedObject->setProperty(property.columnName().toLatin1(), primaryKey);
-            QVariant relatedPrimary = Qp::Private::primaryKey(relatedObject.data());
-
-
-            QVariant primary = relatedPrimary;
-            QVariant foreign = primaryKey;
-            if(property.tableName() != metaObject.tableName())
-                qSwap(primary, foreign);
-
-            // Prepare a query, which resets the relation (set old foreign key to NULL)
-            QpSqlQuery resetRelationQuery(data->database);
-            resetRelationQuery.setTable(property.tableName());
-            resetRelationQuery.addField(property.columnName(), QVariant());
-            resetRelationQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
-            resetRelationQuery.setWhereCondition(QpSqlCondition(property.columnName(),
-                                                                QpSqlCondition::EqualTo,
-                                                                primaryKey));
-            resetRelationQuery.prepareUpdate();
-            queries.append(resetRelationQuery);
-
-            // Prepare actual update
-            QpSqlQuery setForeignKeysQuery(data->database);
-            setForeignKeysQuery.setTable(property.tableName());
-            setForeignKeysQuery.addField(property.columnName(), primary);
-            setForeignKeysQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
-            setForeignKeysQuery.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                                                 QpSqlCondition::EqualTo,
-                                                                 foreign));
-            setForeignKeysQuery.prepareUpdate();
-            queries.append(setForeignKeysQuery);
+        else if (cardinality == QpMetaProperty::OneToManyCardinality) {
+            queries.append(queriesThatAdjustOneToManyRelation(property, object));
+        }
+        else if (cardinality == QpMetaProperty::ManyToOneCardinality) {
+            queries.append(queriesThatAdjustToOneRelation(property, object));
         }
         else if (cardinality == QpMetaProperty::ManyToManyCardinality) {
             // Prepare a query, which sets the update times of all related objects accordingly
@@ -416,6 +346,211 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
     }
 
     return true;
+}
+
+QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToOneRelation(const QpMetaProperty &relation, QObject *object)
+{
+    if(relation.hasTableForeignKey())
+        return queriesThatAdjustToOneRelation(relation, object);
+
+    QList<QpSqlQuery> queries;
+    QVariant primaryKey = Qp::Private::primaryKey(object);
+    QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(relation.metaProperty().read(object));
+
+    // Prepare a query, which resets the relation (set old foreign key to NULL)
+    // This also adjusts the update time of a previously related object
+    QpSqlCondition whereClause = QpSqlCondition(relation.columnName(),
+                                                QpSqlCondition::EqualTo,
+                                                primaryKey);
+    if(relatedObject) {
+        whereClause = whereClause && QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                    QpSqlCondition::NotEqualTo,
+                                                    Qp::primaryKey(relatedObject));
+    }
+
+    QpSqlQuery resetRelationQuery(data->database);
+    resetRelationQuery.setTable(relation.tableName());
+    resetRelationQuery.addField(relation.columnName(), QVariant());
+    resetRelationQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+    resetRelationQuery.setWhereCondition(whereClause);
+    resetRelationQuery.prepareUpdate();
+    queries.append(resetRelationQuery);
+
+    if(!relatedObject)
+        return queries;
+    QVariant relatedPrimary = Qp::primaryKey(relatedObject);
+
+    // Prepare actual update
+    QpSqlQuery setForeignKeyQuery(data->database);
+    setForeignKeyQuery.setTable(relation.tableName());
+    setForeignKeyQuery.addField(relation.columnName(), primaryKey);
+    setForeignKeyQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+    setForeignKeyQuery.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                        QpSqlCondition::EqualTo,
+                                                        relatedPrimary)
+                                         && QpSqlCondition(QString("%1 IS NULL").arg(relation.columnName())));
+    setForeignKeyQuery.prepareUpdate();
+    queries.append(setForeignKeyQuery);
+    return queries;
+}
+
+QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToManyRelation(const QpMetaProperty &relation, QObject *object)
+{
+    QList<QpSqlQuery> queries;
+    QVariant primaryKey = Qp::Private::primaryKey(object);
+
+    QList<QSharedPointer<QObject> > relatedObjects = Qp::Private::objectListCast(relation.metaProperty().read(object));
+
+    // Build an OR'd where clause, which matches all now related objects
+    QList<QpSqlCondition> relatedObjectsWhereClauses;
+    int count = 0;
+    foreach (QSharedPointer<QObject> relatedObject, relatedObjects) {
+        relatedObjectsWhereClauses.append(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                         QpSqlCondition::EqualTo,
+                                                         Qp::Private::primaryKey(relatedObject.data())));
+
+        relatedObject->setProperty(relation.columnName().toLatin1(), primaryKey);
+
+        // SQL (at least SQLITE) has a limitation, where a WHERE clause may only contain 999 subclauses
+        if (count > 990) {
+            QpSqlCondition relatedObjectsWhereClause(QpSqlCondition::Or, relatedObjectsWhereClauses);
+            QpSqlQuery setForeignKeysQuery(data->database);
+            setForeignKeysQuery.setTable(relation.tableName());
+            setForeignKeysQuery.addField(relation.columnName(), primaryKey);
+            setForeignKeysQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+            setForeignKeysQuery.setWhereCondition(relatedObjectsWhereClause);
+            setForeignKeysQuery.prepareUpdate();
+            queries.append(setForeignKeysQuery);
+            relatedObjectsWhereClauses.clear();
+            count = 0;
+        }
+
+        ++count;
+    }
+    QpSqlCondition relatedObjectsWhereClause(QpSqlCondition::Or, relatedObjectsWhereClauses);
+
+    // The reset condition matches all objects, which have previously been related with me, but are not now
+    QpSqlCondition resetCondition = QpSqlCondition(relation.columnName(),
+                                                   QpSqlCondition::EqualTo,
+                                                   primaryKey);
+    if(!relatedObjects.isEmpty()) {
+        resetCondition = resetCondition && !relatedObjectsWhereClause;
+    }
+
+    // Prepare a query, which resets the relation for all objects, which have been related and aren't anymore
+    // This also adjusts the update times of these now unrelated objects
+    QpSqlQuery resetRelationQuery(data->database);
+    resetRelationQuery.setTable(relation.tableName());
+    resetRelationQuery.addField(relation.columnName(), QVariant());
+    resetRelationQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+    resetRelationQuery.setWhereCondition(resetCondition);
+    resetRelationQuery.prepareUpdate();
+    queries.append(resetRelationQuery);
+
+    if(relatedObjects.isEmpty())
+        return queries;
+
+    QpSqlCondition newlyRelatedObjectsClause = relatedObjectsWhereClause
+            && QpSqlCondition(QpSqlCondition::Or, QList<QpSqlCondition>()
+                              << QpSqlCondition(relation.columnName(),
+                                                QpSqlCondition::NotEqualTo,
+                                                primaryKey)
+                              << QpSqlCondition(QString("%1 IS NULL").arg(relation.columnName())));
+
+    // Prepare a query, which sets the foreign keys of the related objects to our object's primary key
+    QpSqlQuery setForeignKeysQuery(data->database);
+    setForeignKeysQuery.setTable(relation.tableName());
+    setForeignKeysQuery.addField(relation.columnName(), primaryKey);
+    setForeignKeysQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+    setForeignKeysQuery.setWhereCondition(newlyRelatedObjectsClause);
+    setForeignKeysQuery.prepareUpdate();
+    queries.append(setForeignKeysQuery);
+
+    return queries;
+}
+
+QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustToOneRelation(const QpMetaProperty &relation, QObject *object)
+{
+    QList<QpSqlQuery> queries;
+    QVariant primaryKey = Qp::Private::primaryKey(object);
+
+    QVariant relatedPrimary;
+    QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(relation.metaProperty().read(object));
+    if (relatedObject) {
+        relatedPrimary = Qp::primaryKey(relatedObject);
+    }
+
+    QpSqlQuery selectPreviouslyRelatedObjectPKQuery(data->database);
+    selectPreviouslyRelatedObjectPKQuery.setTable(relation.tableName());
+    selectPreviouslyRelatedObjectPKQuery.addField(relation.columnName());
+    selectPreviouslyRelatedObjectPKQuery.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                                          QpSqlCondition::EqualTo,
+                                                                          primaryKey));
+    selectPreviouslyRelatedObjectPKQuery.prepareSelect();
+    if(!selectPreviouslyRelatedObjectPKQuery.exec()
+            || selectPreviouslyRelatedObjectPKQuery.lastError().isValid()) {
+        setLastError(selectPreviouslyRelatedObjectPKQuery);
+        return queries;
+    }
+
+    QVariant previousRelatedPK;
+    if(selectPreviouslyRelatedObjectPKQuery.size() == 1
+            && selectPreviouslyRelatedObjectPKQuery.first())
+        previousRelatedPK = selectPreviouslyRelatedObjectPKQuery.value(0);
+
+    if(previousRelatedPK == relatedPrimary)
+        return queries;
+
+    if(!previousRelatedPK.isNull()) {
+        // Prepare a query, which adjusts the update time of a previously related object (in the foreign object's table)
+        QpSqlQuery adjustUpdateTimeQueryPreviouslyRelated(data->database);
+        adjustUpdateTimeQueryPreviouslyRelated.setTable(relation.reverseMetaObject().tableName());
+        adjustUpdateTimeQueryPreviouslyRelated.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+        adjustUpdateTimeQueryPreviouslyRelated.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                                                QpSqlCondition::EqualTo,
+                                                                                previousRelatedPK));
+        adjustUpdateTimeQueryPreviouslyRelated.prepareUpdate();
+        queries.append(adjustUpdateTimeQueryPreviouslyRelated);
+    }
+
+    if(!relatedPrimary.isNull()) {
+        if(relation.cardinality() == QpMetaProperty::OneToOneCardinality) {
+            // Prepare a query, which resets the relation (in my table: set old foreign key to NULL)
+            QpSqlQuery resetRelationQuery(data->database);
+            resetRelationQuery.setTable(relation.tableName());
+            resetRelationQuery.addField(relation.columnName(), QVariant());
+            resetRelationQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+            resetRelationQuery.setWhereCondition(QpSqlCondition(relation.columnName(),
+                                                                QpSqlCondition::EqualTo,
+                                                                relatedPrimary));
+            resetRelationQuery.prepareUpdate();
+            queries.append(resetRelationQuery);
+        }
+
+        // Prepare a query, which adjusts the update time of the new foreign object (in the foreign object's table)
+        QpSqlQuery adjustUpdateTimeQuery(data->database);
+        adjustUpdateTimeQuery.setTable(relation.reverseMetaObject().tableName());
+        adjustUpdateTimeQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+        adjustUpdateTimeQuery.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                               QpSqlCondition::EqualTo,
+                                                               relatedPrimary));
+        adjustUpdateTimeQuery.prepareUpdate();
+        queries.append(adjustUpdateTimeQuery);
+    }
+
+    // Prepare update (in my table) (this might be a SET to NULL)
+    QpSqlQuery setForeignKeyQuery(data->database);
+    setForeignKeyQuery.setTable(relation.tableName());
+    setForeignKeyQuery.addField(relation.columnName(), relatedPrimary);
+    setForeignKeyQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
+    setForeignKeyQuery.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                        QpSqlCondition::EqualTo,
+                                                        primaryKey));
+    setForeignKeyQuery.prepareUpdate();
+    queries.append(setForeignKeyQuery);
+
+    return queries;
+
 }
 
 bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, QObject *object)
@@ -545,7 +680,7 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
 
 void QpSqlDataAccessObjectHelper::setLastError(const QpError &error) const
 {
-    qWarning() << error;
+    qFatal(error.text().toUtf8());
     data->lastError = error;
     Qp::Private::setLastError(error);
 }

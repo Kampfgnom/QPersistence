@@ -13,9 +13,6 @@ class QpMetaProperty
 public:
     enum Cardinality {
         UnknownCardinality,
-        NoCardinality,
-        ToOneCardinality,
-        ToManyCardinality,
         OneToOneCardinality,
         OneToManyCardinality,
         ManyToOneCardinality,

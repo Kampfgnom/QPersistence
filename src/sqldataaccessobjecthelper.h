@@ -44,11 +44,15 @@ private:
     void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;
 
-    void fillValuesIntoQuery(const QpMetaObject &metaObject,
-                             const QObject *object,
-                             QpSqlQuery &queryconst,
-                             bool forInsert = false);
+    QList<QpSqlQuery> fillValuesIntoQuery(const QpMetaObject &metaObject,
+                                          const QObject *object,
+                                          QpSqlQuery &queryconst);
     bool adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object);
+
+    QList<QpSqlQuery> queriesThatAdjustOneToManyRelation(const QpMetaProperty &relation, QObject *object);
+    QList<QpSqlQuery> queriesThatAdjustOneToOneRelation(const QpMetaProperty &relation, QObject *object);
+    QList<QpSqlQuery> queriesThatAdjustToOneRelation(const QpMetaProperty &relation, QObject *object);
+
 };
 
 #endif // SQLDATAACCESSOBJECTHELPER_H

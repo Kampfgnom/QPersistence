@@ -1,7 +1,6 @@
 QPERSISTENCE_PATH = ../../
 include($$QPERSISTENCE_PATH/QPersistence.pri)
-
-include(../testModel/testModel.pri)
+include($$QPERSISTENCE_PATH/examples/testModel/testModel.pri)
 
 
 ### General config ###

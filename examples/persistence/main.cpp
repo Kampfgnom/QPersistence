@@ -1,7 +1,7 @@
 #include <QApplication>
 
-#include <testModel/parentobject.h>
-#include <testModel/childobject.h>
+#include <parentobject.h>
+#include <childobject.h>
 
 #include <QPersistence.h>
 

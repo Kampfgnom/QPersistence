@@ -15,8 +15,7 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveRelation(const QStrin
 
     QpMetaProperty::Cardinality cardinality = relation.cardinality();
 
-    if (cardinality == QpMetaProperty::ToManyCardinality
-            || cardinality == QpMetaProperty::OneToManyCardinality
+    if (cardinality == QpMetaProperty::OneToManyCardinality
             || cardinality == QpMetaProperty::ManyToManyCardinality) {
         result = resolveToManyRelation(name, object);
     }

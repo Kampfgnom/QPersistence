@@ -137,6 +137,7 @@ bool QpMetaProperty::isRelationProperty() const
 bool QpMetaProperty::isToOneRelationProperty() const
 {
     QString type(typeName());
+    Q_ASSERT(!type.isEmpty());
     return type.startsWith("QSharedPointer<")
             || type.startsWith("QWeakPointer<");
 }
@@ -149,11 +150,9 @@ bool QpMetaProperty::isToManyRelationProperty() const
 bool QpMetaProperty::hasTableForeignKey() const
 {
     switch (cardinality()) {
-    case QpMetaProperty::ToOneCardinality:
     case QpMetaProperty::ManyToOneCardinality:
         return true;
 
-    case QpMetaProperty::ToManyCardinality:
     case QpMetaProperty::OneToManyCardinality:
         return false;
 
@@ -163,7 +162,6 @@ bool QpMetaProperty::hasTableForeignKey() const
     case QpMetaProperty::ManyToManyCardinality:
         return false;
 
-    case QpMetaProperty::NoCardinality:
     default:
         // This is BAD and should have asserted in cardinality()
         Q_ASSERT(false);
@@ -179,35 +177,23 @@ QpMetaProperty::Cardinality QpMetaProperty::cardinality() const
         return data->cardinality;
 
     QString reverseName = reverseRelationName();
-    if (reverseName.isEmpty()) {
-        if (isToOneRelationProperty())
-            data->cardinality = ToOneCardinality;
-        else if (isToManyRelationProperty())
-            data->cardinality = ToManyCardinality;
-    }
-    else {
-        QpMetaProperty r = reverseRelation();
-        if (isToOneRelationProperty()) {
-            if (QString(r.typeName()).isEmpty()) {
-                data->cardinality = ToOneCardinality;
-            }
-            else if (r.isToOneRelationProperty()) {
-                data->cardinality = OneToOneCardinality;
-            }
-            else if (r.isToManyRelationProperty()) {
-                data->cardinality = ManyToOneCardinality;
-            }
+    Q_ASSERT(!reverseName.isEmpty());
+
+    QpMetaProperty r = reverseRelation();
+    if (isToOneRelationProperty()) {
+        if (r.isToOneRelationProperty()) {
+            data->cardinality = OneToOneCardinality;
         }
-        else if (isToManyRelationProperty()) {
-            if (QString(r.typeName()).isEmpty()) {
-                data->cardinality = ToManyCardinality;
-            }
-            else if (r.isToManyRelationProperty()) {
-                data->cardinality = ManyToManyCardinality;
-            }
-            else if (r.isToOneRelationProperty()) {
-                data->cardinality = OneToManyCardinality;
-            }
+        else if (r.isToManyRelationProperty()) {
+            data->cardinality = ManyToOneCardinality;
+        }
+    }
+    else if (isToManyRelationProperty()) {
+        if (r.isToManyRelationProperty()) {
+            data->cardinality = ManyToManyCardinality;
+        }
+        else if (r.isToOneRelationProperty()) {
+            data->cardinality = OneToManyCardinality;
         }
     }
 
@@ -277,13 +263,11 @@ QString QpMetaProperty::tableName() const
     QString result;
 
     switch (cardinality()) {
-    case QpMetaProperty::ToOneCardinality:
     case QpMetaProperty::ManyToOneCardinality:
         // My table gets a foreign key column
         result = table;
         break;
 
-    case QpMetaProperty::ToManyCardinality:
     case QpMetaProperty::OneToManyCardinality:
         // The related table gets a foreign key column
         result = reverseTable;
@@ -307,7 +291,6 @@ QString QpMetaProperty::tableName() const
                 .arg(s2);
         break;
 
-    case QpMetaProperty::NoCardinality:
     default:
         // This is BAD and should have asserted in cardinality()
         Q_ASSERT(false);

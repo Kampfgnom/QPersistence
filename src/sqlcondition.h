@@ -28,6 +28,7 @@ public:
     QpSqlCondition();
     QpSqlCondition(const QString &rawString);
     QpSqlCondition(const QString &key, ComparisonOperator op, const QVariant &value);
+    QpSqlCondition(BooleanOperator op, QpSqlCondition &condition);
     QpSqlCondition(BooleanOperator op, const QList<QpSqlCondition> &conditions);
 
     bool isValid() const;
