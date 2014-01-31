@@ -80,3 +80,8 @@ void ParentObject::setChildObjectsManyToMany(QList<QSharedPointer<ChildObject> >
 {
     m_childObjectsManyToMany.relate(arg);
 }
+
+void ParentObject::removeChildObjectOneToMany(QSharedPointer<ChildObject> child)
+{
+    m_childObjects.unrelate(child);
+}

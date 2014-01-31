@@ -43,6 +43,9 @@ public:
 private:
     void setChildObjectsManyToMany(QList<QSharedPointer<ChildObject> > arg);
 
+    friend class ChildObject;
+    void removeChildObjectOneToMany(QSharedPointer<ChildObject> child);
+
     QString m_astring;
     QpStrongRelation<ChildObject> m_childObject;
 
