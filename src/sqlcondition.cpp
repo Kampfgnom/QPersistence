@@ -8,12 +8,16 @@
 
 class QpSqlConditionData : public QSharedData {
 public:
+    QpSqlConditionData() : QSharedData(),
+        valuesBoundInString(false)
+    {}
     QString rawString;
     QString key;
     QVariant value;
     QpSqlCondition::BooleanOperator booleanOperator;
     QpSqlCondition::ComparisonOperator comparisonOperator;
     QList<QpSqlCondition> conditions;
+    mutable bool valuesBoundInString;
 };
 
 QpSqlCondition::QpSqlCondition() :
@@ -55,6 +59,7 @@ QpSqlCondition::QpSqlCondition(QpSqlCondition::BooleanOperator op, const QList<Q
 bool QpSqlCondition::isValid() const
 {
     return !data->key.isEmpty()
+            || !data->rawString.isEmpty()
             || (data->booleanOperator == Not
                 && data->conditions.size() == 1)
             || !data->conditions.isEmpty();
@@ -93,8 +98,9 @@ QpSqlCondition QpSqlCondition::operator &&(const QpSqlCondition &rhs)
     return QpSqlCondition(QpSqlCondition::And, QList<QpSqlCondition>() << *this << rhs);
 }
 
-QString QpSqlCondition::toWhereClause(bool bindValues) const
+QString QpSqlCondition::toWhereClause(bool bindValuesInString) const
 {
+    data->valuesBoundInString = bindValuesInString;
     if (!data->rawString.isEmpty())
         return data->rawString;
 
@@ -107,7 +113,7 @@ QString QpSqlCondition::toWhereClause(bool bindValues) const
     if (!data->conditions.isEmpty()) {
         QStringList conditions;
         foreach (const QpSqlCondition &condition, data->conditions) {
-            conditions.append(condition.toWhereClause(bindValues));
+            conditions.append(condition.toWhereClause(bindValuesInString));
         }
 
         QString result = conditions.join(booleanOperator());
@@ -119,12 +125,22 @@ QString QpSqlCondition::toWhereClause(bool bindValues) const
 
     Q_ASSERT(!data->key.isEmpty());
 
-    return comparisonOperator().prepend(QString("%1").arg(data->key)).append("?");
+    QString value = "?";
+    if(bindValuesInString)
+        value = data->value.toString();
+
+    return comparisonOperator().prepend(QString("%1").arg(data->key)).append(value);
 }
 
 QVariantList QpSqlCondition::bindValues() const
 {
     QVariantList result;
+
+    if(data->valuesBoundInString)
+        return result;
+
+    if(!data->rawString.isEmpty())
+        return result;
 
     foreach (const QpSqlCondition& condition, data->conditions) {
         result.append(condition.bindValues());

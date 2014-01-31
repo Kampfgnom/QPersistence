@@ -41,7 +41,7 @@ public:
     QpSqlCondition operator ||(const QpSqlCondition &rhs);
     QpSqlCondition operator &&(const QpSqlCondition &rhs);
 
-    QString toWhereClause(bool bindValues = true) const;
+    QString toWhereClause(bool bindValuesInString = false) const;
     QVariantList bindValues() const;
 
     QString booleanOperator() const;
