@@ -18,6 +18,7 @@ private Q_SLOTS:
     void testUpdateTimeForOneObject();
     void testUpdateTimeForOneToOneRelations();
     void testUpdateTimeForOneToManyRelations();
+    void testUpdateTimeForManyToManyRelations();
 
 private:
     void VERIFY_QP_ERROR();

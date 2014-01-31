@@ -191,6 +191,37 @@ void CreationAndUpdateTimesTest::testUpdateTimeForOneToManyRelations()
 
 }
 
+void CreationAndUpdateTimesTest::testUpdateTimeForManyToManyRelations()
+{
+    const int CHILDCOUNT = 4;
+    const int PARENTCOUNT = 3;
+
+    // Insert a tree of related parents and childs
+    QList<QSharedPointer<ParentObject>> parents;
+    QList<QSharedPointer<ChildObject>> children;
+    for(int j = 0; j < PARENTCOUNT; ++j) {
+        QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+        foreach(QSharedPointer<ParentObject> parent2, parents) {
+            foreach(QSharedPointer<ChildObject> child2, parent2->childObjects()) {
+                parent->addChildObjectManyToMany(child2);
+            }
+        }
+
+        for(int i = 0; i < CHILDCOUNT; ++i) {
+            QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+            children.append(child);
+            parent->addChildObjectManyToMany(child);
+        }
+
+        parents.append(parent);
+        Qp::update(parent);
+    }
+
+    {
+
+    }
+}
+
 void CreationAndUpdateTimesTest::VERIFY_QP_ERROR()
 {
     QVERIFY2(!Qp::lastError().isValid(), Qp::lastError().text().toUtf8());
