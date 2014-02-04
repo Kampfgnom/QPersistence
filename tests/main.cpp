@@ -4,6 +4,7 @@
 #include "tst_onetoonerelationtest.h"
 #include "tst_onetomanyrelationtest.h"
 #include "tst_manytomanyrelationstest.h"
+#include "tst_creationandupdatetimestest.h"
 
 #define RUNTEST(TestClass) { \
     TestClass t; \
@@ -18,6 +19,7 @@ int main(int argc, char *argv[])
     RUNTEST(OneToOneRelationTest);
     RUNTEST(OneToManyRelationTest);
     RUNTEST(ManyToManyRelationsTest);
+    RUNTEST(CreationAndUpdateTimesTest);
 
     return 0;
 }

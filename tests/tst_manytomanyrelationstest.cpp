@@ -369,7 +369,7 @@ void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime 
             QCOMPARE(Qp::updateTime(parent), newTime);
         }
         else {
-            QCOMPARE(Qp::updateTime(parent), previousTime);
+            QVERIFY(Qp::updateTime(parent) <= previousTime);
         }
 
         foreach(QSharedPointer<ChildObject> child, parent->childObjectsManyToMany()) {
@@ -377,7 +377,7 @@ void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime 
                 QCOMPARE(Qp::updateTime(child), newTime);
             }
             else {
-                QCOMPARE(Qp::updateTime(child), previousTime);
+                QVERIFY(Qp::updateTime(child) <= previousTime);
             }
         }
     }
@@ -387,7 +387,7 @@ void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime 
             QCOMPARE(Qp::updateTime(child), newTime);
         }
         else {
-            QCOMPARE(Qp::updateTime(child), previousTime);
+            QVERIFY(Qp::updateTime(child) <= previousTime);
         }
 
         foreach(QSharedPointer<ParentObject> parent, child->parentObjectsManyToMany()) {
@@ -395,7 +395,7 @@ void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime 
                 QCOMPARE(Qp::updateTime(parent), newTime);
             }
             else {
-                QCOMPARE(Qp::updateTime(parent), previousTime);
+                QVERIFY(Qp::updateTime(parent) <= previousTime);
             }
         }
     }

@@ -15,10 +15,7 @@ private Q_SLOTS:
     void cleanupTestCase();
 
     void testCreationTime();
-    void testUpdateTimeForOneObject();
-    void testUpdateTimeForOneToOneRelations();
-    void testUpdateTimeForOneToManyRelations();
-    void testUpdateTimeForManyToManyRelations();
+    void testUpdateTime();
 
 private:
     void VERIFY_QP_ERROR();
