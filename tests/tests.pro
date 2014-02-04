@@ -28,7 +28,8 @@ SOURCES +=  \
     tst_relationsindatabasetest.cpp \
     relationtestbase.cpp \
     tst_onetoonerelationtest.cpp \
-    tst_onetomanyrelationtest.cpp
+    tst_onetomanyrelationtest.cpp \
+    tst_manytomanyrelationstest.cpp
 
 HEADERS += \
     tst_cachetest.h \
@@ -36,4 +37,5 @@ HEADERS += \
     tst_relationsindatabasetest.h \
     relationtestbase.h \
     tst_onetoonerelationtest.h \
-    tst_onetomanyrelationtest.h
+    tst_onetomanyrelationtest.h \
+    tst_manytomanyrelationstest.h

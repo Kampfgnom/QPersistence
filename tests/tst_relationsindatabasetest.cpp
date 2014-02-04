@@ -42,7 +42,7 @@ void RelationsInDatabaseTest::testSetOneToOneFromParent()
     QVERIFY(q.size() == 1);
     QCOMPARE(q.value(0), QVariant(QVariant().toInt()));
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(parent);
 
     q = fkInDatabase(parent, "childObject");
@@ -68,7 +68,7 @@ void RelationsInDatabaseTest::testSetOneToOneFromChild()
     QVERIFY(q.size() == 1);
     QCOMPARE(q.value(0), QVariant(QVariant().toInt()));
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(child);
 
     q = fkInDatabase(parent, "childObject");
@@ -87,11 +87,11 @@ void RelationsInDatabaseTest::testSetAnotherOneToOneFromParent()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(parent);
 
     QSharedPointer<ChildObject> child2 = Qp::create<ChildObject>();
-    parent->setChildObject(child2);
+    parent->setChildObjectOneToOne(child2);
     Qp::update(parent);
 
     QSqlQuery q = fkInDatabase(child, "parentObjectOneToOne");
@@ -115,11 +115,11 @@ void RelationsInDatabaseTest::testSetAnotherOneToOneFromChild()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(child);
 
     QSharedPointer<ChildObject> child2 = Qp::create<ChildObject>();
-    parent->setChildObject(child2);
+    parent->setChildObjectOneToOne(child2);
     Qp::update(child2);
 
     QSqlQuery q = fkInDatabase(child, "parentObjectOneToOne");
@@ -143,10 +143,10 @@ void RelationsInDatabaseTest::testClearOneToOneRelationFromParent()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(parent);
 
-    parent->setChildObject(QSharedPointer<ChildObject>());
+    parent->setChildObjectOneToOne(QSharedPointer<ChildObject>());
     Qp::update(parent);
 
     QSqlQuery q = fkInDatabase(parent, "childObject");
@@ -163,10 +163,10 @@ void RelationsInDatabaseTest::testClearOneToOneRelationFromChild()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(child);
 
-    parent->setChildObject(QSharedPointer<ChildObject>());
+    parent->setChildObjectOneToOne(QSharedPointer<ChildObject>());
     Qp::update(child);
 
     QSqlQuery q = fkInDatabase(parent, "childObject");
@@ -186,7 +186,7 @@ void RelationsInDatabaseTest::testSetOneToManyFromParent()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     for(int i = 0; i < CHILDCOUNT; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObject(child);
+        parent->addChildObjectOneToMany(child);
     }
     Qp::update(parent);
 
@@ -196,7 +196,7 @@ void RelationsInDatabaseTest::testSetOneToManyFromParent()
         fks.append(q.value(0).toInt());
     }
 
-    foreach(QSharedPointer<ChildObject> child, parent->childObjects()) {
+    foreach(QSharedPointer<ChildObject> child, parent->childObjectsOneToMany()) {
         QSqlQuery q2 = fkInDatabase(child, "parentObjectOneToMany");
         QVERIFY(q2.first());
         QVERIFY(q2.size() == 1);
@@ -215,7 +215,7 @@ void RelationsInDatabaseTest::testSetOneToManyFromChild()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     for(int i = 0; i < CHILDCOUNT; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObject(child);
+        parent->addChildObjectOneToMany(child);
         Qp::update(child);
     }
 
@@ -225,7 +225,7 @@ void RelationsInDatabaseTest::testSetOneToManyFromChild()
         fks.append(q.value(0).toInt());
     }
 
-    foreach(QSharedPointer<ChildObject> child, parent->childObjects()) {
+    foreach(QSharedPointer<ChildObject> child, parent->childObjectsOneToMany()) {
         QSqlQuery q2 = fkInDatabase(child, "parentObjectOneToMany");
         QVERIFY(q2.first());
         QVERIFY(q2.size() == 1);
@@ -244,13 +244,13 @@ void RelationsInDatabaseTest::testSetAnotherOneToManyFromParent()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     for(int i = 0; i < CHILDCOUNT; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObject(child);
+        parent->addChildObjectOneToMany(child);
     }
     Qp::update(parent);
 
     QSharedPointer<ParentObject> parent2 = Qp::create<ParentObject>();
-    foreach(QSharedPointer<ChildObject> child, parent->childObjects()) {
-        parent2->addChildObject(child);
+    foreach(QSharedPointer<ChildObject> child, parent->childObjectsOneToMany()) {
+        parent2->addChildObjectOneToMany(child);
     }
     Qp::update(parent2);
 
@@ -263,7 +263,7 @@ void RelationsInDatabaseTest::testSetAnotherOneToManyFromParent()
         fks.append(q.value(0).toInt());
     }
 
-    foreach(QSharedPointer<ChildObject> child, parent2->childObjects()) {
+    foreach(QSharedPointer<ChildObject> child, parent2->childObjectsOneToMany()) {
         QSqlQuery q2 = fkInDatabase(child, "parentObjectOneToMany");
         QVERIFY(q2.first());
         QVERIFY(q2.size() == 1);
@@ -282,13 +282,13 @@ void RelationsInDatabaseTest::testSetAnotherOneToManyFromChild()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     for(int i = 0; i < CHILDCOUNT; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObject(child);
+        parent->addChildObjectOneToMany(child);
         Qp::update(child);
     }
 
     QSharedPointer<ParentObject> parent2 = Qp::create<ParentObject>();
-    foreach(QSharedPointer<ChildObject> child, parent->childObjects()) {
-        parent2->addChildObject(child);
+    foreach(QSharedPointer<ChildObject> child, parent->childObjectsOneToMany()) {
+        parent2->addChildObjectOneToMany(child);
         Qp::update(child);
     }
 
@@ -301,7 +301,7 @@ void RelationsInDatabaseTest::testSetAnotherOneToManyFromChild()
         fks.append(q.value(0).toInt());
     }
 
-    foreach(QSharedPointer<ChildObject> child, parent2->childObjects()) {
+    foreach(QSharedPointer<ChildObject> child, parent2->childObjectsOneToMany()) {
         QSqlQuery q2 = fkInDatabase(child, "parentObjectOneToMany");
         QVERIFY(q2.first());
         QVERIFY(q2.size() == 1);
@@ -323,7 +323,7 @@ void RelationsInDatabaseTest::testSetManyToManyRelationFromParent()
     for(int j = 0; j < PARENTCOUNT; ++j) {
         QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
         foreach(QSharedPointer<ParentObject> parent2, parents) {
-            foreach(QSharedPointer<ChildObject> child2, parent2->childObjects()) {
+            foreach(QSharedPointer<ChildObject> child2, parent2->childObjectsOneToMany()) {
                 parent->addChildObjectManyToMany(child2);
             }
         }
@@ -379,7 +379,7 @@ void RelationsInDatabaseTest::testSetManyToManyRelationFromChild()
     for(int j = 0; j < PARENTCOUNT; ++j) {
         QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
         foreach(QSharedPointer<ParentObject> parent2, parents) {
-            foreach(QSharedPointer<ChildObject> child2, parent2->childObjects()) {
+            foreach(QSharedPointer<ChildObject> child2, parent2->childObjectsOneToMany()) {
                 parent->addChildObjectManyToMany(child2);
                 Qp::update(child2);
             }

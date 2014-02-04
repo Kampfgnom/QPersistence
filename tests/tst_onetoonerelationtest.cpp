@@ -10,7 +10,7 @@ void OneToOneRelationTest::initTestCase()
     RelationTestBase::initDatabase();
 
     QpMetaObject metaObject = QpMetaObject::forClassName(ParentObject::staticMetaObject.className());
-    m_parentToChildRelation = metaObject.metaProperty("childObject");
+    m_parentToChildRelation = metaObject.metaProperty("childObjectOneToOne");
 
     metaObject = QpMetaObject::forClassName(ChildObject::staticMetaObject.className());
     m_childToParentRelation = metaObject.metaProperty("parentObjectOneToOne");
@@ -18,7 +18,6 @@ void OneToOneRelationTest::initTestCase()
 
 void OneToOneRelationTest::cleanupTestCase()
 {
-    Qp::database().close();
 }
 
 QVariant OneToOneRelationTest::childFK(QSharedPointer<ParentObject> parent)
@@ -77,7 +76,7 @@ void OneToOneRelationTest::testDatabaseFKInsertFromParent()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(parent);
 
     QCOMPARE(childFK(parent), QVariant(Qp::primaryKey(child)));
@@ -89,7 +88,7 @@ void OneToOneRelationTest::testDatabaseFKInsertFromChild()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(child);
 
     QCOMPARE(childFK(parent), QVariant(Qp::primaryKey(child)));
@@ -101,11 +100,11 @@ void OneToOneRelationTest::testDatabaseFKChangeFromParent()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(parent);
 
     QSharedPointer<ChildObject> newChild = Qp::create<ChildObject>();
-    parent->setChildObject(newChild);
+    parent->setChildObjectOneToOne(newChild);
     Qp::update(parent);
 
     QCOMPARE(parentFK(child), QVariant(QVariant().toInt()));
@@ -118,11 +117,11 @@ void OneToOneRelationTest::testDatabaseFKChangeFromChild()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(child);
 
     QSharedPointer<ChildObject> newChild = Qp::create<ChildObject>();
-    parent->setChildObject(newChild);
+    parent->setChildObjectOneToOne(newChild);
     Qp::update(newChild);
 
     QCOMPARE(parentFK(child), QVariant(QVariant().toInt()));
@@ -135,10 +134,10 @@ void OneToOneRelationTest::testDatabaseFKClearFromParent()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(parent);
 
-    parent->setChildObject(QSharedPointer<ChildObject>());
+    parent->setChildObjectOneToOne(QSharedPointer<ChildObject>());
     Qp::update(parent);
 
     QCOMPARE(childFK(parent), QVariant());
@@ -150,10 +149,10 @@ void OneToOneRelationTest::testDatabaseFKClearFromChild()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(child);
 
-    parent->setChildObject(QSharedPointer<ChildObject>());
+    parent->setChildObjectOneToOne(QSharedPointer<ChildObject>());
     Qp::update(child);
 
     QCOMPARE(childFK(parent), QVariant());
@@ -167,7 +166,7 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
     QSharedPointer<ChildObject> child2 = Qp::create<ChildObject>();
     QSharedPointer<ChildObject> child3 = Qp::create<ChildObject>();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(child);
 
     QDateTime updateTimeParent = Qp::updateTime(parent);
@@ -198,7 +197,7 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
     {
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
-        parent->setChildObject(child2);
+        parent->setChildObjectOneToOne(child2);
         Qp::update(parent);
 
         QDateTime updateTimeParentAfterParentUpdate = Qp::updateTime(parent);
@@ -212,7 +211,7 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
     {
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
-        parent->setChildObject(child);
+        parent->setChildObjectOneToOne(child);
         Qp::update(child);
 
         QDateTime updateTimeParentAfterUpdate = Qp::updateTime(parent);
@@ -224,7 +223,7 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
 
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
-        parent->setChildObject(child3);
+        parent->setChildObjectOneToOne(child3);
         Qp::update(child3);
 
         QDateTime updateTimeParentAfterchild3Update = Qp::updateTime(parent);

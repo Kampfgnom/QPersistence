@@ -86,7 +86,7 @@ void CreationAndUpdateTimesTest::testUpdateTimeForOneToOneRelations()
     QSharedPointer<ChildObject> child3 = Qp::create<ChildObject>();
     VERIFY_QP_ERROR();
 
-    parent->setChildObject(child);
+    parent->setChildObjectOneToOne(child);
     Qp::update(parent);
 
     QDateTime updateTimeParent = Qp::updateTime(parent);
@@ -117,7 +117,7 @@ void CreationAndUpdateTimesTest::testUpdateTimeForOneToOneRelations()
     {
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
-        parent->setChildObject(child2);
+        parent->setChildObjectOneToOne(child2);
         Qp::update(parent);
 
         QDateTime updateTimeParentAfterParentUpdate = Qp::updateTime(parent);
@@ -131,7 +131,7 @@ void CreationAndUpdateTimesTest::testUpdateTimeForOneToOneRelations()
     {
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
-        parent->setChildObject(child);
+        parent->setChildObjectOneToOne(child);
         Qp::update(child);
 
         QDateTime updateTimeParentAfterUpdate = Qp::updateTime(parent);
@@ -143,7 +143,7 @@ void CreationAndUpdateTimesTest::testUpdateTimeForOneToOneRelations()
 
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
-        parent->setChildObject(child3);
+        parent->setChildObjectOneToOne(child3);
         Qp::update(child3);
 
         QDateTime updateTimeParentAfterchild3Update = Qp::updateTime(parent);
@@ -165,15 +165,15 @@ void CreationAndUpdateTimesTest::testUpdateTimeForOneToManyRelations()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     for(int i = 0; i < CHILDCOUNT; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObject(child);
+        parent->addChildObjectOneToMany(child);
     }
     Qp::update(parent);
 
     QDateTime updateTimeParent = Qp::updateTime(parent);
-    QDateTime updateTimeChildren = Qp::updateTime(parent->childObjects().first());
+    QDateTime updateTimeChildren = Qp::updateTime(parent->childObjectsOneToMany().first());
     QCOMPARE(updateTimeParent, updateTimeChildren);
 
-    foreach(QSharedPointer<ChildObject> child, parent->childObjects()) {
+    foreach(QSharedPointer<ChildObject> child, parent->childObjectsOneToMany()) {
         QDateTime updateTimeChild = Qp::updateTime(child);
         QCOMPARE(updateTimeParent, updateTimeChild);
     }
@@ -183,7 +183,7 @@ void CreationAndUpdateTimesTest::testUpdateTimeForOneToManyRelations()
     Qp::update(parent);
 
     updateTimeParent = Qp::updateTime(parent);
-    foreach(QSharedPointer<ChildObject> child, parent->childObjects()) {
+    foreach(QSharedPointer<ChildObject> child, parent->childObjectsOneToMany()) {
         QDateTime updateTimeChild = Qp::updateTime(child);
         QCOMPARE(updateTimeParent.addSecs(-1), updateTimeChild);
     }
@@ -202,7 +202,7 @@ void CreationAndUpdateTimesTest::testUpdateTimeForManyToManyRelations()
     for(int j = 0; j < PARENTCOUNT; ++j) {
         QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
         foreach(QSharedPointer<ParentObject> parent2, parents) {
-            foreach(QSharedPointer<ChildObject> child2, parent2->childObjects()) {
+            foreach(QSharedPointer<ChildObject> child2, parent2->childObjectsOneToMany()) {
                 parent->addChildObjectManyToMany(child2);
             }
         }

@@ -9,15 +9,14 @@
 ChildObject::ChildObject(QObject *parent) :
     QObject(parent),
     m_someInt(0),
-    m_parentObject("parentObjectOneToOne", this),
-    m_parentObject2("parentObjectOneToMany", this),
+    m_parentObjectOneToOne("parentObjectOneToOne", this),
+    m_parentObjectOneToMany("parentObjectOneToMany", this),
     m_parentObjectsManyToMany("parentObjectsManyToMany", this)
 {
 }
 
 ChildObject::~ChildObject()
 {
-    qDebug() << Q_FUNC_INFO;
 }
 
 int ChildObject::someInt() const
@@ -32,22 +31,17 @@ void ChildObject::setSomeInt(int arg)
 
 QSharedPointer<ParentObject> ChildObject::parentObjectOneToOne() const
 {
-    return m_parentObject.resolve();
+    return m_parentObjectOneToOne.resolve();
 }
 
 void ChildObject::setParentObjectOneToOne(const QSharedPointer<ParentObject> &parentObject)
 {
-    QSharedPointer<ParentObject> parent = parentObjectOneToOne();
-    if(parent) {
-        parent->setChildObject(QSharedPointer<ChildObject>());
-    }
-
-    m_parentObject.relate(parentObject);
+    m_parentObjectOneToOne.relate(parentObject);
 }
 
 QSharedPointer<ParentObject> ChildObject::parentObjectOneToMany() const
 {
-    return m_parentObject2.resolve();
+    return m_parentObjectOneToMany.resolve();
 }
 
 QList<QSharedPointer<ParentObject> > ChildObject::parentObjectsManyToMany() const
@@ -66,12 +60,12 @@ void ChildObject::addParentObjectManyToMany(QSharedPointer<ParentObject> arg)
     m_parentObjectsManyToMany.relate(arg);
 }
 
+void ChildObject::removeParentObjectManyToMany(QSharedPointer<ParentObject> arg)
+{
+    m_parentObjectsManyToMany.unrelate(arg);
+}
+
 void ChildObject::setParentObjectOneToMany(const QSharedPointer<ParentObject> &parentObject)
 {
-    QSharedPointer<ParentObject> parent = parentObjectOneToMany();
-    if(parent) {
-        parent->removeChildObjectOneToMany(Qp::sharedFrom(this));
-    }
-
-    m_parentObject2.relate(parentObject);
+    m_parentObjectOneToMany.relate(parentObject);
 }

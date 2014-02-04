@@ -9,19 +9,22 @@ RelationTestBase::RelationTestBase(QObject *parent) :
 
 void RelationTestBase::initDatabase()
 {
-    QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
-    db.setHostName("192.168.100.2");
-    db.setDatabaseName("niklas");
-    db.setUserName("niklas");
-    db.setPassword("niklas");
+    QSqlDatabase db = Qp::database();
+    if(!db.isOpen()) {
+        db = QSqlDatabase::addDatabase("QMYSQL");
+        db.setHostName("192.168.100.2");
+        db.setDatabaseName("niklas");
+        db.setUserName("niklas");
+        db.setPassword("niklas");
 
-    QVERIFY2(db.open(), db.lastError().text().toUtf8());
+        QVERIFY2(db.open(), db.lastError().text().toUtf8());
 
-    Qp::setSqlDebugEnabled(true);
-    Qp::setDatabase(db);
-    Qp::registerClass<ParentObject>();
-    Qp::registerClass<ChildObject>();
-    Qp::createCleanSchema();
+        Qp::setDatabase(db);
+        Qp::setSqlDebugEnabled(false);
+        Qp::registerClass<ParentObject>();
+        Qp::registerClass<ChildObject>();
+        Qp::createCleanSchema();
+    }
 
     VERIFY_QP_ERROR();
 }

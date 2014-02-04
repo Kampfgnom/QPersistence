@@ -133,7 +133,7 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
     }
 }
 
-void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
+void QpDatabaseSchema::createManyToManyRelationTables(const QMetaObject &metaObject)
 {
     QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
     QString primaryTable = meta.tableName();
@@ -165,6 +165,7 @@ void QpDatabaseSchema::createRelationTables(const QMetaObject &metaObject)
                                        foreignTable,
                                        "SET NULL");
         createTableQuery.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
+        createTableQuery.addUniqueKey(QStringList() << columnName << foreignColumnName);
         createTableQuery.prepareCreateTable();
         if ( !createTableQuery.exec()
              || createTableQuery.lastError().isValid()) {
@@ -331,7 +332,7 @@ void QpDatabaseSchema::createCleanSchema()
     }
 
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
-        createRelationTables(metaObject.metaObject());
+        createManyToManyRelationTables(metaObject.metaObject());
     }
 }
 
@@ -339,7 +340,7 @@ void QpDatabaseSchema::adjustSchema()
 {
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
         createTableIfNotExists(metaObject.metaObject());
-        createRelationTables(metaObject.metaObject());
+        createManyToManyRelationTables(metaObject.metaObject());
         addMissingColumns(metaObject.metaObject());
     }
 }

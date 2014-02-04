@@ -21,7 +21,8 @@ public:
         QSharedData(),
         count(-1),
         skip(-1),
-        canBulkExec(false)
+        canBulkExec(false),
+        ignore(false)
     {}
 
     QSqlDatabase database;
@@ -35,7 +36,9 @@ public:
     QpSqlCondition whereCondition;
     QList<QPair<QString, QpSqlQuery::Order> > orderBy;
     QList<QStringList> foreignKeys;
+    QList<QStringList> uniqueKeys;
     bool canBulkExec;
+    bool ignore;
 
     static bool debugEnabled;
     static QList<QpSqlQuery> bulkQueries;
@@ -102,7 +105,7 @@ bool QpSqlQuery::exec(const QString &queryString)
         int index = query.indexOf('?');
         int i = 0;
         QList<QVariant> values = boundValues().values();
-        while (index >= 0) {
+        while (index >= 0 && i < values.size()) {
             QString value = values.at(i).toString();
             if (value.isEmpty())
                 value = QLatin1String("NULL");
@@ -139,6 +142,10 @@ void QpSqlQuery::clear()
     data->whereCondition = QpSqlCondition();
     data->orderBy.clear();
     data->foreignKeys.clear();
+    data->uniqueKeys.clear();
+    data->rawFields.clear();
+    data->canBulkExec = false;
+    data->ignore = false;
 }
 
 bool QpSqlQuery::isDebugEnabled()
@@ -164,6 +171,16 @@ void QpSqlQuery::setTable(const QString &table)
 void QpSqlQuery::addPrimaryKey(const QString &name)
 {
     addField(name, data->backend->primaryKeyType());
+}
+
+void QpSqlQuery::addUniqueKey(const QStringList &fields)
+{
+    data->uniqueKeys.append(fields);
+}
+
+void QpSqlQuery::setOrIgnore(bool ignore)
+{
+    data->ignore = ignore;
 }
 
 void QpSqlQuery::addRawField(const QString &name, const QString &value)
@@ -220,6 +237,10 @@ void QpSqlQuery::prepareCreateTable()
     }
     query.append(fields.join(",\n\t"));
 
+    foreach(QStringList key, data->uniqueKeys) {
+        query.append(QString(",\n\tUNIQUE KEY (%1)").arg(key.join(", ")));
+    }
+
     foreach (const QStringList foreignKey, data->foreignKeys) {
         query.append(QString(",\n\tFOREIGN KEY (%1) REFERENCES %2(%3)")
                      .arg(foreignKey.first())
@@ -235,7 +256,6 @@ void QpSqlQuery::prepareCreateTable()
             query.append(QString("\n\t\tON UPDATE %1").arg(onUpdate));
         }
     }
-
 
     query.append("\n);");
 
@@ -348,7 +368,12 @@ bool QpSqlQuery::prepareUpdate()
 
 void QpSqlQuery::prepareInsert()
 {
-    QString query("INSERT INTO ");
+    QString query("INSERT ");
+    if(data->ignore)
+        query.append(" IGNORE ");
+
+    query.append("INTO ");
+
     query.append(data->table).append("\n\t(");
 
     QStringList rawFieldKeys = data->rawFields.keys();
@@ -374,11 +399,18 @@ void QpSqlQuery::prepareInsert()
     }
 
     query.append(fields.join(", "));
-    query.append(")");
+    query.append(") ");
+
+    if (data->whereCondition.isValid()) {
+        query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
+    }
 
     QSqlQuery::prepare(query);
 
     foreach (const QVariant value, data->fields.values()) {
+        addBindValue(value);
+    }
+    foreach (const QVariant value, data->whereCondition.bindValues()) {
         addBindValue(value);
     }
 }

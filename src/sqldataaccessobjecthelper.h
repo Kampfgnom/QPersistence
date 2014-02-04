@@ -9,6 +9,7 @@ class QSqlQuery;
 class QpError;
 class QpMetaObject;
 class QpMetaProperty;
+class QpSqlCondition;
 class QpSqlQuery;
 
 class QpSqlDataAccessObjectHelperPrivate;
@@ -52,6 +53,7 @@ private:
     QList<QpSqlQuery> queriesThatAdjustOneToManyRelation(const QpMetaProperty &relation, QObject *object);
     QList<QpSqlQuery> queriesThatAdjustOneToOneRelation(const QpMetaProperty &relation, QObject *object);
     QList<QpSqlQuery> queriesThatAdjustToOneRelation(const QpMetaProperty &relation, QObject *object);
+    QList<QpSqlQuery> queriesThatAdjustManyToManyRelation(const QpMetaProperty &relation, QObject *object);
 
 };
 

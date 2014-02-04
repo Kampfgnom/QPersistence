@@ -9,7 +9,7 @@
 class QpSqlConditionData : public QSharedData {
 public:
     QpSqlConditionData() : QSharedData(),
-        valuesBoundInString(false)
+        bindValues(false)
     {}
     QString rawString;
     QString key;
@@ -17,7 +17,7 @@ public:
     QpSqlCondition::BooleanOperator booleanOperator;
     QpSqlCondition::ComparisonOperator comparisonOperator;
     QList<QpSqlCondition> conditions;
-    mutable bool valuesBoundInString;
+    bool bindValues;
 };
 
 QpSqlCondition::QpSqlCondition() :
@@ -65,6 +65,15 @@ bool QpSqlCondition::isValid() const
             || !data->conditions.isEmpty();
 }
 
+void QpSqlCondition::setBindValuesAsString(bool bindValues)
+{
+    data->bindValues = bindValues;
+
+    for(int i = 0; i < data->conditions.size(); ++i) {
+        data->conditions[i].setBindValuesAsString(bindValues);
+    }
+}
+
 QpSqlCondition::QpSqlCondition(const QpSqlCondition &rhs) :
     data(rhs.data)
 {
@@ -98,9 +107,8 @@ QpSqlCondition QpSqlCondition::operator &&(const QpSqlCondition &rhs)
     return QpSqlCondition(QpSqlCondition::And, QList<QpSqlCondition>() << *this << rhs);
 }
 
-QString QpSqlCondition::toWhereClause(bool bindValuesInString) const
+QString QpSqlCondition::toWhereClause() const
 {
-    data->valuesBoundInString = bindValuesInString;
     if (!data->rawString.isEmpty())
         return data->rawString;
 
@@ -113,7 +121,7 @@ QString QpSqlCondition::toWhereClause(bool bindValuesInString) const
     if (!data->conditions.isEmpty()) {
         QStringList conditions;
         foreach (const QpSqlCondition &condition, data->conditions) {
-            conditions.append(condition.toWhereClause(bindValuesInString));
+            conditions.append(condition.toWhereClause());
         }
 
         QString result = conditions.join(booleanOperator());
@@ -126,7 +134,7 @@ QString QpSqlCondition::toWhereClause(bool bindValuesInString) const
     Q_ASSERT(!data->key.isEmpty());
 
     QString value = "?";
-    if(bindValuesInString)
+    if(data->bindValues)
         value = data->value.toString();
 
     return comparisonOperator().prepend(QString("%1").arg(data->key)).append(value);
@@ -136,7 +144,7 @@ QVariantList QpSqlCondition::bindValues() const
 {
     QVariantList result;
 
-    if(data->valuesBoundInString)
+    if(data->bindValues)
         return result;
 
     if(!data->rawString.isEmpty())

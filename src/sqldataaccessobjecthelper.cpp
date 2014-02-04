@@ -266,15 +266,10 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery &query, QO
 
 bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object)
 {
-    int primaryKey = Qp::Private::primaryKey(object);
-
     QList<QpSqlQuery> queries;
 
     foreach (const QpMetaProperty property, metaObject.relationProperties()) {
         QpMetaProperty::Cardinality cardinality = property.cardinality();
-
-        // Here we only have to handle relations, for which foreign key column is in other tables,
-        // because the foreign keys in the object's table have already been updated whith its normal UPDATE query
 
         if (cardinality == QpMetaProperty::OneToOneCardinality) {
             queries.append(queriesThatAdjustOneToOneRelation(property, object));
@@ -286,54 +281,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
             queries.append(queriesThatAdjustToOneRelation(property, object));
         }
         else if (cardinality == QpMetaProperty::ManyToManyCardinality) {
-            // Prepare a query, which sets the update times of all related objects accordingly
-            // This query will be executed twice: First for all previously related object, then for the new ones.
-            // TODO: Make use of other SQL backends. This is MySQL only!
-            QString updateTimeQueryString = QString("UPDATE %1"
-                                                    "\n\tINNER JOIN %2 "
-                                                    "\n\t\tON %2.%3 = %1.%4 "
-                                                    "\n\tSET %1.%5 = %6 "
-                                                    "\n\tWHERE %2.%7 = %8")
-                    .arg(property.reverseRelation().metaObject().tableName())
-                    .arg(property.tableName())
-                    .arg(property.reverseRelation().columnName())
-                    .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
-                    .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
-                    .arg(QpSqlBackend::forDatabase(data->database)->nowTimestamp())
-                    .arg(property.columnName())
-                    .arg(primaryKey);
-
-            QpSqlQuery setUpdateTimeOnRelatedObjectsQuery(data->database);
-            setUpdateTimeOnRelatedObjectsQuery.prepare(updateTimeQueryString);
-            queries.append(setUpdateTimeOnRelatedObjectsQuery);
-
-            // Prepare a query, which resets the relation (deletes all relation rows)
-            QpSqlQuery resetRelationQuery(data->database);
-            resetRelationQuery.setTable(property.tableName());
-            resetRelationQuery.setWhereCondition(QpSqlCondition(property.columnName(),
-                                                                QpSqlCondition::EqualTo,
-                                                                primaryKey));
-            resetRelationQuery.prepareDelete();
-            queries.append(resetRelationQuery);
-
-            // Create rows, which represent the relation
-            QList<QSharedPointer<QObject> > relatedObjects = Qp::Private::objectListCast(property.metaProperty().read(object));
-            if (relatedObjects.isEmpty())
-                continue;
-
-            foreach (QSharedPointer<QObject> relatedObject, relatedObjects) {
-                QpSqlQuery createRelationQuery(data->database);
-                createRelationQuery.setTable(property.tableName());
-                createRelationQuery.addField(property.columnName(), primaryKey);
-                createRelationQuery.addField(property.reverseRelation().columnName(), Qp::Private::primaryKey(relatedObject.data()));
-
-                createRelationQuery.prepareInsert();
-                queries.append(createRelationQuery);
-            }
-
-            QpSqlQuery setUpdateTimeOnRelatedObjectsQuery2(data->database);
-            setUpdateTimeOnRelatedObjectsQuery2.prepare(updateTimeQueryString);
-            queries.append(setUpdateTimeOnRelatedObjectsQuery2);
+            queries.append(queriesThatAdjustManyToManyRelation(property, object));
         }
     }
 
@@ -403,31 +351,12 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToManyRelatio
 
     // Build an OR'd where clause, which matches all now related objects
     QList<QpSqlCondition> relatedObjectsWhereClauses;
-    int count = 0;
     foreach (QSharedPointer<QObject> relatedObject, relatedObjects) {
         relatedObjectsWhereClauses.append(QpSqlCondition(QString("%1.%2")
                                                          .arg(relation.tableName())
                                                          .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY),
                                                          QpSqlCondition::EqualTo,
                                                          Qp::Private::primaryKey(relatedObject.data())));
-
-        relatedObject->setProperty(relation.columnName().toLatin1(), primaryKey);
-
-        // SQL (at least SQLITE) has a limitation, where a WHERE clause may only contain 999 subclauses
-        if (count > 990) {
-            QpSqlCondition relatedObjectsWhereClause(QpSqlCondition::Or, relatedObjectsWhereClauses);
-            QpSqlQuery setForeignKeysQuery(data->database);
-            setForeignKeysQuery.setTable(relation.tableName());
-            setForeignKeysQuery.addField(relation.columnName(), primaryKey);
-            setForeignKeysQuery.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
-            setForeignKeysQuery.setWhereCondition(relatedObjectsWhereClause);
-            setForeignKeysQuery.prepareUpdate();
-            queries.append(setForeignKeysQuery);
-            relatedObjectsWhereClauses.clear();
-            count = 0;
-        }
-
-        ++count;
     }
     QpSqlCondition relatedObjectsWhereClause(QpSqlCondition::Or, relatedObjectsWhereClauses);
 
@@ -460,6 +389,8 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToManyRelatio
                                                 primaryKey)
                               << QpSqlCondition(QString("%1 IS NULL").arg(relation.columnName())));
 
+    QpSqlCondition relatedObjectsWhereClause2 = relatedObjectsWhereClause;
+    relatedObjectsWhereClause2.setBindValuesAsString(true);
     QString updateTimeQueryString = QString("UPDATE %1"
                                             "\n\tINNER JOIN %2 "
                                             "\n\t\tON %2.%3 = %1.%4 "
@@ -471,7 +402,7 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToManyRelatio
             .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
             .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
             .arg(QpSqlBackend::forDatabase(data->database)->nowTimestamp())
-            .arg(relatedObjectsWhereClause.toWhereClause(true));
+            .arg(relatedObjectsWhereClause2.toWhereClause());
 
     QpSqlQuery setUpdateTimeOnRelatedObjectsQuery(data->database);
     setUpdateTimeOnRelatedObjectsQuery.prepare(updateTimeQueryString);
@@ -572,6 +503,103 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustToOneRelation(co
 
     return queries;
 
+}
+
+QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelation(const QpMetaProperty &relation, QObject *object)
+{
+    QList<QpSqlQuery> queries;
+    QVariant primaryKey = Qp::Private::primaryKey(object);
+
+    QList<QSharedPointer<QObject> > relatedObjects = Qp::Private::objectListCast(relation.metaProperty().read(object));
+
+    // Build an OR'd where clause, which matches all now related objects
+    QList<QpSqlCondition> relatedObjectsWhereClauses;
+    QList<QpSqlCondition> relatedObjectsWhereClauses2;
+    foreach (QSharedPointer<QObject> relatedObject, relatedObjects) {
+        relatedObjectsWhereClauses.append(QpSqlCondition(QString("%1.%2")
+                                                         .arg(relation.tableName())
+                                                         .arg(relation.reverseRelation().columnName()),
+                                                         QpSqlCondition::EqualTo,
+                                                         Qp::Private::primaryKey(relatedObject.data())));
+        relatedObjectsWhereClauses2.append(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                         QpSqlCondition::EqualTo,
+                                                         Qp::Private::primaryKey(relatedObject.data())));
+        // TODO: React to 999-clauses bug
+    }
+
+    QpSqlCondition relatedObjectsWhereClause(QpSqlCondition::Or, relatedObjectsWhereClauses);
+    QpSqlCondition relatedObjectsWhereClause2(QpSqlCondition::Or, relatedObjectsWhereClauses2);
+    relatedObjectsWhereClause2.setBindValuesAsString(true);
+
+    // The reset condition matches all objects, which have previously been related with me, but are not now
+    QpSqlCondition resetCondition = QpSqlCondition(relation.columnName(),
+                                                   QpSqlCondition::EqualTo,
+                                                   primaryKey);
+    if(!relatedObjects.isEmpty()) {
+        resetCondition = resetCondition && !relatedObjectsWhereClause;
+    }
+
+    QpSqlCondition resetCondition2 = resetCondition;
+    resetCondition2.setBindValuesAsString(true);
+    // Update the times of now unrelated objects
+    QString updatePreviouslyRelatedTimeQueryString = QString("UPDATE %1"
+                                            "\n\tINNER JOIN %2 "
+                                            "\n\t\tON %2.%3 = %1.%4 "
+                                            "\n\tSET %1.%5 = %6 "
+                                            "\n\tWHERE %7")
+            .arg(relation.reverseRelation().metaObject().tableName())
+            .arg(relation.tableName())
+            .arg(relation.reverseRelation().columnName())
+            .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
+            .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
+            .arg(QpSqlBackend::forDatabase(data->database)->nowTimestamp())
+            .arg(resetCondition2.toWhereClause());
+
+    QpSqlQuery setUpdateTimeOnPreviouslyRelatedObjectsQuery(data->database);
+    setUpdateTimeOnPreviouslyRelatedObjectsQuery.prepare(updatePreviouslyRelatedTimeQueryString);
+    queries.append(setUpdateTimeOnPreviouslyRelatedObjectsQuery);
+
+    // Remove now unrelated relations
+    QpSqlQuery removeNowUnrelatedQuery(data->database);
+    removeNowUnrelatedQuery.setTable(relation.tableName());
+    removeNowUnrelatedQuery.setWhereCondition(resetCondition);
+    removeNowUnrelatedQuery.prepareDelete();
+    queries.append(removeNowUnrelatedQuery);
+
+    if (relatedObjects.isEmpty())
+        return queries;
+
+    QString updateNewlyRelatedTimeQueryString = QString("UPDATE %1 SET %2 = %3 "
+                                                        "WHERE %4 "
+                                                        "AND NOT EXISTS (SELECT 1 FROM %5 WHERE %6 = %1.%7 AND %8 = %9)")
+            .arg(relation.reverseRelation().metaObject().tableName())
+            .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
+            .arg(QpSqlBackend::forDatabase(data->database)->nowTimestamp())
+            .arg(relatedObjectsWhereClause2.toWhereClause())
+            .arg(relation.tableName())
+            .arg(relation.reverseRelation().columnName())
+            .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
+            .arg(relation.columnName())
+            .arg(primaryKey.toString());
+
+    QpSqlQuery setUpdateTimeOnRelatedObjectsQuery(data->database);
+    setUpdateTimeOnRelatedObjectsQuery.prepare(updateNewlyRelatedTimeQueryString);
+    queries.append(setUpdateTimeOnRelatedObjectsQuery);
+
+    // Add newly related relations
+    foreach (QSharedPointer<QObject> relatedObject, relatedObjects) {
+        QVariant relatedPK = Qp::Private::primaryKey(relatedObject.data());
+
+        QpSqlQuery createRelationQuery(data->database);
+        createRelationQuery.setOrIgnore(true);
+        createRelationQuery.setTable(relation.tableName());
+        createRelationQuery.addField(relation.columnName(), primaryKey);
+        createRelationQuery.addField(relation.reverseRelation().columnName(), relatedPK);
+        createRelationQuery.prepareInsert();
+        queries.append(createRelationQuery);
+    }
+
+    return queries;
 }
 
 bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, QObject *object)

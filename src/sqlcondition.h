@@ -33,6 +33,8 @@ public:
 
     bool isValid() const;
 
+    void setBindValuesAsString(bool bindValues);
+
     QpSqlCondition(const QpSqlCondition &);
     QpSqlCondition &operator=(const QpSqlCondition &);
     ~QpSqlCondition();
@@ -41,7 +43,7 @@ public:
     QpSqlCondition operator ||(const QpSqlCondition &rhs);
     QpSqlCondition operator &&(const QpSqlCondition &rhs);
 
-    QString toWhereClause(bool bindValuesInString = false) const;
+    QString toWhereClause() const;
     QVariantList bindValues() const;
 
     QString booleanOperator() const;

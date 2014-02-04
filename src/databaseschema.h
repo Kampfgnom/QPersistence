@@ -57,7 +57,7 @@ private:
     void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;
 
-    void createRelationTables(const QMetaObject &metaObject);
+    void createManyToManyRelationTables(const QMetaObject &metaObject);
 
     QString metaPropertyToColumnDefinition(const QpMetaProperty &metaProperty);
 };
