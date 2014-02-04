@@ -181,7 +181,7 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
     query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
                                            Qp::Private::primaryKey(object)));
-    QList<QpSqlQuery> additionalQueries = fillValuesIntoQuery(metaObject, object, query);
+    fillValuesIntoQuery(metaObject, object, query);
     query.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
 
     // Insert the object itself
@@ -192,19 +192,11 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
         return false;
     }
 
-    foreach (QpSqlQuery query, additionalQueries) {
-        if (!query.exec()
-                || query.lastError().isValid()) {
-            setLastError(query);
-            return false;
-        }
-    }
-
     // Update related objects
     return adjustRelationsInDatabase(metaObject, object);
 }
 
-QList<QpSqlQuery> QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaObject,
+void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaObject,
                                                                    const QObject *object,
                                                                    QpSqlQuery &query)
 {
@@ -212,34 +204,6 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaO
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
         query.addField(property.columnName(), property.metaProperty().read(object));
     }
-
-    QList<QpSqlQuery> additionalQueries;
-
-    //    // There can not be any relations at insert time!
-    //    if (!forInsert) {
-    //        // Add relation properties
-    //        foreach (const QpMetaProperty property, metaObject.relationProperties()) {
-    //            QpMetaProperty::Cardinality cardinality = property.cardinality();
-
-    //            // Only care for "XtoOne" relations, since only they have to be inserted into our table
-    //            if (cardinality == QpMetaProperty::ManyToOneCardinality
-    //                    || (QpMetaProperty::OneToOneCardinality
-    //                        && property.hasTableForeignKey())) {
-    //                QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(property.metaProperty().read(object));
-
-    //                if (!relatedObject)
-    //                    continue;
-
-    //                QVariant foreignKey = Qp::Private::primaryKey(relatedObject.data());
-    //                query.addField(property.columnName(), foreignKey);
-
-    //                // If the foreign key is in my table, we also have to adjust the update time of the related object
-    //                additionalQueries.append(queryToAdjustUpdateTimeQueryForObject(relatedObject));
-    //            }
-    //        }
-    //    }
-
-    return additionalQueries;
 }
 
 void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery &query, QObject *object)

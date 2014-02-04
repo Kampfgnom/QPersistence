@@ -45,9 +45,10 @@ private:
     void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;
 
-    QList<QpSqlQuery> fillValuesIntoQuery(const QpMetaObject &metaObject,
-                                          const QObject *object,
-                                          QpSqlQuery &queryconst);
+    void fillValuesIntoQuery(const QpMetaObject &metaObject,
+                             const QObject *object,
+                             QpSqlQuery &query);
+
     bool adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object);
 
     QList<QpSqlQuery> queriesThatAdjustOneToManyRelation(const QpMetaProperty &relation, QObject *object);
