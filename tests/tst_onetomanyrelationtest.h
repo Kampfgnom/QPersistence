@@ -22,6 +22,7 @@ private Q_SLOTS:
     void testDatabaseFKChangeFromChild();
 
     void testUpdateTimesFromParent();
+    void testUpdateTimesFromChild();
 
 private:
     QpMetaProperty m_parentToChildRelation;

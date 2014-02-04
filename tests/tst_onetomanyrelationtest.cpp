@@ -197,7 +197,6 @@ void OneToManyRelationTest::testDatabaseFKChangeFromChild()
     }
 }
 
-
 void OneToManyRelationTest::testUpdateTimesFromParent()
 {
     static const int CHILDCOUNT = 3;
@@ -254,5 +253,92 @@ void OneToManyRelationTest::testUpdateTimesFromParent()
             QCOMPARE(timeChild, timeChildren);
         }
     }
+}
 
+void OneToManyRelationTest::testUpdateTimesFromChild()
+{
+    static const int CHILDCOUNT = 3;
+    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QList<QSharedPointer<ChildObject>> children;
+    for(int i = 0; i < CHILDCOUNT; ++i) {
+        QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+        parent->addChildObject(child);
+        children.append(child);
+        Qp::update(child);
+    }
+
+    QDateTime timeParent = Qp::updateTime(parent);
+    QDateTime timeChildren = Qp::updateTime(parent->childObjects().first());
+    QCOMPARE(timeParent, timeChildren);
+
+    foreach(QSharedPointer<ChildObject> child, parent->childObjects()) {
+        QDateTime timeChild = Qp::updateTime(child);
+        QCOMPARE(timeParent, timeChild);
+    }
+
+    qDebug() << "Sleeping 1 second...";
+    QTest::qSleep(1000);
+    Qp::update(parent->childObjects().first());
+
+    // verify child updatetime changes
+    QDateTime timeFirstChild = Qp::updateTime(parent->childObjects().first());
+    QCOMPARE(timeFirstChild, timeChildren.addSecs(1));
+
+    // verify parent time does not change
+    QCOMPARE(timeParent, Qp::updateTime(parent));
+
+    // verify other children's time does not change
+    foreach(QSharedPointer<ChildObject> child, parent->childObjects()) {
+        if(child == parent->childObjects().first())
+            continue;
+
+        QDateTime timeChild = Qp::updateTime(child);
+        QCOMPARE(timeFirstChild.addSecs(-1), timeChild);
+    }
+
+    // Create another parent
+    QSharedPointer<ParentObject> parent2 = Qp::create<ParentObject>();
+    parent2->addChildObject(Qp::create<ChildObject>());
+    parent2->addChildObject(Qp::create<ChildObject>());
+    QDateTime timeParent2 = Qp::updateTime(parent2);
+
+
+
+
+
+
+    qDebug() << "Sleeping 1 second...";
+    QTest::qSleep(1000);
+
+    // change one child's parent
+    QSharedPointer<ChildObject> changedChild = parent->childObjects().first();
+    parent2->addChildObject(changedChild);
+    Qp::update(changedChild);
+
+    {
+        // verify both parent's times changed
+        QDateTime newTimeParent1 = Qp::updateTime(parent);
+        QDateTime newTimeParent2 = Qp::updateTime(parent2);
+        QCOMPARE(newTimeParent1, timeFirstChild.addSecs(1));
+        QCOMPARE(newTimeParent1, newTimeParent2);
+
+        // verify the changed child's time changed
+        QCOMPARE(newTimeParent1, Qp::updateTime(changedChild));
+
+        // Verify other children times are unchanged
+        foreach(QSharedPointer<ChildObject> child, parent->childObjects()) {
+            Q_ASSERT(child != changedChild);
+
+            QDateTime timeChild = Qp::updateTime(child);
+            QCOMPARE(timeChild, timeChildren);
+        }
+
+        foreach(QSharedPointer<ChildObject> child, parent2->childObjects()) {
+            if(child == changedChild)
+                continue;
+
+            QDateTime timeChild = Qp::updateTime(child);
+            QCOMPARE(timeChild, timeParent2);
+        }
+    }
 }
