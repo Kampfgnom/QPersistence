@@ -13,13 +13,16 @@ class ChildObject : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(int someInt READ someInt WRITE setSomeInt)
-    Q_PROPERTY(QSharedPointer<ParentObject> parentObject READ parentObject)
-    Q_PROPERTY(QSharedPointer<ParentObject> parentObject2 READ parentObject2)
+    Q_PROPERTY(QSharedPointer<ParentObject> parentObjectOneToOne READ parentObjectOneToOne)
+    Q_PROPERTY(QSharedPointer<ParentObject> parentObjectOneToMany READ parentObjectOneToMany)
+    Q_PROPERTY(QList<QSharedPointer<ParentObject> > parentObjectsManyToMany READ parentObjectsManyToMany WRITE setParentObjectsManyToMany)
 
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:parentObject",
-                "reverserelation=childObject")
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:parentObject2",
-                "reverserelation=childObjects")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:parentObjectOneToOne",
+                "reverserelation=childObjectOneToOne")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:parentObjectOneToMany",
+                "reverserelation=childObjectsOneToMany")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:parentObjectsManyToMany",
+                "reverserelation=childObjectsManyToMany")
 
 
 public:
@@ -29,17 +32,22 @@ public:
     int someInt() const;
     void setSomeInt(int arg);
 
-    QSharedPointer<ParentObject> parentObject() const;
-    QSharedPointer<ParentObject> parentObject2() const;
+    QSharedPointer<ParentObject> parentObjectOneToOne() const;
+    QSharedPointer<ParentObject> parentObjectOneToMany() const;
+    QList<QSharedPointer<ParentObject> > parentObjectsManyToMany() const;
 
 private:
     int m_someInt;
-    QpWeakRelation<ParentObject> m_parentObject;
-    QpWeakRelation<ParentObject> m_parentObject2;
+    QpWeakRelation<ParentObject> m_parentObjectOneToOne;
+    QpWeakRelation<ParentObject> m_parentObjectOneToMany;
+    QpWeakRelation<ParentObject> m_parentObjectsManyToMany;
 
     friend class ParentObject;
-    void setParentObject(const QSharedPointer<ParentObject> &parentObject);
-    void setParentObject2(const QSharedPointer<ParentObject> &parentObject);
+    void setParentObjectOneToOne(const QSharedPointer<ParentObject> &parentObjectOneToOne);
+    void setParentObjectOneToMany(const QSharedPointer<ParentObject> &parentObjectOneToOne);
+    void setParentObjectsManyToMany(QList<QSharedPointer<ParentObject> > arg);
+    void addParentObjectManyToMany(QSharedPointer<ParentObject> arg);
+    void removeParentObjectManyToMany(QSharedPointer<ParentObject> arg);
 };
 
 #endif // CHILDOBJECT_H

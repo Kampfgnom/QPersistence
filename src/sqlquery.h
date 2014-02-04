@@ -30,8 +30,15 @@ public:
     void clear();
     void setTable(const QString &table);
     void addPrimaryKey(const QString &name);
+    void addUniqueKey(const QStringList &fields);
+    void setOrIgnore(bool ignore);
+    void addRawField(const QString &name, const QString &value);
     void addField(const QString &name, const QVariant &value = QVariant());
-    void addForeignKey(const QString &columnName, const QString &keyName, const QString &foreignTableName);
+    void addForeignKey(const QString &columnName,
+                       const QString &keyName,
+                       const QString &foreignTableName,
+                       const QString &onDelete = QString(),
+                       const QString &onUpdate = QString());
     void setCount(int limit);
     void setSkip(int skip);
     void setWhereCondition(const QpSqlCondition &condition);

@@ -21,19 +21,24 @@ public:
         QSharedData(),
         count(-1),
         skip(-1),
-        canBulkExec(false)
+        canBulkExec(false),
+        ignore(false)
     {}
 
     QSqlDatabase database;
-    QpSqlBackend backend;
+    QpSqlBackend *backend;
     QString table;
     QHash<QString, QVariant> fields;
+    // inserted directly into query instead of using bindValue
+    QHash<QString, QString> rawFields;
     int count;
     int skip;
     QpSqlCondition whereCondition;
     QList<QPair<QString, QpSqlQuery::Order> > orderBy;
     QList<QStringList> foreignKeys;
+    QList<QStringList> uniqueKeys;
     bool canBulkExec;
+    bool ignore;
 
     static bool debugEnabled;
     static QList<QpSqlQuery> bulkQueries;
@@ -100,7 +105,7 @@ bool QpSqlQuery::exec(const QString &queryString)
         int index = query.indexOf('?');
         int i = 0;
         QList<QVariant> values = boundValues().values();
-        while (index >= 0) {
+        while (index >= 0 && i < values.size()) {
             QString value = values.at(i).toString();
             if (value.isEmpty())
                 value = QLatin1String("NULL");
@@ -108,6 +113,8 @@ bool QpSqlQuery::exec(const QString &queryString)
             index = query.indexOf('?', index + value.length());
             ++i;
         }
+        query.append(";");
+        query.append(QString("\n%1 rows affected.").arg(this->numRowsAffected()));
         qDebug() << qPrintable(query);
     }
 
@@ -135,6 +142,10 @@ void QpSqlQuery::clear()
     data->whereCondition = QpSqlCondition();
     data->orderBy.clear();
     data->foreignKeys.clear();
+    data->uniqueKeys.clear();
+    data->rawFields.clear();
+    data->canBulkExec = false;
+    data->ignore = false;
 }
 
 bool QpSqlQuery::isDebugEnabled()
@@ -159,7 +170,22 @@ void QpSqlQuery::setTable(const QString &table)
 
 void QpSqlQuery::addPrimaryKey(const QString &name)
 {
-    addField(name, data->backend.primaryKeyType());
+    addField(name, data->backend->primaryKeyType());
+}
+
+void QpSqlQuery::addUniqueKey(const QStringList &fields)
+{
+    data->uniqueKeys.append(fields);
+}
+
+void QpSqlQuery::setOrIgnore(bool ignore)
+{
+    data->ignore = ignore;
+}
+
+void QpSqlQuery::addRawField(const QString &name, const QString &value)
+{
+    data->rawFields.insert(name, value);
 }
 
 void QpSqlQuery::addField(const QString &name, const QVariant &value)
@@ -167,9 +193,13 @@ void QpSqlQuery::addField(const QString &name, const QVariant &value)
     data->fields.insert(name, value);
 }
 
-void QpSqlQuery::addForeignKey(const QString &columnName, const QString &keyName, const QString &foreignTableName)
+void QpSqlQuery::addForeignKey(const QString &columnName,
+                               const QString &keyName,
+                               const QString &foreignTableName,
+                               const QString &onDelete,
+                               const QString &onUpdate)
 {
-    data->foreignKeys.append(QStringList() << columnName << keyName << foreignTableName);
+    data->foreignKeys.append(QStringList() << columnName << keyName << foreignTableName << onDelete << onUpdate);
 }
 
 void QpSqlQuery::setCount(int count)
@@ -207,11 +237,24 @@ void QpSqlQuery::prepareCreateTable()
     }
     query.append(fields.join(",\n\t"));
 
+    foreach(QStringList key, data->uniqueKeys) {
+        query.append(QString(",\n\tUNIQUE KEY (%1)").arg(key.join(", ")));
+    }
+
     foreach (const QStringList foreignKey, data->foreignKeys) {
         query.append(QString(",\n\tFOREIGN KEY (%1) REFERENCES %2(%3)")
                      .arg(foreignKey.first())
-                     .arg(foreignKey.last())
+                     .arg(foreignKey.at(2))
                      .arg(foreignKey.at(1)));
+
+        QString onDelete = foreignKey.at(3);
+        if(!onDelete.isEmpty()) {
+            query.append(QString("\n\t\tON DELETE %1").arg(onDelete));
+        }
+        QString onUpdate = foreignKey.at(4);
+        if(!onUpdate.isEmpty()) {
+            query.append(QString("\n\t\tON UPDATE %1").arg(onUpdate));
+        }
     }
 
     query.append("\n);");
@@ -288,7 +331,8 @@ void QpSqlQuery::prepareSelect()
 
 bool QpSqlQuery::prepareUpdate()
 {
-    if (data->fields.isEmpty())
+    if (data->fields.isEmpty()
+            && data->rawFields.isEmpty())
         return false;
 
     QString query("UPDATE ");
@@ -298,13 +342,17 @@ bool QpSqlQuery::prepareUpdate()
     foreach (const QString &field, data->fields.keys()) {
         fields.append(QString("%1 = ?").arg(field));
     }
+    foreach (const QString &field, data->rawFields.keys()) {
+        fields.append(QString("%1 = %2")
+                      .arg(field)
+                      .arg(data->rawFields.value(field)));
+    }
     query.append(fields.join(",\n\t"));
 
     if (data->whereCondition.isValid()) {
         query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
     }
 
-    query.append(';');
     QSqlQuery::prepare(query);
 
     foreach (const QVariant value, data->fields.values()) {
@@ -320,28 +368,49 @@ bool QpSqlQuery::prepareUpdate()
 
 void QpSqlQuery::prepareInsert()
 {
-    QString query("INSERT INTO ");
+    QString query("INSERT ");
+    if(data->ignore)
+        query.append(" IGNORE ");
+
+    query.append("INTO ");
+
     query.append(data->table).append("\n\t(");
+
+    QStringList rawFieldKeys = data->rawFields.keys();
 
     QStringList fields;
     foreach (const QString &field, data->fields.keys()) {
-        fields.append(QString("%1").arg(field));
+        fields.append(field);
+    }
+    foreach (QString field, rawFieldKeys) {
+        fields.append(field);
     }
     query.append(fields.join(", "));
 
-    query.append(")\n\tVALUES ");
-    query.append("(");
-    query.append(QString("?, ").repeated(fields.size() - 1));
-    if (fields.size() > 0)
-        query.append("?");
-    query.append("),");
+    query.append(")\n\tVALUES (");
 
-    // Remove the last comma
-    query.remove(query.length() - 1, 1);
+    fields = QStringList();
+    int s = data->fields.size();
+    for (int i = 0; i < s; ++i) {
+        fields.append(QLatin1String("?"));
+    }
+    foreach (QString field, rawFieldKeys) {
+        fields.append(data->rawFields.value(field));
+    }
+
+    query.append(fields.join(", "));
+    query.append(") ");
+
+    if (data->whereCondition.isValid()) {
+        query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
+    }
 
     QSqlQuery::prepare(query);
 
     foreach (const QVariant value, data->fields.values()) {
+        addBindValue(value);
+    }
+    foreach (const QVariant value, data->whereCondition.bindValues()) {
         addBindValue(value);
     }
 }

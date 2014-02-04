@@ -24,7 +24,7 @@ void setDatabase(const QSqlDatabase &database)
         QpSqlQuery query(database);
         query.prepare("PRAGMA foreign_keys = 1;");
         if (!query.exec()
-             || query.lastError().isValid()) {
+                || query.lastError().isValid()) {
             qCritical() << "The PRAGMA foreign_keys could not be set to 1:" << query.lastError();
         }
     }
@@ -79,19 +79,38 @@ QpError lastError()
 
 bool beginTransaction()
 {
-    return Qp::database().transaction();
+    bool transaction = Qp::database().transaction();
+    if(!transaction)
+        qFatal("START TRANSACTION failed.");
+
+    if(QpSqlQuery::isDebugEnabled())
+        qDebug() << "START TRANSACTION;";
+
+    return transaction;
 }
 
 CommitResult commitOrRollbackTransaction()
 {
     if(lastError().isValid()) {
-        if(Qp::database().rollback())
+        bool rollback = Qp::database().rollback();
+        if(!rollback)
+            qFatal("ROLLBACK failed.");
+
+        if(QpSqlQuery::isDebugEnabled())
+            qDebug() << "ROLLBACK;";
+        if(rollback)
             return RollbackSuccessful;
         else
             return RollbackFailed;
     }
 
-    if(Qp::database().commit())
+    bool commit = Qp::database().commit();
+    if(!commit)
+        qFatal("COMMIT failed.");
+
+    if(QpSqlQuery::isDebugEnabled())
+        qDebug() << "COMMIT;";
+    if(commit)
         return CommitSuccessful;
     else
         return CommitFailed;

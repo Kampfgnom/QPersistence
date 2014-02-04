@@ -9,6 +9,7 @@ class QSqlQuery;
 class QpError;
 class QpMetaObject;
 class QpMetaProperty;
+class QpSqlCondition;
 class QpSqlQuery;
 
 class QpSqlDataAccessObjectHelperPrivate;
@@ -27,6 +28,7 @@ public:
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);
+    bool readDatabaseTimes(const QpMetaObject &metaObject, QObject *object);
     void readQueryIntoObject(const QSqlQuery &query,
                              QObject *object);
 
@@ -43,11 +45,16 @@ private:
     void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;
 
-    void fillValuesIntoQuery(const QpMetaObject &metaObject,
-                             const QObject *object,
-                             QpSqlQuery &queryconst,
-                             bool forInsert = false);
+    QList<QpSqlQuery> fillValuesIntoQuery(const QpMetaObject &metaObject,
+                                          const QObject *object,
+                                          QpSqlQuery &queryconst);
     bool adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object);
+
+    QList<QpSqlQuery> queriesThatAdjustOneToManyRelation(const QpMetaProperty &relation, QObject *object);
+    QList<QpSqlQuery> queriesThatAdjustOneToOneRelation(const QpMetaProperty &relation, QObject *object);
+    QList<QpSqlQuery> queriesThatAdjustToOneRelation(const QpMetaProperty &relation, QObject *object);
+    QList<QpSqlQuery> queriesThatAdjustManyToManyRelation(const QpMetaProperty &relation, QObject *object);
+
 };
 
 #endif // SQLDATAACCESSOBJECTHELPER_H

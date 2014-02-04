@@ -103,7 +103,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count) c
 {
     int myCount = this->count();
 
-    if (count <= 0)
+    if (count <= 0 && myCount != 0)
         count = myCount;
 
     QpSqlQuery query = data->sqlDataAccessObjectHelper->readAllObjects(data->metaObject, skip, count);
@@ -151,7 +151,10 @@ QSharedPointer<QObject> QpDaoBase::readObject(int id) const
     QObject *object = createInstance();
 
     if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, object)) {
-        setLastError(data->sqlDataAccessObjectHelper->lastError());
+        QpError error = data->sqlDataAccessObjectHelper->lastError();
+        if(error.isValid())
+            setLastError(error);
+
         delete object;
         return QSharedPointer<QObject>();
     }

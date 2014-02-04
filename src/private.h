@@ -17,6 +17,8 @@ void setLastError(const QpError &error);
 
 int primaryKey(QObject *object);
 void setPrimaryKey(QObject *object, int key);
+QDateTime creationTime(QObject *object);
+QDateTime updateTime(QObject *object);
 
 template<class T> QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bool *ok = 0);
 template<class T> QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list);

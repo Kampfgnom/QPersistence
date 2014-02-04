@@ -13,9 +13,6 @@ class QpMetaProperty
 public:
     enum Cardinality {
         UnknownCardinality,
-        NoCardinality,
-        ToOneCardinality,
-        ToManyCardinality,
         OneToOneCardinality,
         OneToManyCardinality,
         ManyToOneCardinality,
@@ -68,6 +65,8 @@ private:
     explicit QpMetaProperty(const QMetaProperty &property, const QpMetaObject &metaObject);
 
     QString generateColumnName() const;
+
+    QString shortName(const QString &name) const;
 
     QExplicitlySharedDataPointer<QpMetaPropertyPrivate> data;
 };

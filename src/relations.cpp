@@ -13,6 +13,7 @@ public:
     QString name;
     QObject *parent;
     mutable bool resolved;
+    mutable bool cleared;
     mutable QList<QWeakPointer<T> > relatedList;
     mutable QWeakPointer<T> related;
     QpMetaProperty metaProperty;
@@ -32,8 +33,7 @@ template<class T>
 bool QpWeakRelationData<T>::isToMany() const
 {
     return cardinality == QpMetaProperty::OneToManyCardinality
-            || cardinality == QpMetaProperty::ManyToManyCardinality
-            || cardinality == QpMetaProperty::ToManyCardinality;
+            || cardinality == QpMetaProperty::ManyToManyCardinality;
 }
 
 template<class T>
@@ -58,6 +58,7 @@ QpWeakRelation<T>::QpWeakRelation(const QString &name, QObject *parent) :
     data->name = name;
     data->parent = parent;
     data->resolved = false;
+    data->cleared = false;
     data->metaProperty = QpMetaObject::forClassName(parent->metaObject()->className()).metaProperty(name);
     data->cardinality = data->metaProperty.cardinality();
 }
@@ -83,10 +84,13 @@ QpWeakRelation<T>::~QpWeakRelation()
 template<class T>
 QList<QSharedPointer<T> > QpWeakRelation<T>::resolveList() const
 {
+    if(data->cleared)
+        return QList<QSharedPointer<T> >();
+
     bool ok;
     QList<QSharedPointer<T> > result = Qp::Private::makeListStrong<T>(data->relatedList, &ok);
     if (!data->resolved || !ok)
-        return data->resolveFromDatabase();
+        result = data->resolveFromDatabase();
 
     return result;
 }
@@ -94,6 +98,9 @@ QList<QSharedPointer<T> > QpWeakRelation<T>::resolveList() const
 template<class T>
 QSharedPointer<T> QpWeakRelation<T>::resolve() const
 {
+    if(data->cleared)
+        return QSharedPointer<T>();
+
     QSharedPointer<T> strong = data->related.toStrongRef();
     if (!data->resolved || !strong) {
         QList<QSharedPointer<T> > list = data->resolveFromDatabase();
@@ -121,6 +128,8 @@ void QpWeakRelation<T>::relate(QSharedPointer<T> related)
         return;
     }
 
+    data->cleared = false;
+
     if (data->isToMany()) {
         if (!data->resolved)
             data->resolveFromDatabase();
@@ -140,6 +149,7 @@ void QpWeakRelation<T>::relate(QList<QSharedPointer<T> > related)
     if (!data->resolved)
         data->resolveFromDatabase();
 
+    data->cleared = false;
     data->relatedList.append(Qp::Private::makeListWeak<T>(related));
 }
 
@@ -167,6 +177,7 @@ void QpWeakRelation<T>::unrelate(QSharedPointer<T> related)
 template<class T>
 void QpWeakRelation<T>::clear()
 {
+    data->cleared = true;
     data->related = QWeakPointer<T>();
     data->relatedList.clear();
 }
@@ -177,11 +188,21 @@ public:
     QString name;
     QObject *parent;
     mutable bool resolved;
+    QpMetaProperty metaProperty;
+    QpMetaProperty::Cardinality cardinality;
     mutable QList<QSharedPointer<T> > relatedList;
     mutable QSharedPointer<T> related;
 
     void resolveFromDatabase() const;
+    bool isToMany() const;
 };
+
+template<class T>
+bool QpStrongRelationData<T>::isToMany() const
+{
+    return cardinality == QpMetaProperty::OneToManyCardinality
+            || cardinality == QpMetaProperty::ManyToManyCardinality;
+}
 
 template<class T>
 void QpStrongRelationData<T>::resolveFromDatabase() const
@@ -202,6 +223,8 @@ QpStrongRelation<T>::QpStrongRelation(const QString &name, QObject *parent) :
     data->name = name;
     data->parent = parent;
     data->resolved = false;
+    data->metaProperty = QpMetaObject::forClassName(parent->metaObject()->className()).metaProperty(name);
+    data->cardinality = data->metaProperty.cardinality();
 }
 
 template<class T>
@@ -234,7 +257,7 @@ QList<QSharedPointer<T> > QpStrongRelation<T>::resolveList() const
 template<class T>
 QSharedPointer<T> QpStrongRelation<T>::resolve() const
 {
-    if (!data->resolved || !data->related)
+    if (!data->resolved)
         data->resolveFromDatabase();
 
     return data->related;
@@ -254,8 +277,16 @@ void QpStrongRelation<T>::relate(QSharedPointer<T> related)
         return;
     }
 
-    data->relatedList.append(related);
-    data->related = related;
+    if (data->isToMany()) {
+        if (!data->resolved)
+            data->resolveFromDatabase();
+
+        data->relatedList.append(related.toWeakRef());
+    }
+    else {
+        data->resolved = true;
+        data->related = related.toWeakRef();
+    }
 }
 
 template<class T>
@@ -281,6 +312,9 @@ void QpStrongRelation<T>::unrelate(QSharedPointer<T> related)
 template<class T>
 void QpStrongRelation<T>::clear()
 {
-    data->related = QWeakPointer<T>();
+    if(!data->isToMany())
+        data->resolved = true;
+
+    data->related = QSharedPointer<T>();
     data->relatedList.clear();
 }

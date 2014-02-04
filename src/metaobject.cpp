@@ -52,7 +52,11 @@ QpMetaObject QpMetaObject::registerMetaObject(const QMetaObject &metaObject)
 QpMetaObject QpMetaObject::forClassName(const QString &className)
 {
     auto it = QpMetaObjectPrivate::metaObjectForName.find(className);
-    Q_ASSERT(it != QpMetaObjectPrivate::metaObjectForName.end());
+    Q_ASSERT_X(it != QpMetaObjectPrivate::metaObjectForName.end(),
+               Q_FUNC_INFO,
+               QString("No such metaobject for class name '%1'!\nHave you forgotten to register the class?")
+               .arg(className)
+               .toUtf8());
     return it.value();
 }
 

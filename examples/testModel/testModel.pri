@@ -1,9 +1,9 @@
 SOURCES += \
-    ../testModel/parentobject.cpp \
-    ../testModel/childobject.cpp
+    $$QPERSISTENCE_PATH/examples/testModel/parentobject.cpp \
+    $$QPERSISTENCE_PATH/examples/testModel/childobject.cpp
 
 HEADERS += \
-    ../testModel/parentobject.h \
-    ../testModel/childobject.h
+    $$QPERSISTENCE_PATH/examples/testModel/parentobject.h \
+    $$QPERSISTENCE_PATH/examples/testModel/childobject.h
 
-TESTMODEL_INCLUDEPATH = $$PWD/../
+TESTMODEL_INCLUDEPATH = $$QPERSISTENCE_PATH/examples/testModel/
