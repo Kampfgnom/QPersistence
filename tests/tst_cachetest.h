@@ -20,6 +20,4 @@ private Q_SLOTS:
     void testCacheReOrderingUponAccess();
 };
 
-
-
 #endif // TST_CACHETEST_H

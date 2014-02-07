@@ -3,9 +3,20 @@
 #include <QProcess>
 #include <QSqlError>
 
+QProcess *SynchronizeTest::m_currentProcess(nullptr);
+
 SynchronizeTest::SynchronizeTest(QObject *parent) :
     QObject(parent)
 {
+}
+
+void SynchronizeTest::cleanup(QProcess *process)
+{
+    Q_ASSERT(process == m_currentProcess);
+
+    m_currentProcess->close();
+    delete m_currentProcess;
+    m_currentProcess = nullptr;
 }
 
 void SynchronizeTest::initDatabase()
@@ -32,19 +43,15 @@ void SynchronizeTest::testUpdateTimeChangesFromOtherProcess()
 {
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
 
-    QProcess *process = changerProcess(Qp::primaryKey(parent));
-    process->start();
-
     QDateTime updateTime = Qp::updateTimeInDatabase(parent);
 
-    const int COUNTS = 3;
-    for(int i = 1; i <= COUNTS; ++i) {
-        qDebug() << "Checking update time...";
-        QTRY_COMPARE(updateTime.addSecs(i), Qp::updateTimeInDatabase(parent));
-    }
+    QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(Qp::primaryKey(parent), Counter));
 
-    process->close();
-    delete process;
+    for(int i = 0; i < childInts().size(); ++i) {
+        qDebug() << "Checking update time...";
+        QTRY_VERIFY(updateTime < Qp::updateTimeInDatabase(parent));
+        updateTime = Qp::updateTimeInDatabase(parent);
+    }
 }
 
 void SynchronizeTest::testUnchangedSynchronizeResult()
@@ -62,33 +69,94 @@ void SynchronizeTest::testUnchangedSynchronizeResult()
 void SynchronizeTest::testSynchronizeCounter()
 {
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QDateTime lastUpdateTime = Qp::updateTimeInDatabase(parent);
 
-    QProcess *process = changerProcess(Qp::primaryKey(parent));
-    process->start();
+    QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(Qp::primaryKey(parent), Counter));
 
-    QDateTime updateTime = Qp::updateTimeInDatabase(parent);
-
-    const int COUNTS = 3;
-    for(int i = 1; i <= COUNTS; ++i) {
-        QTRY_COMPARE(updateTime.addSecs(i), Qp::updateTimeInDatabase(parent));
+    for(int i = 0; i < childInts().size(); ++i) {
+        qDebug() << "Testing counter...";
+        QTRY_VERIFY(lastUpdateTime < Qp::updateTimeInDatabase(parent));
+        lastUpdateTime = Qp::updateTimeInDatabase(parent);
 
         Qp::SynchronizeResult result = Qp::synchronize(parent);
         QCOMPARE(result, Qp::Updated);
 
-        qDebug() << "Testing counter...";
-
-        QCOMPARE(i + 1, parent->counter());
+        QCOMPARE(parent->counter(), i + 1);
     }
-
-    process->close();
-    delete process;
 }
 
-QProcess *SynchronizeTest::changerProcess(int id)
+void SynchronizeTest::testSynchronizeOneToOneRelation()
 {
-    QProcess *process = new QProcess(this);
-    process->setProgram("../testDatabaseChanger/qpersistencetestdatabasechanger");
-    process->setArguments(QStringList() << QString("%1").arg(id));
+    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
 
-    return process;
+    QDateTime lastUpdateTime = Qp::updateTimeInDatabase(parent);
+
+    QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(Qp::primaryKey(parent), OneToOne));
+
+    for(int i = 0; i < childInts().size(); ++i) {
+        qDebug() << "Testing child...";
+        QTRY_VERIFY(lastUpdateTime < Qp::updateTimeInDatabase(parent));
+        lastUpdateTime = Qp::updateTimeInDatabase(parent);
+
+        Qp::SynchronizeResult result = Qp::synchronize(parent);
+        QCOMPARE(result, Qp::Updated);
+
+        QSharedPointer<ChildObject> child = parent->childObjectOneToOne();
+        QTRY_VERIFY(lastUpdateTime == Qp::updateTimeInDatabase(child));
+
+        Qp::synchronize(child);
+        QCOMPARE(child->someInt(), childInts().at(i));
+    }
+
+    QTRY_VERIFY(lastUpdateTime < Qp::updateTimeInDatabase(parent));
+    Qp::SynchronizeResult result = Qp::synchronize(parent);
+    QCOMPARE(result, Qp::Updated);
+
+    QCOMPARE(QSharedPointer<ChildObject>(), parent->childObjectOneToOne());
+}
+
+void SynchronizeTest::testSynchronizeOneToManyRelation()
+{
+    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+
+    QDateTime lastUpdateTime = Qp::updateTimeInDatabase(parent);
+
+    QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(Qp::primaryKey(parent), OneToMany));
+
+    for(int i = 0; i < childInts().size(); ++i) {
+        qDebug() << "Testing child...";
+        QTRY_VERIFY(lastUpdateTime < Qp::updateTimeInDatabase(parent));
+        lastUpdateTime = Qp::updateTimeInDatabase(parent);
+
+        Qp::SynchronizeResult result = Qp::synchronize(parent);
+        QCOMPARE(result, Qp::Updated);
+
+        QList<QSharedPointer<ChildObject> > children = parent->childObjectsOneToMany();
+        for(int i2 = 0; i2 < childInts().size(); ++i2) {
+            QSharedPointer<ChildObject> child = children.at(i2 + childInts().size() * i);
+            QTRY_VERIFY(lastUpdateTime == Qp::updateTimeInDatabase(child));
+
+            Qp::synchronize(child);
+            QCOMPARE(child->someInt(), childInts().at(i2));
+        }
+    }
+}
+
+void SynchronizeTest::startProcess()
+{
+    if(m_currentProcess)
+        m_currentProcess->start();
+}
+
+QProcess *SynchronizeTest::startChangerProcess(int id, ChangerMode mode)
+{
+    m_currentProcess = new QProcess(this);
+    m_currentProcess->setProcessChannelMode(QProcess::ForwardedChannels);
+    m_currentProcess->setProgram("../testDatabaseChanger/qpersistencetestdatabasechanger");
+    m_currentProcess->setArguments(QStringList()
+                                   << QString("%1").arg(id)
+                                   << QString("%1").arg(mode));
+
+    QTimer::singleShot(1000, this, SLOT(startProcess()));
+    return m_currentProcess;
 }

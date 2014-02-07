@@ -46,6 +46,7 @@ private:
     void setParentObjectOneToOne(const QSharedPointer<ParentObject> &parentObjectOneToOne);
     void setParentObjectOneToMany(const QSharedPointer<ParentObject> &parentObjectOneToOne);
     void setParentObjectsManyToMany(QList<QSharedPointer<ParentObject> > arg);
+
     void addParentObjectManyToMany(QSharedPointer<ParentObject> arg);
     void removeParentObjectManyToMany(QSharedPointer<ParentObject> arg);
 };

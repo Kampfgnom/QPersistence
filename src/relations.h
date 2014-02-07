@@ -25,6 +25,8 @@ public:
     void unrelate(QSharedPointer<T> related);
     void clear();
 
+    bool isResolved() const;
+
 private:
     QSharedDataPointer<QpWeakRelationData<T> > data;
 };
@@ -49,6 +51,8 @@ public:
     void relate(QList<QSharedPointer<T> > related);
     void unrelate(QSharedPointer<T> related);
     void clear();
+
+    bool isResolved() const;
 
 private:
     QSharedDataPointer<QpStrongRelationData<T> > data;

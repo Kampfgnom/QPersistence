@@ -36,6 +36,9 @@ QSharedPointer<ChildObject> ParentObject::childObjectOneToOne() const
 void ParentObject::setChildObjectOneToOne(QSharedPointer<ChildObject> child)
 {
     QSharedPointer<ChildObject> previousChild = childObjectOneToOne();
+    if(child == previousChild)
+        return;
+
     if(previousChild)
         previousChild->setParentObjectOneToOne(QSharedPointer<ParentObject>());
 
@@ -45,9 +48,8 @@ void ParentObject::setChildObjectOneToOne(QSharedPointer<ChildObject> child)
     }
 
     QSharedPointer<ParentObject> previousParent = child->parentObjectOneToOne();
-    if(previousParent) {
+    if(previousParent)
         previousParent->setChildObjectOneToOne(QSharedPointer<ChildObject>());
-    }
 
     child->setParentObjectOneToOne(Qp::sharedFrom(this));
     m_childObjectOneToOne.relate(child);
@@ -60,20 +62,23 @@ QList<QSharedPointer<ChildObject> > ParentObject::childObjectsOneToMany() const
 
 void ParentObject::addChildObjectOneToMany(QSharedPointer<ChildObject> child)
 {
-    if (m_childObjectsOneToMany.contains(child))
-        return;
-
     if(!child)
         return;
 
     QSharedPointer<ParentObject> previousParent = child->parentObjectOneToMany();
+    QSharedPointer<ParentObject> sharedThis = Qp::sharedFrom(this);
+
+    if(previousParent == sharedThis)
+        return;
+
     if(previousParent) {
         previousParent->removeChildObjectOneToMany(child);
     }
 
-    child->setParentObjectOneToMany(Qp::sharedFrom(this));
+    child->setParentObjectOneToMany(sharedThis);
     m_childObjectsOneToMany.relate(child);
 }
+
 
 void ParentObject::removeChildObjectOneToMany(QSharedPointer<ChildObject> child)
 {
@@ -133,10 +138,44 @@ void ParentObject::setCounter(int arg)
 
 void ParentObject::setChildObjectsOneToMany(QList<QSharedPointer<ChildObject> > arg)
 {
+    if(m_childObjectsOneToMany.isResolved()) {
+        foreach(QSharedPointer<ChildObject> child, childObjectsOneToMany()) {
+            child->setParentObjectOneToMany(QSharedPointer<ParentObject>());
+        }
+
+        m_childObjectsOneToMany.clear();
+
+        foreach(QSharedPointer<ChildObject> child,  arg) {
+            QSharedPointer<ParentObject> previousParent = child->parentObjectOneToMany();
+            QSharedPointer<ParentObject> sharedThis = Qp::sharedFrom(this);
+
+            if(previousParent != sharedThis) {
+                if(previousParent) {
+                    previousParent->removeChildObjectOneToMany(child);
+                }
+
+                child->setParentObjectOneToMany(sharedThis);
+            }
+        }
+    }
+
     m_childObjectsOneToMany.relate(arg);
 }
 
 void ParentObject::setChildObjectsManyToMany(QList<QSharedPointer<ChildObject> > arg)
 {
+    if(m_childObjectsManyToMany.isResolved()) {
+        QSharedPointer<ParentObject> sharedThis = Qp::sharedFrom(this);
+        foreach(QSharedPointer<ChildObject> child, childObjectsManyToMany()) {
+            child->removeParentObjectManyToMany(sharedThis);
+        }
+
+        m_childObjectsManyToMany.clear();
+
+        foreach(QSharedPointer<ChildObject> child,  arg) {
+            child->addParentObjectManyToMany(sharedThis);
+        }
+    }
+
     m_childObjectsManyToMany.relate(arg);
 }

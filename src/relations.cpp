@@ -183,6 +183,12 @@ void QpWeakRelation<T>::clear()
 }
 
 template<class T>
+bool QpWeakRelation<T>::isResolved() const
+{
+    return data->resolved;
+}
+
+template<class T>
 class QpStrongRelationData : public QSharedData {
 public:
     QString name;
@@ -317,4 +323,10 @@ void QpStrongRelation<T>::clear()
 
     data->related = QSharedPointer<T>();
     data->relatedList.clear();
+}
+
+template<class T>
+bool QpStrongRelation<T>::isResolved() const
+{
+    return data->resolved;
 }
