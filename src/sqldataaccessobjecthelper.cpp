@@ -167,6 +167,9 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
     }
 
     Qp::Private::setPrimaryKey(object, query.lastInsertId().toInt());
+    QDateTime time = readCreationTime(metaObject, object);
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME.toLatin1(), time);
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME.toLatin1(), time);
 
     return true;
 }
@@ -191,6 +194,8 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
         setLastError(query);
         return false;
     }
+
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME.toLatin1(), readUpdateTime(metaObject, object));
 
     // Update related objects
     return adjustRelationsInDatabase(metaObject, object);
@@ -586,14 +591,13 @@ bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, Q
     return true;
 }
 
-bool QpSqlDataAccessObjectHelper::readDatabaseTimes(const QpMetaObject &metaObject, QObject *object)
+QDateTime QpSqlDataAccessObjectHelper::readUpdateTime(const QpMetaObject &metaObject, QObject *object)
 {
     Q_ASSERT(object);
 
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
     query.setCount(1);
-    query.addField(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME);
     query.addField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
     query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
@@ -603,14 +607,38 @@ bool QpSqlDataAccessObjectHelper::readDatabaseTimes(const QpMetaObject &metaObje
     if (!query.exec()
             || query.lastError().isValid()) {
         setLastError(query);
-        return false;
+        return QDateTime();
     }
 
     if(!query.first())
-        return false;
+        return QDateTime();
 
-    readQueryIntoObject(query, object);
-    return true;
+    return query.value(0).toDateTime();
+}
+
+QDateTime QpSqlDataAccessObjectHelper::readCreationTime(const QpMetaObject &metaObject, QObject *object)
+{
+    Q_ASSERT(object);
+
+    QpSqlQuery query(data->database);
+    query.setTable(metaObject.tableName());
+    query.setCount(1);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME);
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpSqlCondition::EqualTo,
+                                           Qp::Private::primaryKey(object)));
+    query.prepareSelect();
+
+    if (!query.exec()
+            || query.lastError().isValid()) {
+        setLastError(query);
+        return QDateTime();
+    }
+
+    if(!query.first())
+        return QDateTime();
+
+    return query.value(0).toDateTime();
 }
 
 QpError QpSqlDataAccessObjectHelper::lastError() const

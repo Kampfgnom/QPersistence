@@ -13,6 +13,7 @@ class ParentObject : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString aString READ aString WRITE setAString)
+    Q_PROPERTY(int counter READ counter WRITE setCounter)
     Q_PROPERTY(QSharedPointer<ChildObject> childObjectOneToOne READ childObjectOneToOne WRITE setChildObjectOneToOne)
     Q_PROPERTY(QList<QSharedPointer<ChildObject> > childObjectsOneToMany READ childObjectsOneToMany WRITE setChildObjectsOneToMany)
     Q_PROPERTY(QList<QSharedPointer<ChildObject> > childObjectsManyToMany READ childObjectsManyToMany WRITE setChildObjectsManyToMany)
@@ -42,7 +43,11 @@ public:
     void addChildObjectManyToMany(QSharedPointer<ChildObject> arg);
     void removeChildObjectManyToMany(QSharedPointer<ChildObject> child);
 
+    int counter() const;
+    void increaseCounter();
+
 private:
+    void setCounter(int arg);
     void setChildObjectsOneToMany(QList<QSharedPointer<ChildObject> > arg);
     void setChildObjectsManyToMany(QList<QSharedPointer<ChildObject> > arg);
 
@@ -50,6 +55,7 @@ private:
     QpStrongRelation<ChildObject> m_childObjectOneToOne;
     QpStrongRelation<ChildObject> m_childObjectsOneToMany;
     QpStrongRelation<ChildObject> m_childObjectsManyToMany;
+    int m_counter;
 };
 
 #endif // PARENTOBJECT_H

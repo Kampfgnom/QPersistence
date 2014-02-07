@@ -9,7 +9,8 @@ ParentObject::ParentObject(QObject *parent) :
     QObject(parent),
     m_childObjectOneToOne("childObjectOneToOne", this),
     m_childObjectsOneToMany("childObjectsOneToMany", this),
-    m_childObjectsManyToMany("childObjectsManyToMany", this)
+    m_childObjectsManyToMany("childObjectsManyToMany", this),
+    m_counter(0)
 {
 }
 
@@ -113,6 +114,21 @@ void ParentObject::removeChildObjectManyToMany(QSharedPointer<ChildObject> child
 
     child->removeParentObjectManyToMany(Qp::sharedFrom(this));
     m_childObjectsManyToMany.unrelate(child);
+}
+
+int ParentObject::counter() const
+{
+    return m_counter;
+}
+
+void ParentObject::increaseCounter()
+{
+    setCounter(counter() + 1);
+}
+
+void ParentObject::setCounter(int arg)
+{
+    m_counter = arg;
 }
 
 void ParentObject::setChildObjectsOneToMany(QList<QSharedPointer<ChildObject> > arg)

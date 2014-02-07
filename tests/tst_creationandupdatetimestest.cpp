@@ -47,8 +47,8 @@ void CreationAndUpdateTimesTest::testCreationTime()
     QVERIFY(query.exec());
     QVERIFY(query.first());
 
-    QDateTime creationTime = Qp::creationTime(parent);
-    QDateTime updateTime = Qp::updateTime(parent);
+    QDateTime creationTime = Qp::creationTimeInDatabase(parent);
+    QDateTime updateTime = Qp::updateTimeInDatabase(parent);
     QDateTime databaseTime = query.value(0).toDateTime();
 
     QCOMPARE(creationTime, databaseTime);
@@ -60,7 +60,7 @@ void CreationAndUpdateTimesTest::testUpdateTime()
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     VERIFY_QP_ERROR();
 
-    QDateTime creationTime = Qp::creationTime(parent);
+    QDateTime creationTime = Qp::creationTimeInDatabase(parent);
 
     qDebug() << "Sleeping 1 second...";
     QTest::qSleep(1000);
@@ -70,8 +70,8 @@ void CreationAndUpdateTimesTest::testUpdateTime()
     QVERIFY(query.exec());
     QVERIFY(query.first());
 
-    QDateTime creationTimeAfterUpdate = Qp::creationTime(parent);
-    QDateTime updateTime = Qp::updateTime(parent);
+    QDateTime creationTimeAfterUpdate = Qp::creationTimeInDatabase(parent);
+    QDateTime updateTime = Qp::updateTimeInDatabase(parent);
     QDateTime databaseTime = query.value(0).toDateTime();
 
     QCOMPARE(creationTime, creationTimeAfterUpdate);

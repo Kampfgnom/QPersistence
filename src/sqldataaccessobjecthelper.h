@@ -28,7 +28,8 @@ public:
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);
-    bool readDatabaseTimes(const QpMetaObject &metaObject, QObject *object);
+    QDateTime readUpdateTime(const QpMetaObject &metaObject, QObject *object);
+    QDateTime readCreationTime(const QpMetaObject &metaObject, QObject *object);
     void readQueryIntoObject(const QSqlQuery &query,
                              QObject *object);
 

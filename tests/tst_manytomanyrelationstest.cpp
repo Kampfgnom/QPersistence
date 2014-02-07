@@ -139,7 +139,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
 
         QSharedPointer<ParentObject> addedToParent = tree.parents.first();
         QSharedPointer<ChildObject> addedChild = Qp::create<ChildObject>();
-        QDateTime previousTime = Qp::updateTime(addedChild);
+        QDateTime previousTime = Qp::updateTimeInDatabase(addedChild);
 
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
@@ -149,7 +149,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
 
         changedTree.children.append(addedChild);
         changedTree.parents.append(addedToParent);
-        QDateTime newTime = Qp::updateTime(addedToParent);
+        QDateTime newTime = Qp::updateTimeInDatabase(addedToParent);
 
         testUpdateTimes(previousTime, newTime, changedTree, tree);
     }
@@ -161,7 +161,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
 
         QSharedPointer<ParentObject> removedFromParent = tree.parents.at(1);
         QSharedPointer<ChildObject> removedChild = removedFromParent->childObjectsManyToMany().first();
-        QDateTime previousTime = Qp::updateTime(removedChild);
+        QDateTime previousTime = Qp::updateTimeInDatabase(removedChild);
 
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
@@ -171,7 +171,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
 
         changedTree.children.append(removedChild);
         changedTree.parents.append(removedFromParent);
-        QDateTime newTime = Qp::updateTime(removedFromParent);
+        QDateTime newTime = Qp::updateTimeInDatabase(removedFromParent);
 
         testUpdateTimes(previousTime, newTime, changedTree, tree);
     }
@@ -184,7 +184,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
         QSharedPointer<ParentObject> addedFromParent = tree.parents.at(0);
         QSharedPointer<ParentObject> addedToParent = tree.parents.at(1);
         QSharedPointer<ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
-        QDateTime previousTime = Qp::updateTime(changedChild);
+        QDateTime previousTime = Qp::updateTimeInDatabase(changedChild);
 
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
@@ -196,7 +196,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
         changedTree.children.append(changedChild);
         changedTree.parents.append(addedToParent);
 
-        QDateTime newTime = Qp::updateTime(addedToParent);
+        QDateTime newTime = Qp::updateTimeInDatabase(addedToParent);
 
         testUpdateTimes(previousTime, newTime, changedTree, tree);
     }
@@ -211,7 +211,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
 
         QSharedPointer<ParentObject> addedToParent = tree.parents.first();
         QSharedPointer<ChildObject> addedChild = Qp::create<ChildObject>();
-        QDateTime previousTime = Qp::updateTime(addedChild);
+        QDateTime previousTime = Qp::updateTimeInDatabase(addedChild);
 
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
@@ -221,7 +221,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
 
         changedTree.children.append(addedChild);
         changedTree.parents.append(addedToParent);
-        QDateTime newTime = Qp::updateTime(addedChild);
+        QDateTime newTime = Qp::updateTimeInDatabase(addedChild);
 
         testUpdateTimes(previousTime, newTime, changedTree, tree);
     }
@@ -233,7 +233,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
 
         QSharedPointer<ParentObject> removedFromParent = tree.parents.at(1);
         QSharedPointer<ChildObject> removedChild = removedFromParent->childObjectsManyToMany().first();
-        QDateTime previousTime = Qp::updateTime(removedChild);
+        QDateTime previousTime = Qp::updateTimeInDatabase(removedChild);
 
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
@@ -243,7 +243,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
 
         changedTree.children.append(removedChild);
         changedTree.parents.append(removedFromParent);
-        QDateTime newTime = Qp::updateTime(removedChild);
+        QDateTime newTime = Qp::updateTimeInDatabase(removedChild);
 
         testUpdateTimes(previousTime, newTime, changedTree, tree);
     }
@@ -256,7 +256,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         QSharedPointer<ParentObject> addedFromParent = tree.parents.at(0);
         QSharedPointer<ParentObject> addedToParent = tree.parents.at(1);
         QSharedPointer<ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
-        QDateTime previousTime = Qp::updateTime(changedChild);
+        QDateTime previousTime = Qp::updateTimeInDatabase(changedChild);
 
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
@@ -268,7 +268,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         changedTree.children.append(changedChild);
         changedTree.parents.append(addedToParent);
 
-        QDateTime newTime = Qp::updateTime(changedChild);
+        QDateTime newTime = Qp::updateTimeInDatabase(changedChild);
 
         testUpdateTimes(previousTime, newTime, changedTree, tree);
     }
@@ -366,36 +366,36 @@ void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime 
 {
     foreach(QSharedPointer<ParentObject> parent, completeTree.parents) {
         if(changed.parents.contains(parent)) {
-            QCOMPARE(Qp::updateTime(parent), newTime);
+            QCOMPARE(Qp::updateTimeInDatabase(parent), newTime);
         }
         else {
-            QVERIFY(Qp::updateTime(parent) <= previousTime);
+            QVERIFY(Qp::updateTimeInDatabase(parent) <= previousTime);
         }
 
         foreach(QSharedPointer<ChildObject> child, parent->childObjectsManyToMany()) {
             if(changed.children.contains(child)) {
-                QCOMPARE(Qp::updateTime(child), newTime);
+                QCOMPARE(Qp::updateTimeInDatabase(child), newTime);
             }
             else {
-                QVERIFY(Qp::updateTime(child) <= previousTime);
+                QVERIFY(Qp::updateTimeInDatabase(child) <= previousTime);
             }
         }
     }
 
     foreach(QSharedPointer<ChildObject> child, completeTree.children) {
         if(changed.children.contains(child)) {
-            QCOMPARE(Qp::updateTime(child), newTime);
+            QCOMPARE(Qp::updateTimeInDatabase(child), newTime);
         }
         else {
-            QVERIFY(Qp::updateTime(child) <= previousTime);
+            QVERIFY(Qp::updateTimeInDatabase(child) <= previousTime);
         }
 
         foreach(QSharedPointer<ParentObject> parent, child->parentObjectsManyToMany()) {
             if(changed.parents.contains(parent)) {
-                QCOMPARE(Qp::updateTime(parent), newTime);
+                QCOMPARE(Qp::updateTimeInDatabase(parent), newTime);
             }
             else {
-                QVERIFY(Qp::updateTime(parent) <= previousTime);
+                QVERIFY(Qp::updateTimeInDatabase(parent) <= previousTime);
             }
         }
     }

@@ -7,6 +7,10 @@
 #include "dataaccessobject.h"
 
 class QpMetaObject;
+class QpError;
+template<class T>
+class QpDao;
+class QpDaoBase;
 
 namespace Qp {
 
@@ -15,6 +19,12 @@ enum CommitResult {
     RollbackFailed,
     CommitSuccessful,
     CommitFailed
+};
+
+enum SynchronizeResult : short {
+    Error,
+    Unchanged,
+    Updated
 };
 
 void setDatabase(const QSqlDatabase &database);
@@ -39,8 +49,9 @@ template<class T> int count();
 template<class T> QSharedPointer<T> create();
 template<class T> bool update(QSharedPointer<T> object);
 template<class T> bool remove(QSharedPointer<T> object);
+template<class T> SynchronizeResult synchronize(QSharedPointer<T> object);
 template<class T> QDateTime creationTime(QSharedPointer<T> object);
-template<class T> QDateTime updateTime(QSharedPointer<T> object);
+template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object);
 
 template<class K, class V> void registerMappableTypes();
 template<class T> void registerSetType();

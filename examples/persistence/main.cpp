@@ -62,26 +62,26 @@ int main(int argc, char *argv[])
 
     qDebug() << "Updating parents...";
     foreach(QSharedPointer<ParentObject> parent, Qp::readAll<ParentObject>()) {
-        qDebug() << Qp::updateTime(parent);
+        qDebug() << Qp::updateTimeInDatabase(parent);
         foreach(QSharedPointer<ChildObject> c, parent->childObjectsManyToMany()) {
-            qDebug() << Qp::updateTime(c);
+            qDebug() << Qp::updateTimeInDatabase(c);
         }
         foreach(QSharedPointer<ChildObject> c, parent->childObjectsOneToMany()) {
-            qDebug() << Qp::updateTime(c);
+            qDebug() << Qp::updateTimeInDatabase(c);
         }
-        qDebug() << Qp::updateTime(parent->childObjectOneToOne());
+        qDebug() << Qp::updateTimeInDatabase(parent->childObjectOneToOne());
 
         parent->setAString(QString("test"));
         Qp::update(parent);
 
-        qDebug() << Qp::updateTime(parent);
+        qDebug() << Qp::updateTimeInDatabase(parent);
         foreach(QSharedPointer<ChildObject> c, parent->childObjectsManyToMany()) {
-            qDebug() << Qp::updateTime(c);
+            qDebug() << Qp::updateTimeInDatabase(c);
         }
         foreach(QSharedPointer<ChildObject> c, parent->childObjectsOneToMany()) {
-            qDebug() << Qp::updateTime(c);
+            qDebug() << Qp::updateTimeInDatabase(c);
         }
-        qDebug() << Qp::updateTime(parent->childObjectOneToOne());
+        qDebug() << Qp::updateTimeInDatabase(parent->childObjectOneToOne());
     }
     qDebug() << "Done.\n";
 
@@ -89,27 +89,27 @@ int main(int argc, char *argv[])
 
     qDebug() << "Updating m:n child...";
     foreach(QSharedPointer<ParentObject> parent, Qp::readAll<ParentObject>()) {
-        qDebug() << Qp::updateTime(parent);
+        qDebug() << Qp::updateTimeInDatabase(parent);
         foreach(QSharedPointer<ChildObject> c, parent->childObjectsManyToMany()) {
-            qDebug() << Qp::updateTime(c);
+            qDebug() << Qp::updateTimeInDatabase(c);
         }
         foreach(QSharedPointer<ChildObject> c, parent->childObjectsOneToMany()) {
-            qDebug() << Qp::updateTime(c);
+            qDebug() << Qp::updateTimeInDatabase(c);
         }
-        qDebug() << Qp::updateTime(parent->childObjectOneToOne());
+        qDebug() << Qp::updateTimeInDatabase(parent->childObjectOneToOne());
 
         QSharedPointer<ChildObject> c1 = parent->childObjectsManyToMany().first();
         c1->setSomeInt(123);
         Qp::update(c1);
 
-        qDebug() << Qp::updateTime(parent);
+        qDebug() << Qp::updateTimeInDatabase(parent);
         foreach(QSharedPointer<ChildObject> c, parent->childObjectsManyToMany()) {
-            qDebug() << Qp::updateTime(c);
+            qDebug() << Qp::updateTimeInDatabase(c);
         }
         foreach(QSharedPointer<ChildObject> c, parent->childObjectsOneToMany()) {
-            qDebug() << Qp::updateTime(c);
+            qDebug() << Qp::updateTimeInDatabase(c);
         }
-        qDebug() << Qp::updateTime(parent->childObjectOneToOne());
+        qDebug() << Qp::updateTimeInDatabase(parent->childObjectOneToOne());
     }
     qDebug() << "Done.\n";
 

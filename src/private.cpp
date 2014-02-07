@@ -25,17 +25,20 @@ void setPrimaryKey(QObject *object, int key)
     object->setProperty("_Qp_ID",key);
 }
 
-QDateTime creationTime(QObject *object)
+QDateTime creationTimeInDatabase(QObject *object)
 {
-    // TODO: Remove this line, once the times are automatically consistent with the database
-    QpSqlDataAccessObjectHelper::forDatabase(Qp::database())->readDatabaseTimes(QpMetaObject::forClassName(object->metaObject()->className()), object);
-    return object->property(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME.toLatin1()).toDateTime();
+    QpSqlDataAccessObjectHelper *daoHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
+    return daoHelper->readCreationTime(QpMetaObject::forClassName(object->metaObject()->className()), object);
 }
 
-QDateTime updateTime(QObject *object)
+QDateTime updateTimeInDatabase(QObject *object)
 {
-    // TODO: Remove this line, once the times are automatically consistent with the database
-    QpSqlDataAccessObjectHelper::forDatabase(Qp::database())->readDatabaseTimes(QpMetaObject::forClassName(object->metaObject()->className()), object);
+    QpSqlDataAccessObjectHelper *daoHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
+    return daoHelper->readUpdateTime(QpMetaObject::forClassName(object->metaObject()->className()), object);
+}
+
+QDateTime updateTimeInObject(QObject *object)
+{
     return object->property(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME.toLatin1()).toDateTime();
 }
 

@@ -4,7 +4,8 @@ CONFIG += ordered
 SUBDIRS = \
     src \
     examples \
-    tests
+    tests \
+    testDatabaseChanger
 
 src.subdir      = src
 examples.subdir     = examples

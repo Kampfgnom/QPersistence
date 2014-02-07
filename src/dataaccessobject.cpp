@@ -204,6 +204,26 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
     return true;
 }
 
+Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object)
+{
+    QDateTime localTime = Qp::Private::updateTimeInObject(object.data());
+    QDateTime remoteTime = Qp::Private::updateTimeInDatabase(object.data());
+
+    if(localTime == remoteTime)
+        return Qp::Unchanged;
+
+    int id = Qp::primaryKey(object);
+    if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, object.data())) {
+        QpError error = data->sqlDataAccessObjectHelper->lastError();
+        if(error.isValid())
+            setLastError(error);
+
+        return Qp::Error;
+    }
+
+    return Qp::Updated;
+}
+
 uint qHash(const QVariant &var)
 {
     if (!var.isValid() || var.isNull())

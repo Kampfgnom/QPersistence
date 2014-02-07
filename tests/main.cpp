@@ -5,6 +5,7 @@
 #include "tst_onetomanyrelationtest.h"
 #include "tst_manytomanyrelationstest.h"
 #include "tst_creationandupdatetimestest.h"
+#include "tst_synchronizetest.h"
 
 #define RUNTEST(TestClass) { \
     TestClass t; \
@@ -15,11 +16,14 @@
 
 int main(int argc, char *argv[])
 {
-    RUNTEST(CacheTest);
-    RUNTEST(OneToOneRelationTest);
-    RUNTEST(OneToManyRelationTest);
-    RUNTEST(ManyToManyRelationsTest);
-    RUNTEST(CreationAndUpdateTimesTest);
+    QCoreApplication a(argc, argv);
+
+//    RUNTEST(CacheTest);
+//    RUNTEST(OneToOneRelationTest);
+//    RUNTEST(OneToManyRelationTest);
+//    RUNTEST(ManyToManyRelationsTest);
+//    RUNTEST(CreationAndUpdateTimesTest);
+    RUNTEST(SynchronizeTest);
 
     return 0;
 }

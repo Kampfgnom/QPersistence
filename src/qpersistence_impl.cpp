@@ -107,6 +107,12 @@ bool update(QSharedPointer<T> object)
 }
 
 template<class T>
+SynchronizeResult synchronize(QSharedPointer<T> object)
+{
+    return QpDaoBase::forClass(*object->metaObject())->synchronizeObject(object);
+}
+
+template<class T>
 bool remove(QSharedPointer<T> object)
 {
     beginTransaction();
@@ -129,14 +135,14 @@ int primaryKey(QSharedPointer<T> object)
     return Qp::Private::primaryKey(object.data());
 }
 
-template<class T> QDateTime creationTime(QSharedPointer<T> object)
+template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object)
 {
-    return Qp::Private::creationTime(object.data());
+    return Qp::Private::creationTimeInDatabase(object.data());
 }
 
-template<class T> QDateTime updateTime(QSharedPointer<T> object)
+template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object)
 {
-    return Qp::Private::updateTime(object.data());
+    return Qp::Private::updateTimeInDatabase(object.data());
 }
 
 template<class Target, class Source>

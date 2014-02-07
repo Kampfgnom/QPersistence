@@ -169,8 +169,8 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
     parent->setChildObjectOneToOne(child);
     Qp::update(child);
 
-    QDateTime updateTimeParent = Qp::updateTime(parent);
-    QDateTime updateTimeChild = Qp::updateTime(child);
+    QDateTime updateTimeParent = Qp::updateTimeInDatabase(parent);
+    QDateTime updateTimeChild = Qp::updateTimeInDatabase(child);
 
     QCOMPARE(updateTimeParent, updateTimeChild);
 
@@ -178,8 +178,8 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
         Qp::update(parent);
-        QDateTime updateTimeParentAfterParentUpdate = Qp::updateTime(parent);
-        QDateTime updateTimeChildAfterParentUpdate = Qp::updateTime(child);
+        QDateTime updateTimeParentAfterParentUpdate = Qp::updateTimeInDatabase(parent);
+        QDateTime updateTimeChildAfterParentUpdate = Qp::updateTimeInDatabase(child);
 
         QCOMPARE(updateTimeParentAfterParentUpdate, updateTimeParent.addSecs(1));
         QCOMPARE(updateTimeChildAfterParentUpdate, updateTimeChild);
@@ -187,8 +187,8 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
         Qp::update(child);
-        QDateTime updateTimeParentAfterChildUpdate = Qp::updateTime(parent);
-        QDateTime updateTimeChildAfterChildUpdate = Qp::updateTime(child);
+        QDateTime updateTimeParentAfterChildUpdate = Qp::updateTimeInDatabase(parent);
+        QDateTime updateTimeChildAfterChildUpdate = Qp::updateTimeInDatabase(child);
 
         QCOMPARE(updateTimeParentAfterChildUpdate, updateTimeParentAfterParentUpdate);
         QCOMPARE(updateTimeChildAfterChildUpdate, updateTimeChild.addSecs(2));
@@ -200,9 +200,9 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
         parent->setChildObjectOneToOne(child2);
         Qp::update(parent);
 
-        QDateTime updateTimeParentAfterParentUpdate = Qp::updateTime(parent);
-        QDateTime updateTimeChild2AfterParentUpdate = Qp::updateTime(child2);
-        QDateTime updateTimeChildAfterParentUpdate = Qp::updateTime(child);
+        QDateTime updateTimeParentAfterParentUpdate = Qp::updateTimeInDatabase(parent);
+        QDateTime updateTimeChild2AfterParentUpdate = Qp::updateTimeInDatabase(child2);
+        QDateTime updateTimeChildAfterParentUpdate = Qp::updateTimeInDatabase(child);
 
         QCOMPARE(updateTimeParentAfterParentUpdate, updateTimeChild2AfterParentUpdate);
         QCOMPARE(updateTimeChild2AfterParentUpdate, updateTimeChildAfterParentUpdate);
@@ -214,9 +214,9 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
         parent->setChildObjectOneToOne(child);
         Qp::update(child);
 
-        QDateTime updateTimeParentAfterUpdate = Qp::updateTime(parent);
-        QDateTime updateTimeChild2AfterUpdate = Qp::updateTime(child2);
-        QDateTime updateTimeChildAfterUpdate = Qp::updateTime(child);
+        QDateTime updateTimeParentAfterUpdate = Qp::updateTimeInDatabase(parent);
+        QDateTime updateTimeChild2AfterUpdate = Qp::updateTimeInDatabase(child2);
+        QDateTime updateTimeChildAfterUpdate = Qp::updateTimeInDatabase(child);
 
         QCOMPARE(updateTimeParentAfterUpdate, updateTimeChild2AfterUpdate);
         QCOMPARE(updateTimeChild2AfterUpdate, updateTimeChildAfterUpdate);
@@ -226,10 +226,10 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
         parent->setChildObjectOneToOne(child3);
         Qp::update(child3);
 
-        QDateTime updateTimeParentAfterchild3Update = Qp::updateTime(parent);
-        QDateTime updateTimeChild2Afterchild3Update = Qp::updateTime(child2);
-        QDateTime updateTimeChild3Afterchild3Update = Qp::updateTime(child3);
-        QDateTime updateTimeChildAfterchild3Update = Qp::updateTime(child);
+        QDateTime updateTimeParentAfterchild3Update = Qp::updateTimeInDatabase(parent);
+        QDateTime updateTimeChild2Afterchild3Update = Qp::updateTimeInDatabase(child2);
+        QDateTime updateTimeChild3Afterchild3Update = Qp::updateTimeInDatabase(child3);
+        QDateTime updateTimeChildAfterchild3Update = Qp::updateTimeInDatabase(child);
 
         QCOMPARE(updateTimeParentAfterchild3Update, updateTimeChildAfterchild3Update);
         QCOMPARE(updateTimeParentAfterchild3Update, updateTimeChild3Afterchild3Update);

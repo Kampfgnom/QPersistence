@@ -13,6 +13,10 @@ class QSqlQuery;
 class QpError;
 class QpSqlDataAccessObjectHelper;
 
+namespace Qp {
+enum SynchronizeResult : short;
+}
+
 class QpDaoBaseData;
 class QpDaoBase : public QObject
 {
@@ -33,6 +37,7 @@ public:
     QSharedPointer<QObject> createObject();
     bool updateObject(QSharedPointer<QObject> object);
     bool removeObject(QSharedPointer<QObject> object);
+    Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object);
 
     QpError lastError() const;
 
