@@ -174,6 +174,8 @@ QSharedPointer<QObject> QpDaoBase::createObject()
     }
     QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
     Qp::Private::enableSharedFromThis(obj);
+    count();
+
     ++data->count;
 
     emit objectCreated(obj);
@@ -205,6 +207,7 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
         setLastError(data->sqlDataAccessObjectHelper->lastError());
         return false;
     }
+    count();
 
     --data->count;
     data->cache.remove(Qp::primaryKey(object));
