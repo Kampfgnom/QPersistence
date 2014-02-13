@@ -169,6 +169,40 @@ void SynchronizeTest::testSynchronizeManyToManyRelation()
     }
 }
 
+void SynchronizeTest::testUpdateConflict()
+{
+    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QDateTime lastUpdateTime = Qp::updateTimeInDatabase(parent);
+
+    QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(Qp::primaryKey(parent), ChangeOnce));
+    QTRY_VERIFY(lastUpdateTime < Qp::updateTimeInDatabase(parent));
+
+    QCOMPARE(lastUpdateTime, Qp::updateTimeInObject(parent));
+
+    parent->increaseCounter();
+    Qp::UpdateResult result = Qp::update(parent);
+    QCOMPARE(result, Qp::UpdateConflict);
+}
+
+void SynchronizeTest::testSynchronizeToSolveConflict()
+{
+    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QDateTime lastUpdateTime = Qp::updateTimeInDatabase(parent);
+
+    QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(Qp::primaryKey(parent), ChangeOnce));
+    QTRY_VERIFY(lastUpdateTime < Qp::updateTimeInDatabase(parent));
+
+    parent->increaseCounter();
+    QCOMPARE(Qp::update(parent), Qp::UpdateConflict);
+
+    Qp::synchronize(parent);
+    QCOMPARE(Qp::updateTimeInDatabase(parent), Qp::updateTimeInObject(parent));
+
+    parent->increaseCounter();
+    Qp::UpdateResult result = Qp::update(parent);
+    QCOMPARE(result, Qp::UpdateSuccess);
+}
+
 void SynchronizeTest::startProcess()
 {
     if(m_currentProcess)
@@ -184,6 +218,6 @@ QProcess *SynchronizeTest::startChangerProcess(int id, ChangerMode mode)
                                    << QString("%1").arg(id)
                                    << QString("%1").arg(mode));
 
-    QTimer::singleShot(1000, this, SLOT(startProcess()));
+    QTimer::singleShot(200, this, SLOT(startProcess()));
     return m_currentProcess;
 }

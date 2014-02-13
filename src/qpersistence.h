@@ -27,6 +27,12 @@ enum SynchronizeResult : short {
     Updated
 };
 
+enum UpdateResult : short {
+    UpdateSuccess,
+    UpdateConflict,
+    UpdateError
+};
+
 void setDatabase(const QSqlDatabase &database);
 QSqlDatabase database();
 bool adjustDatabaseSchema();
@@ -47,11 +53,12 @@ template<class T> QSharedPointer<T> read(int id);
 template<class T> QList<QSharedPointer<T> > readAll();
 template<class T> int count();
 template<class T> QSharedPointer<T> create();
-template<class T> bool update(QSharedPointer<T> object);
+template<class T> UpdateResult update(QSharedPointer<T> object);
 template<class T> bool remove(QSharedPointer<T> object);
 template<class T> SynchronizeResult synchronize(QSharedPointer<T> object);
 template<class T> QDateTime creationTime(QSharedPointer<T> object);
 template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object);
+template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object);
 
 template<class K, class V> void registerMappableTypes();
 template<class T> void registerSetType();

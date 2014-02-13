@@ -180,15 +180,23 @@ QSharedPointer<QObject> QpDaoBase::createObject()
     return obj;
 }
 
-bool QpDaoBase::updateObject(QSharedPointer<QObject> object)
+Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 {
+    QDateTime databaseTime = Qp::updateTimeInDatabase(object);
+    QDateTime objectTime = Qp::updateTimeInObject(object);
+
+    if(databaseTime > objectTime)
+        return Qp::UpdateConflict;
+
+    Q_ASSERT(databaseTime == objectTime);
+
     if (!data->sqlDataAccessObjectHelper->updateObject(data->metaObject, object.data())) {
         setLastError(data->sqlDataAccessObjectHelper->lastError());
-        return false;
+        return Qp::UpdateError;
     }
 
     emit objectUpdated(object);
-    return true;
+    return Qp::UpdateSuccess;
 }
 
 bool QpDaoBase::removeObject(QSharedPointer<QObject> object)

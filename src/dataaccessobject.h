@@ -15,6 +15,7 @@ class QpSqlDataAccessObjectHelper;
 
 namespace Qp {
 enum SynchronizeResult : short;
+enum UpdateResult : short;
 }
 
 class QpDaoBaseData;
@@ -35,7 +36,7 @@ public:
     QList<QSharedPointer<QObject> > readAllObjects(int skip = -1, int count = -1) const;
     QSharedPointer<QObject> readObject(int id) const;
     QSharedPointer<QObject> createObject();
-    bool updateObject(QSharedPointer<QObject> object);
+    Qp::UpdateResult updateObject(QSharedPointer<QObject> object);
     bool removeObject(QSharedPointer<QObject> object);
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object);
 

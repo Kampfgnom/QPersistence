@@ -99,11 +99,20 @@ QpDao<T> *dataAccessObject()
 }
 
 template<class T>
-bool update(QSharedPointer<T> object)
+UpdateResult update(QSharedPointer<T> object)
 {
     beginTransaction();
-    QpDaoBase::forClass(*object->metaObject())->updateObject(object);
-    return commitOrRollbackTransaction() == CommitSuccessful;
+    Qp::UpdateResult result = QpDaoBase::forClass(*object->metaObject())->updateObject(object);
+    if(result == Qp::UpdateConflict) {
+        Qp::database().rollback();
+        return Qp::UpdateConflict;
+    }
+
+    CommitResult commitResult = commitOrRollbackTransaction();
+    if(commitResult == CommitSuccessful)
+        return result;
+
+    return Qp::UpdateError;
 }
 
 template<class T>
@@ -143,6 +152,11 @@ template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object)
 template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object)
 {
     return Qp::Private::updateTimeInDatabase(object.data());
+}
+
+template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object)
+{
+    return Qp::Private::updateTimeInObject(object.data());
 }
 
 template<class Target, class Source>

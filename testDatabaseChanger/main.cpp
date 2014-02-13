@@ -33,11 +33,17 @@ int main(int argc, char *argv[])
         Qp::registerClass<ChildObject>();
     }
 
+    QTest::qSleep(1000);
+
     QSharedPointer<ParentObject> parent = Qp::read<ParentObject>(id);
 
     SynchronizeTest::ChangerMode mode = static_cast<SynchronizeTest::ChangerMode>(a.arguments().at(2).toInt());
 
-    if(mode == SynchronizeTest::Counter) {
+    if(mode == SynchronizeTest::ChangeOnce) {
+        parent->increaseCounter();
+        Qp::update(parent);
+    }
+    else if(mode == SynchronizeTest::Counter) {
         for(int i = 0; i < SynchronizeTest::childInts().size(); ++i) {
             parent->increaseCounter();
             Qp::update(parent);

@@ -17,7 +17,8 @@ public:
         Counter,
         OneToOne,
         OneToMany,
-        ManyToMany
+        ManyToMany,
+        ChangeOnce
     };
 
     explicit SynchronizeTest(QObject *parent = 0);
@@ -39,7 +40,12 @@ private slots:
     void testSynchronizeOneToManyRelation();
     void testSynchronizeManyToManyRelation();
 
+    void testUpdateConflict();
+    void testSynchronizeToSolveConflict();
+
     void startProcess();
+
+
 private:
     QProcess *startChangerProcess(int id, ChangerMode mode);
     static QProcess *m_currentProcess;
