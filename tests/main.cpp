@@ -18,11 +18,11 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-//    RUNTEST(CacheTest);
-//    RUNTEST(OneToOneRelationTest);
-//    RUNTEST(OneToManyRelationTest);
-//    RUNTEST(ManyToManyRelationsTest);
-//    RUNTEST(CreationAndUpdateTimesTest);
+    RUNTEST(CacheTest);
+    RUNTEST(OneToOneRelationTest);
+    RUNTEST(OneToManyRelationTest);
+    RUNTEST(ManyToManyRelationsTest);
+    RUNTEST(CreationAndUpdateTimesTest);
     RUNTEST(SynchronizeTest);
 
     return 0;
