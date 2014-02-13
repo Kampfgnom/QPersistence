@@ -30,7 +30,8 @@ HEADERS += \
     sqlcondition.h \
     sqldataaccessobjecthelper.h \
     sqlquery.h \
-    sqlbackend.h
+    sqlbackend.h \
+    lock.h
 
 SOURCES += \
         cache.cpp \
@@ -50,4 +51,5 @@ SOURCES += \
     sqlcondition.cpp \
     sqldataaccessobjecthelper.cpp \
     sqlquery.cpp \
-    sqlbackend.cpp
+    sqlbackend.cpp \
+    lock.cpp

@@ -5,3 +5,4 @@
 #include "../src/objectlistmodel.h"
 #include "../src/relations.h"
 #include "../src/sortfilterproxyobjectmodel.h"
+#include "../src/lock.h"

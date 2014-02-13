@@ -22,7 +22,8 @@ public:
         count(-1),
         skip(-1),
         canBulkExec(false),
-        ignore(false)
+        ignore(false),
+        forUpdate(false)
     {}
 
     QSqlDatabase database;
@@ -39,6 +40,7 @@ public:
     QList<QStringList> uniqueKeys;
     bool canBulkExec;
     bool ignore;
+    bool forUpdate;
 
     static bool debugEnabled;
     static QList<QpSqlQuery> bulkQueries;
@@ -146,6 +148,7 @@ void QpSqlQuery::clear()
     data->rawFields.clear();
     data->canBulkExec = false;
     data->ignore = false;
+    data->forUpdate = false;
 }
 
 bool QpSqlQuery::isDebugEnabled()
@@ -220,6 +223,11 @@ void QpSqlQuery::setWhereCondition(const QpSqlCondition &condition)
 void QpSqlQuery::addOrder(const QString &field, QpSqlQuery::Order order)
 {
     data->orderBy.append(QPair<QString, QpSqlQuery::Order>(field, order));
+}
+
+void QpSqlQuery::setForUpdate(bool forUpdate)
+{
+    data->forUpdate = forUpdate;
 }
 
 void QpSqlQuery::prepareCreateTable()
@@ -319,6 +327,10 @@ void QpSqlQuery::prepareSelect()
             query.append(QString("%1, ").arg(data->skip));
         }
         query.append(QString("%1").arg(data->count));
+    }
+
+    if(data->forUpdate) {
+        query.append(" FOR UPDATE ");
     }
 
     query.append(';');

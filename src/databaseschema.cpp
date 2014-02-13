@@ -1,6 +1,7 @@
 #include "databaseschema.h"
 
 #include "error.h"
+#include "lock.h"
 #include "metaobject.h"
 #include "metaproperty.h"
 #include "qpersistence.h"
@@ -20,6 +21,9 @@
 const QString QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
 const QString QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
 const QString QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME("_Qp_updateTime");
+const QString QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
+const QString QpDatabaseSchema::TABLENAME_LOCKS("_Qp_locks");
+const QString QpDatabaseSchema::COLUMN_LOCK("_Qp_lock");
 
 class QpDatabaseSchemaPrivate : public QSharedData
 {
@@ -125,6 +129,15 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
     data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
     data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
 
+    if(QpLock::isLocksEnabled()) {
+        QString columnType = variantTypeToSqlType(QVariant::Int);
+        data->query.addField(QpDatabaseSchema::COLUMN_LOCK, columnType);
+//        data->query.addForeignKey(QpDatabaseSchema::COLUMN_LOCK,
+//                                  QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+//                                  QpDatabaseSchema::TABLENAME_LOCKS,
+//                                  QpDatabaseSchema::ONDELETE_CASCADE);
+    }
+
     data->query.prepareCreateTable();
 
     if ( !data->query.exec()
@@ -203,14 +216,37 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
             return false;
     }
 
+    // Check for special columns
     QSqlRecord record = data->database.record(meta.tableName());
 
-    // Add timestamp columns
-    if(!record.contains(COLUMN_NAME_CREATION_TIME))
-        data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
+    bool hasCreationTimeColumn = record.contains(COLUMN_NAME_CREATION_TIME);
+    bool hasUpdateTimeColumn = record.contains(COLUMN_NAME_UPDATE_TIME);
+    bool hasLockColumn = record.contains(COLUMN_LOCK);
 
-    if(!record.contains(COLUMN_NAME_UPDATE_TIME))
-        data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
+    if(!hasCreationTimeColumn
+            || !hasUpdateTimeColumn) {
+        data->query.clear();
+        data->query.setTable(meta.tableName());
+
+        // Add timestamp columns
+        if(!hasCreationTimeColumn)
+            data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
+
+        if(!hasUpdateTimeColumn)
+            data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
+
+        if(!hasLockColumn)
+            data->query.addField(COLUMN_LOCK, variantTypeToSqlType(QVariant::Int));
+
+        data->query.prepareAlterTable();
+
+        if ( !data->query.exec()
+             || data->query.lastError().isValid()) {
+            setLastError(data->query);
+            return false;
+        }
+    }
+
 
     return true;
 }
@@ -243,7 +279,6 @@ void QpDatabaseSchema::addColumn(const QpMetaProperty &metaProperty)
 
 void QpDatabaseSchema::addColumn(const QString &table, const QString &column, const QString &type)
 {
-
     data->query.clear();
     data->query.setTable(table);
     data->query.addField(column, type);
@@ -327,6 +362,8 @@ void QpDatabaseSchema::createCleanSchema()
 {
     cleanSchema();
 
+    createLocksTable();
+
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
         createTable(metaObject.metaObject());
     }
@@ -338,10 +375,31 @@ void QpDatabaseSchema::createCleanSchema()
 
 void QpDatabaseSchema::adjustSchema()
 {
+    createLocksTable();
+
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
         createTableIfNotExists(metaObject.metaObject());
         createManyToManyRelationTables(metaObject.metaObject());
         addMissingColumns(metaObject.metaObject());
+    }
+}
+
+void QpDatabaseSchema::createLocksTable()
+{
+    if (!QpLock::isLocksEnabled())
+        return;
+
+    if (existsTable(QpDatabaseSchema::TABLENAME_LOCKS))
+        return;
+
+    data->query.clear();
+    data->query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
+    data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
+    data->query.prepareCreateTable();
+
+    if ( !data->query.exec()
+         || data->query.lastError().isValid()) {
+        setLastError(data->query);
     }
 }
 

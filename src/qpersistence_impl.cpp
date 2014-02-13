@@ -1,6 +1,7 @@
 #include "qpersistence.h"
 
 #include "conversion.h"
+#include "lock.h"
 #include "metaproperty.h"
 #include "private.h"
 #include "relationresolver.h"
@@ -157,6 +158,11 @@ template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object)
 template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object)
 {
     return Qp::Private::updateTimeInObject(object.data());
+}
+
+template<class T> QpLock tryLock(QSharedPointer<T> object)
+{
+    return QpLock::tryLock(qSharedPointerCast<QObject>(object));
 }
 
 template<class Target, class Source>

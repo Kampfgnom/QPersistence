@@ -3,6 +3,7 @@
 #include "dataaccessobject.h"
 #include "databaseschema.h"
 #include "error.h"
+#include "lock.h"
 #include "metaobject.h"
 #include "sqlquery.h"
 
@@ -114,6 +115,11 @@ CommitResult commitOrRollbackTransaction()
         return CommitSuccessful;
     else
         return CommitFailed;
+}
+
+void enableLocks()
+{
+    QpLock::enableLocks();
 }
 
 }

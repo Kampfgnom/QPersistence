@@ -43,6 +43,7 @@ public:
     void setSkip(int skip);
     void setWhereCondition(const QpSqlCondition &condition);
     void addOrder(const QString &field, Order order = Ascending);
+    void setForUpdate(bool forUpdate);
 
     void prepareCreateTable();
     void prepareDropTable();

@@ -6,11 +6,12 @@
 
 #include "dataaccessobject.h"
 
-class QpMetaObject;
-class QpError;
 template<class T>
 class QpDao;
 class QpDaoBase;
+class QpError;
+class QpLock;
+class QpMetaObject;
 
 namespace Qp {
 
@@ -38,6 +39,7 @@ QSqlDatabase database();
 bool adjustDatabaseSchema();
 bool createCleanSchema();
 QpError lastError();
+void enableLocks();
 
 bool beginTransaction();
 CommitResult commitOrRollbackTransaction();
@@ -59,6 +61,7 @@ template<class T> SynchronizeResult synchronize(QSharedPointer<T> object);
 template<class T> QDateTime creationTime(QSharedPointer<T> object);
 template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object);
 template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object);
+template<class T> QpLock tryLock(QSharedPointer<T> object);
 
 template<class K, class V> void registerMappableTypes();
 template<class T> void registerSetType();

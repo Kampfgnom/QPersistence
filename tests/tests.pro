@@ -18,6 +18,7 @@ DEFINES         += SRCDIR=\\\"$$PWD/\\\"
 
 INCLUDEPATH     += $$QPERSISTENCE_INCLUDEPATH
 LIBS            += $$QPERSISTENCE_LIBS
+PRE_TARGETDEPS  += ../src/libqpersistence.a
 
 INCLUDEPATH     += $$TESTMODEL_INCLUDEPATH
 
@@ -29,7 +30,8 @@ SOURCES +=  \
     tst_onetoonerelationtest.cpp \
     tst_onetomanyrelationtest.cpp \
     tst_manytomanyrelationstest.cpp \
-    tst_synchronizetest.cpp
+    tst_synchronizetest.cpp \
+    tst_locktest.cpp
 
 HEADERS += \
     tst_cachetest.h \
@@ -38,4 +40,5 @@ HEADERS += \
     tst_onetoonerelationtest.h \
     tst_onetomanyrelationtest.h \
     tst_manytomanyrelationstest.h \
-    tst_synchronizetest.h
+    tst_synchronizetest.h \
+    tst_locktest.h

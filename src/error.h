@@ -23,10 +23,7 @@ public:
     enum ErrorType {
         NoError = 0,
         SqlError,
-        ParserError,
-        SerializerError,
-        ServerError,
-        StorageError,
+        TransactionError,
         UserError = 1024
     };
 

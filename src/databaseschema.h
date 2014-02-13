@@ -9,6 +9,7 @@
 class QSqlQuery;
 class QpError;
 class QpMetaProperty;
+class QpSqlQuery;
 
 class QpDatabaseSchemaPrivate;
 class QpDatabaseSchema : public QObject
@@ -18,6 +19,10 @@ public:
     static const QString COLUMN_NAME_PRIMARY_KEY;
     static const QString COLUMN_NAME_CREATION_TIME;
     static const QString COLUMN_NAME_UPDATE_TIME;
+    static const QString ONDELETE_CASCADE;
+    static const QString TABLENAME_LOCKS;
+    static const QString COLUMN_LOCK;
+    static const QString COLUMN_LOCKTIME;
 
     explicit QpDatabaseSchema(const QSqlDatabase &database = QSqlDatabase::database(), QObject *parent = 0);
     ~QpDatabaseSchema();
@@ -42,6 +47,7 @@ public:
     void cleanSchema();
     void createCleanSchema();
     void adjustSchema();
+    void createLocksTable();
 
     QpError lastError() const;
 
