@@ -211,20 +211,22 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
     {
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
+        Qp::synchronize(child);
         parent->setChildObjectOneToOne(child);
-        Qp::update(child);
+        QCOMPARE(Qp::update(child), Qp::UpdateSuccess);
 
         QDateTime updateTimeParentAfterUpdate = Qp::updateTimeInDatabase(parent);
         QDateTime updateTimeChild2AfterUpdate = Qp::updateTimeInDatabase(child2);
         QDateTime updateTimeChildAfterUpdate = Qp::updateTimeInDatabase(child);
 
         QCOMPARE(updateTimeParentAfterUpdate, updateTimeChild2AfterUpdate);
-        QCOMPARE(updateTimeChild2AfterUpdate, updateTimeChildAfterUpdate);
+        QCOMPARE(updateTimeParentAfterUpdate, updateTimeChildAfterUpdate);
 
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
+        Qp::synchronize(child3);
         parent->setChildObjectOneToOne(child3);
-        Qp::update(child3);
+        QCOMPARE(Qp::update(child3), Qp::UpdateSuccess);
 
         QDateTime updateTimeParentAfterchild3Update = Qp::updateTimeInDatabase(parent);
         QDateTime updateTimeChild2Afterchild3Update = Qp::updateTimeInDatabase(child2);
