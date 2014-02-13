@@ -16,7 +16,8 @@ public:
     enum ChangerMode {
         Counter,
         OneToOne,
-        OneToMany
+        OneToMany,
+        ManyToMany
     };
 
     explicit SynchronizeTest(QObject *parent = 0);
@@ -36,6 +37,7 @@ private slots:
     void testSynchronizeCounter();
     void testSynchronizeOneToOneRelation();
     void testSynchronizeOneToManyRelation();
+    void testSynchronizeManyToManyRelation();
 
     void startProcess();
 private:

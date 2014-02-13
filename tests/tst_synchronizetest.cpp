@@ -142,6 +142,33 @@ void SynchronizeTest::testSynchronizeOneToManyRelation()
     }
 }
 
+void SynchronizeTest::testSynchronizeManyToManyRelation()
+{
+    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+
+    QDateTime lastUpdateTime = Qp::updateTimeInDatabase(parent);
+
+    QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(Qp::primaryKey(parent), ManyToMany));
+
+    for(int i = 0; i < childInts().size(); ++i) {
+        qDebug() << "Testing child...";
+        QTRY_VERIFY(lastUpdateTime < Qp::updateTimeInDatabase(parent));
+        lastUpdateTime = Qp::updateTimeInDatabase(parent);
+
+        Qp::SynchronizeResult result = Qp::synchronize(parent);
+        QCOMPARE(result, Qp::Updated);
+
+        QList<QSharedPointer<ChildObject> > children = parent->childObjectsManyToMany();
+        for(int i2 = 0; i2 < childInts().size(); ++i2) {
+            QSharedPointer<ChildObject> child = children.at(i2 + childInts().size() * i);
+            QTRY_VERIFY(lastUpdateTime == Qp::updateTimeInDatabase(child));
+
+            Qp::synchronize(child);
+            QCOMPARE(child->someInt(), childInts().at(i2));
+        }
+    }
+}
+
 void SynchronizeTest::startProcess()
 {
     if(m_currentProcess)

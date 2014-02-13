@@ -73,6 +73,20 @@ int main(int argc, char *argv[])
             QTest::qSleep(1000);
         }
     }
+    else if(mode == SynchronizeTest::ManyToMany) {
+        for(int i = 0; i < SynchronizeTest::childInts().size(); ++i) {
+            for(int indexOneToMany = 0; indexOneToMany < SynchronizeTest::childInts().size(); ++indexOneToMany) {
+                QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+                child->setSomeInt(SynchronizeTest::childInts().at(indexOneToMany));
+                Qp::update(child);
+
+                parent->addChildObjectManyToMany(child);
+            }
+            Qp::update(parent);
+
+            QTest::qSleep(1000);
+        }
+    }
 
     return 0;
 }
