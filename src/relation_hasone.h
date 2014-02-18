@@ -32,7 +32,7 @@ public:
     virtual ~QpHasOne() {}
 
     operator QSharedPointer<T> () const { return qSharedPointerCast<T>(object()); }
-    QpHasOneBase &operator=(const QSharedPointer<T> object) { setObject(qSharedPointerCast<QObject>(object)); return *this; }
+    QpHasOne &operator=(const QSharedPointer<T> object) { setObject(qSharedPointerCast<QObject>(object)); return *this; }
 
 protected:
     QVariant objectVariant(QSharedPointer<QObject> object) const

@@ -13,6 +13,8 @@ private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
 
+    void testOneToManyRelation();
+
     void testInitialDatabaseFKEmpty();
 
     void testDatabaseFKInsertFromParent();

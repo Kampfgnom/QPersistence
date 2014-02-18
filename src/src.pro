@@ -33,7 +33,8 @@ HEADERS += \
     sqlbackend.h \
     lock.h \
     relation_hasone.h \
-    relation_belongstoone.h
+    relation_belongstoone.h \
+    relation_hasmany.h
 
 SOURCES += \
         cache.cpp \
@@ -56,4 +57,5 @@ SOURCES += \
     sqlbackend.cpp \
     lock.cpp \
     relation_hasone.cpp \
-    relation_belongstoone.cpp
+    relation_belongstoone.cpp \
+    relation_hasmany.cpp

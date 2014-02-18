@@ -12,7 +12,8 @@ ChildObject::ChildObject(QObject *parent) :
     m_parentObjectOneToOne("parentObjectOneToOne", this),
     m_parentObjectOneToMany("parentObjectOneToMany", this),
     m_parentObjectsManyToMany("parentObjectsManyToMany", this),
-    m_belongsToOne(QpRelation(&ChildObject::belongsToOne))
+    m_belongsToOne(QpRelation(&ChildObject::belongsToOne)),
+    m_belongsToOneMany(QpRelation(&ChildObject::belongsToOneMany))
 {
 }
 
@@ -62,9 +63,19 @@ QSharedPointer<ParentObject> ChildObject::belongsToOne() const
     return m_belongsToOne;
 }
 
+QSharedPointer<ParentObject> ChildObject::belongsToOneMany() const
+{
+    return m_belongsToOneMany;
+}
+
 void ChildObject::setBelongsToOne(QSharedPointer<ParentObject> arg)
 {
     m_belongsToOne = arg;
+}
+
+void ChildObject::setBelongsToOneMany(QSharedPointer<ParentObject> arg)
+{
+    m_belongsToOneMany = arg;
 }
 
 void ChildObject::setParentObjectsManyToMany(QList<QSharedPointer<ParentObject> > arg)

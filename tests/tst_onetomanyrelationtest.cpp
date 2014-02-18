@@ -20,6 +20,19 @@ void OneToManyRelationTest::cleanupTestCase()
 {
 }
 
+void OneToManyRelationTest::testOneToManyRelation()
+{
+    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QList<QSharedPointer<ChildObject>> children;
+
+    for(int i = 0; i < 3; ++i) {
+        QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+
+
+        children.append(child);
+    }
+}
+
 QVariantList OneToManyRelationTest::childFKs(QSharedPointer<ParentObject> parent)
 {
     QpSqlQuery select(Qp::database());
