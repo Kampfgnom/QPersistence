@@ -8,6 +8,7 @@
 
 #include "conversion.h"
 #include "metaobject.h"
+#include "sqlcondition.h"
 
 class QSqlQuery;
 class QpError;
@@ -16,7 +17,10 @@ class QpSqlDataAccessObjectHelper;
 namespace Qp {
 enum SynchronizeResult : short;
 enum UpdateResult : short;
+template<class T>
+struct SynchronizeAllResult;
 }
+
 
 class QpDaoBaseData;
 class QpDaoBase : public QObject
@@ -33,12 +37,14 @@ public:
 
     int count() const;
     QList<int> allKeys(int skip = -1, int count = -1) const;
-    QList<QSharedPointer<QObject> > readAllObjects(int skip = -1, int count = -1) const;
+    QList<QSharedPointer<QObject> > readAllObjects(int skip = -1, int count = -1, const QpSqlCondition &condition = QpSqlCondition()) const;
     QSharedPointer<QObject> readObject(int id) const;
     QSharedPointer<QObject> createObject();
     Qp::UpdateResult updateObject(QSharedPointer<QObject> object);
     bool removeObject(QSharedPointer<QObject> object);
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object);
+    QList<QSharedPointer<QObject>> createdSince(const QDateTime &time);
+    QList<QSharedPointer<QObject>> updatedSince(const QDateTime &time);
 
     QpError lastError() const;
 

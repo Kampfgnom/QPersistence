@@ -40,6 +40,7 @@ bool adjustDatabaseSchema();
 bool createCleanSchema();
 QpError lastError();
 void enableLocks();
+QDateTime databaseTime();
 
 bool beginTransaction();
 CommitResult commitOrRollbackTransaction();
@@ -58,7 +59,9 @@ template<class T> QSharedPointer<T> create();
 template<class T> UpdateResult update(QSharedPointer<T> object);
 template<class T> bool remove(QSharedPointer<T> object);
 template<class T> SynchronizeResult synchronize(QSharedPointer<T> object);
-template<class T> QDateTime creationTime(QSharedPointer<T> object);
+template<class T> QList<QSharedPointer<T>> createdSince(const QDateTime &time);
+template<class T> QList<QSharedPointer<T>> updatedSince(const QDateTime &time);
+template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object);
 template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object);
 template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object);
 template<class T> QpLock tryLock(QSharedPointer<T> object);

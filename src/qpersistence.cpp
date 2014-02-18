@@ -5,6 +5,7 @@
 #include "error.h"
 #include "lock.h"
 #include "metaobject.h"
+#include "sqlbackend.h"
 #include "sqlquery.h"
 
 #include <QDebug>
@@ -120,6 +121,18 @@ CommitResult commitOrRollbackTransaction()
 void enableLocks()
 {
     QpLock::enableLocks();
+}
+
+QDateTime databaseTime()
+{
+    QpSqlQuery query(Qp::database());
+    if(!query.exec(QString("SELECT %1").arg(QpSqlBackend::forDatabase(Qp::database())->nowTimestamp()))
+            || !query.first()) {
+        Qp::Private::setLastError(QpError(query.lastError()));
+        return QDateTime();
+    }
+
+    return query.value(0).toDateTime();
 }
 
 }

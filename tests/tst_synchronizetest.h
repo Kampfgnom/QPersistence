@@ -20,7 +20,8 @@ public:
         ManyToMany,
         ChangeOnce,
         LockAndUnlock,
-        LockedCounting
+        LockedCounting,
+        CreateAndUpdate
     };
 
     explicit SynchronizeTest(QObject *parent = 0);
@@ -32,8 +33,12 @@ public:
 
     static void cleanup(QProcess *process);
 
+
 private slots:
     void initDatabase();
+
+    void testCreatedSince();
+    void testUpdatedSince();
 
     void testUpdateTimeChangesFromOtherProcess();
     void testUnchangedSynchronizeResult();
@@ -46,7 +51,6 @@ private slots:
     void testSynchronizeToSolveConflict();
 
     void startProcess();
-
 
 private:
     QProcess *startChangerProcess(int id, ChangerMode mode);

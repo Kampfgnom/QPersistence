@@ -24,7 +24,7 @@ public:
     int count(const QpMetaObject &metaObject) const;
     QList<int> allKeys(const QpMetaObject &metaObject, int skip, int count) const;
     bool readObject(const QpMetaObject &metaObject, const QVariant &key, QObject *object);
-    QpSqlQuery readAllObjects(const QpMetaObject &metaObject, int skip, int count);
+    QpSqlQuery readAllObjects(const QpMetaObject &metaObject, int skip, int count, const QpSqlCondition &condition);
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);

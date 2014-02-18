@@ -130,10 +130,11 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
     return object;
 }
 
-QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject, int skip, int count)
+QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject, int skip, int count, const QpSqlCondition &condition)
 {
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
+    query.setWhereCondition(condition);
     query.setCount(count);
     query.setSkip(skip);
     query.setForwardOnly(true);

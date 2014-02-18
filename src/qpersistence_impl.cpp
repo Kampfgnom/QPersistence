@@ -123,6 +123,18 @@ SynchronizeResult synchronize(QSharedPointer<T> object)
 }
 
 template<class T>
+QList<QSharedPointer<T>> createdSince(const QDateTime &time)
+{
+    return castList<T>(QpDaoBase::forClass(T::staticMetaObject)->createdSince(time));
+}
+
+template<class T>
+QList<QSharedPointer<T>> updatedSince(const QDateTime &time)
+{
+    return castList<T>(QpDaoBase::forClass(T::staticMetaObject)->updatedSince(time));
+}
+
+template<class T>
 bool remove(QSharedPointer<T> object)
 {
     beginTransaction();
@@ -191,5 +203,6 @@ QList<QSharedPointer<Target> > castList(const QList<QSharedPointer<Source> >& li
     Q_FOREACH(QSharedPointer<Source> s, list) result.append(qSharedPointerCast<Target>(s));
     return result;
 }
+
 
 } // namespace Qp

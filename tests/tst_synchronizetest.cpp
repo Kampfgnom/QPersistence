@@ -203,6 +203,39 @@ void SynchronizeTest::testSynchronizeToSolveConflict()
     QCOMPARE(result, Qp::UpdateSuccess);
 }
 
+void SynchronizeTest::testCreatedSince()
+{
+    int count = 20;
+    QDateTime now = Qp::databaseTime();
+
+    QTest::qSleep(1000);
+    QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(count, CreateAndUpdate));
+
+    QList<QSharedPointer<ParentObject>> result;
+
+    QTRY_VERIFY((result = Qp::createdSince<ParentObject>(now)).size() == count);
+
+    now = Qp::creationTimeInDatabase(result.last());
+
+    QTRY_VERIFY((result = Qp::createdSince<ParentObject>(now)).size() == count);
+    QCOMPARE(result.size(), count);
+}
+
+void SynchronizeTest::testUpdatedSince()
+{
+    int count = 20;
+    QDateTime now = Qp::databaseTime();
+
+    QTest::qSleep(1000);
+    QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(count, CreateAndUpdate));
+
+    QList<QSharedPointer<ParentObject>> result;
+
+    QTRY_VERIFY((result = Qp::createdSince<ParentObject>(now)).size() == count * 2);
+    now = Qp::creationTimeInDatabase(result.last());
+    QTRY_VERIFY((result = Qp::updatedSince<ParentObject>(now)).size() == count * 2);
+}
+
 void SynchronizeTest::startProcess()
 {
     if(m_currentProcess)
@@ -218,6 +251,6 @@ QProcess *SynchronizeTest::startChangerProcess(int id, ChangerMode mode)
                                    << QString("%1").arg(id)
                                    << QString("%1").arg(mode));
 
-    QTimer::singleShot(200, this, SLOT(startProcess()));
+    m_currentProcess->start();
     return m_currentProcess;
 }

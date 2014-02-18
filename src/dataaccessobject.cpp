@@ -1,10 +1,12 @@
 #include "dataaccessobject.h"
 
 #include "cache.h"
+#include "databaseschema.h"
 #include "error.h"
 #include "metaobject.h"
 #include "metaproperty.h"
 #include "qpersistence.h"
+#include "sqlbackend.h"
 #include "sqldataaccessobjecthelper.h"
 #include "sqlquery.h"
 
@@ -24,6 +26,7 @@ public:
     mutable QpError lastError;
     mutable QpCache cache;
     mutable int count;
+    QDateTime lastSync;
 
     static QHash<QString, QpDaoBase *> daoPerMetaObjectName;
 };
@@ -99,14 +102,14 @@ QList<int> QpDaoBase::allKeys(int skip, int count) const
     return result;
 }
 
-QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count) const
+QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, const QpSqlCondition &condition) const
 {
     int myCount = this->count();
 
     if (count <= 0 && myCount != 0)
         count = myCount;
 
-    QpSqlQuery query = data->sqlDataAccessObjectHelper->readAllObjects(data->metaObject, skip, count);
+    QpSqlQuery query = data->sqlDataAccessObjectHelper->readAllObjects(data->metaObject, skip, count, condition);
 
     if (data->sqlDataAccessObjectHelper->lastError().isValid()) {
         setLastError(data->sqlDataAccessObjectHelper->lastError());
@@ -238,6 +241,20 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
     }
 
     return Qp::Updated;
+}
+
+QList<QSharedPointer<QObject> > QpDaoBase::createdSince(const QDateTime &time)
+{
+    return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME,
+                                                QpSqlCondition::GreaterThan,
+                                                time));
+}
+
+QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(const QDateTime &time)
+{
+    return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME,
+                                                QpSqlCondition::GreaterThan,
+                                                time));
 }
 
 uint qHash(const QVariant &var)

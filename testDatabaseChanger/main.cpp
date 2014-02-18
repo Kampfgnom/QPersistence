@@ -21,6 +21,7 @@ void lockedCounter(QSharedPointer<ParentObject> parent) {
 
 int main(int argc, char *argv[])
 {
+    qDebug() << "Starting changer";
     QGuiApplication a(argc, argv);
     if(a.arguments().size() != 3) {
         qWarning() << "Usage: qpersistencetestdatabasechanger <id>";
@@ -46,11 +47,31 @@ int main(int argc, char *argv[])
 
     QTest::qSleep(1000);
 
-    QSharedPointer<ParentObject> parent = Qp::read<ParentObject>(id);
+    QSharedPointer<ParentObject> parent;
+    if(id > 0)
+        parent = Qp::read<ParentObject>(id);
 
     SynchronizeTest::ChangerMode mode = static_cast<SynchronizeTest::ChangerMode>(a.arguments().at(2).toInt());
 
-    if(mode == SynchronizeTest::LockedCounting) {
+    if(mode == SynchronizeTest::CreateAndUpdate) {
+        qDebug() << "creating objects";
+        for(int i = 0; i < id; ++i) {
+            Qp::create<ParentObject>();
+        }
+        QTest::qSleep(2000);
+        qDebug() << "creating more objects";
+        for(int i = 0; i < id; ++i) {
+            Qp::create<ParentObject>();
+        }
+
+        QTest::qSleep(1000);
+        qDebug() << "updating objects";
+        foreach(QSharedPointer<ParentObject> o, Qp::readAll<ParentObject>()) {
+            o->setAString("test");
+            Qp::update(o);
+        }
+    }
+    else if(mode == SynchronizeTest::LockedCounting) {
         lockedCounter(parent);
     }
     else if(mode == SynchronizeTest::LockAndUnlock) {
