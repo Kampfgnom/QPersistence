@@ -18,7 +18,9 @@ public:
         OneToOne,
         OneToMany,
         ManyToMany,
-        ChangeOnce
+        ChangeOnce,
+        LockAndUnlock,
+        LockedCounting
     };
 
     explicit SynchronizeTest(QObject *parent = 0);

@@ -165,6 +165,16 @@ template<class T> QpLock tryLock(QSharedPointer<T> object)
     return QpLock::tryLock(qSharedPointerCast<QObject>(object));
 }
 
+template<class T> QpLock unlock(QSharedPointer<T> object)
+{
+    return QpLock::unlock(qSharedPointerCast<QObject>(object));
+}
+
+template<class T> QpLock isLocked(QSharedPointer<T> object)
+{
+    return QpLock::isLocked(qSharedPointerCast<QObject>(object));
+}
+
 template<class Target, class Source>
 QList<Target> castList(const QList<Source>& list)
 {

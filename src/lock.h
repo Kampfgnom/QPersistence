@@ -1,9 +1,8 @@
 #ifndef LOCK_H
 #define LOCK_H
 
-#include <QObject>
-
-#include <QSharedDataPointer>
+#include <QtCore/QExplicitlySharedDataPointer>
+#include <QtCore/QSharedPointer>
 
 namespace Qp {
 void enableLocks();
@@ -13,19 +12,23 @@ class QpError;
 class QpSqlQuery;
 
 class QpLockData;
-class QpLock : public QObject
+class QpLock
 {
 public:
     enum Status {
         UnkownStatus,
+        Unlocked,
         LockedRemotely,
         LockedLocally,
-        DatabaseError,
-        NotLocked
+        DatabaseError
     };
 
+    static void enableLocks();
     static bool isLocksEnabled();
+
+    static QpLock isLocked(QSharedPointer<QObject> object);
     static QpLock tryLock(QSharedPointer<QObject> object);
+    static QpLock unlock(QSharedPointer<QObject> object);
 
     QpLock();
     QpLock(const QpLock &);
@@ -36,19 +39,11 @@ public:
     QpError error() const;
     QSharedPointer<QObject> object() const;
 
-private:    
-    static void enableLocks();
-    static QpLock insertLock(QSharedPointer<QObject> object);
-    static QpLock selectLock(int id, QSharedPointer<QObject> object);
-
-    friend class QpDatabaseSchema;
-    friend void Qp::enableLocks();
-
+private:
+    friend class QpLockData;
     explicit QpLock(const QpError &error);
 
-    int id() const;
-
-    QSharedDataPointer<QpLockData> data;
+    QExplicitlySharedDataPointer<QpLockData> data;
 };
 
 #endif // LOCK_H

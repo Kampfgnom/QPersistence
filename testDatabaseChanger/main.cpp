@@ -8,6 +8,17 @@
 
 #include <QGuiApplication>
 
+void lockedCounter(QSharedPointer<ParentObject> parent) {
+
+    for(int i = 0; i < 100; ++i) {
+        QTRY_COMPARE(Qp::tryLock(parent).status(), QpLock::LockedLocally);
+        Qp::synchronize(parent);
+        parent->increaseCounter();
+        Qp::update(parent);
+        Qp::unlock(parent);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     QGuiApplication a(argc, argv);
@@ -39,7 +50,16 @@ int main(int argc, char *argv[])
 
     SynchronizeTest::ChangerMode mode = static_cast<SynchronizeTest::ChangerMode>(a.arguments().at(2).toInt());
 
-    if(mode == SynchronizeTest::ChangeOnce) {
+    if(mode == SynchronizeTest::LockedCounting) {
+        lockedCounter(parent);
+    }
+    else if(mode == SynchronizeTest::LockAndUnlock) {
+        QTest::qSleep(1000);
+        Qp::tryLock(parent);
+        QTest::qSleep(1000);
+        Qp::unlock(parent);
+    }
+    else if(mode == SynchronizeTest::ChangeOnce) {
         parent->increaseCounter();
         Qp::update(parent);
     }

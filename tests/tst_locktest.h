@@ -8,6 +8,7 @@
 #include "parentobject.h"
 #include "../src/sqlquery.h"
 #include "../src/sqlcondition.h"
+#include "tst_synchronizetest.h"
 
 class LockTest : public QObject
 {
@@ -15,11 +16,22 @@ class LockTest : public QObject
 public:
     explicit LockTest(QObject *parent = 0);
 
+    static void cleanup(QProcess *process);
+
+    void testSynchronizedCounter();
+
 private slots:
+    void startProcess();
+
     void initTestCase();
 
-    void testLockLocally();
+    void testLockAndUnlockLocally();
+    void testLockAndUnlockRemotely();
+    void testLockRemotelyAndUnlockLocally();
 
+private:
+    QProcess *startChangerProcess(int id, SynchronizeTest::ChangerMode mode);
+    static QProcess *m_currentProcess;
 };
 
 #endif // TST_LOCKTEST_H
