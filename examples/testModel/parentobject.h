@@ -18,12 +18,17 @@ class ParentObject : public QObject
     Q_PROPERTY(QList<QSharedPointer<ChildObject> > childObjectsOneToMany READ childObjectsOneToMany WRITE setChildObjectsOneToMany)
     Q_PROPERTY(QList<QSharedPointer<ChildObject> > childObjectsManyToMany READ childObjectsManyToMany WRITE setChildObjectsManyToMany)
 
+    Q_PROPERTY(QSharedPointer<ChildObject> hasOne READ hasOne WRITE setHasOne)
+
     Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:childObjectOneToOne",
                 "reverserelation=parentObjectOneToOne")
     Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:childObjectsOneToMany",
                 "reverserelation=parentObjectOneToMany")
     Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:childObjectsManyToMany",
                 "reverserelation=parentObjectsManyToMany")
+
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:hasOne",
+                "reverserelation=belongsToOne")
 
 public:
     explicit ParentObject(QObject *parent = 0);
@@ -46,6 +51,11 @@ public:
     int counter() const;
     void increaseCounter();
 
+    QSharedPointer<ChildObject> hasOne() const;
+
+public slots:
+    void setHasOne(QSharedPointer<ChildObject> arg);
+
 private:
     void setCounter(int arg);
     void setChildObjectsOneToMany(QList<QSharedPointer<ChildObject> > arg);
@@ -56,6 +66,8 @@ private:
     QpStrongRelation<ChildObject> m_childObjectsOneToMany;
     QpStrongRelation<ChildObject> m_childObjectsManyToMany;
     int m_counter;
+
+    QpHasOne<ChildObject> m_hasOne;
 };
 
 #endif // PARENTOBJECT_H

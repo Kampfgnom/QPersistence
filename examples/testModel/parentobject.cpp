@@ -10,7 +10,8 @@ ParentObject::ParentObject(QObject *parent) :
     m_childObjectOneToOne("childObjectOneToOne", this),
     m_childObjectsOneToMany("childObjectsOneToMany", this),
     m_childObjectsManyToMany("childObjectsManyToMany", this),
-    m_counter(0)
+    m_counter(0),
+    m_hasOne(QpRelation(&ParentObject::hasOne))
 {
 }
 
@@ -129,6 +130,16 @@ int ParentObject::counter() const
 void ParentObject::increaseCounter()
 {
     setCounter(counter() + 1);
+}
+
+QSharedPointer<ChildObject> ParentObject::hasOne() const
+{
+    return m_hasOne;
+}
+
+void ParentObject::setHasOne(QSharedPointer<ChildObject> arg)
+{
+    m_hasOne = arg;
 }
 
 void ParentObject::setCounter(int arg)

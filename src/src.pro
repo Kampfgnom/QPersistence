@@ -31,7 +31,9 @@ HEADERS += \
     sqldataaccessobjecthelper.h \
     sqlquery.h \
     sqlbackend.h \
-    lock.h
+    lock.h \
+    relation_hasone.h \
+    relation_belongstoone.h
 
 SOURCES += \
         cache.cpp \
@@ -52,4 +54,6 @@ SOURCES += \
     sqldataaccessobjecthelper.cpp \
     sqlquery.cpp \
     sqlbackend.cpp \
-    lock.cpp
+    lock.cpp \
+    relation_hasone.cpp \
+    relation_belongstoone.cpp

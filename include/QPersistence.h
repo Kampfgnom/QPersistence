@@ -6,3 +6,5 @@
 #include "../src/relations.h"
 #include "../src/sortfilterproxyobjectmodel.h"
 #include "../src/lock.h"
+#include "../src/relation_hasone.h"
+#include "../src/relation_belongstoone.h"

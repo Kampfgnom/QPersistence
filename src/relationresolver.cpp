@@ -34,7 +34,7 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveRelation(const QStrin
 {
     QList<QSharedPointer<QObject> > result;
 
-    QpMetaObject metaObject = QpMetaObject::forClassName(object->metaObject()->className());
+    QpMetaObject metaObject = QpMetaObject::forObject(object);
     QpMetaProperty relation = metaObject.metaProperty(name);
 
     QpMetaProperty::Cardinality cardinality = relation.cardinality();
@@ -52,7 +52,7 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveRelation(const QStrin
 
 QSharedPointer<QObject> QpRelationResolver::resolveToOneRelation(const QString &name, const QObject *object)
 {
-    QpMetaObject metaObject = QpMetaObject::forClassName(object->metaObject()->className());
+    QpMetaObject metaObject = QpMetaObject::forObject(object);
     QpMetaProperty relation = metaObject.metaProperty(name);
     const char* column = relation.columnName().toLatin1();
 
@@ -78,7 +78,7 @@ QSharedPointer<QObject> QpRelationResolver::resolveToOneRelation(const QString &
 
 QList<QSharedPointer<QObject> > QpRelationResolver::resolveToManyRelation(const QString &name, const QObject *object)
 {
-    QpMetaObject metaObject = QpMetaObject::forClassName(object->metaObject()->className());
+    QpMetaObject metaObject = QpMetaObject::forObject(object);
     QpMetaProperty relation = metaObject.metaProperty(name);
 
     QpSqlDataAccessObjectHelper *helper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());

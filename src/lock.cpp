@@ -49,7 +49,7 @@ QpLockData::~QpLockData()
 
 QpLock QpLockData::insertLock(QSharedPointer<QObject> object)
 {
-    QpMetaObject metaObject = QpMetaObject::forClassName(object->metaObject()->className());
+    QpMetaObject metaObject = QpMetaObject::forObject(object);
     QpSqlQuery query(Qp::database());
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
     query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
@@ -104,7 +104,7 @@ QpLock QpLockData::selectLock(int id, QSharedPointer<QObject> object)
 
 int QpLockData::selectLockId(QSharedPointer<QObject> object, bool forUpdate)
 {
-    QpMetaObject metaObject = QpMetaObject::forClassName(object->metaObject()->className());
+    QpMetaObject metaObject = QpMetaObject::forObject(object);
 
     // Check if there already is a different lock
     QpSqlQuery query(Qp::database());
@@ -128,7 +128,7 @@ int QpLockData::selectLockId(QSharedPointer<QObject> object, bool forUpdate)
 
 void QpLockData::removeLock(int id, QSharedPointer<QObject> object)
 {
-    QpMetaObject metaObject = QpMetaObject::forClassName(object->metaObject()->className());
+    QpMetaObject metaObject = QpMetaObject::forObject(object);
 
     QpSqlQuery query(Qp::database());
     query.setTable(metaObject.tableName());

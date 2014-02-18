@@ -20,6 +20,36 @@ void OneToOneRelationTest::cleanupTestCase()
 {
 }
 
+void OneToOneRelationTest::testOneToOneRelation()
+{
+    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    parent->setObjectName("P1");
+    QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+    child->setObjectName("C1");
+
+    parent->setHasOne(child);
+
+    QCOMPARE(parent->hasOne(), child);
+    QCOMPARE(child->belongsToOne(), parent);
+
+    // Add child to another parent
+    QSharedPointer<ParentObject> parent2 = Qp::create<ParentObject>();
+    parent2->setObjectName("P2");
+    parent2->setHasOne(child);
+    QCOMPARE(parent->hasOne(), QSharedPointer<ChildObject>());
+    QCOMPARE(parent2->hasOne(), child);
+    QCOMPARE(child->belongsToOne(), parent2);
+
+    // Add another child to the parent
+    QSharedPointer<ChildObject> child2 = Qp::create<ChildObject>();
+    child2->setObjectName("C2");
+    parent2->setHasOne(child2);
+    QCOMPARE(parent->hasOne(), QSharedPointer<ChildObject>());
+    QCOMPARE(parent2->hasOne(), child2);
+    QCOMPARE(child->belongsToOne(), QSharedPointer<ParentObject>());
+    QCOMPARE(child2->belongsToOne(), parent2);
+}
+
 QVariant OneToOneRelationTest::childFK(QSharedPointer<ParentObject> parent)
 {
     QpSqlQuery select(Qp::database());

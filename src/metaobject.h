@@ -16,6 +16,8 @@ class QpMetaObjectPrivate;
 class QpMetaObject
 {
 public:
+    static QpMetaObject forObject(const QObject *object);
+    static QpMetaObject forObject(QSharedPointer<QObject> object);
     static QpMetaObject forClassName(const QString &className);
     static QList<QpMetaObject> registeredMetaObjects();
 

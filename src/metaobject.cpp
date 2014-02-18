@@ -49,6 +49,16 @@ QpMetaObject QpMetaObject::registerMetaObject(const QMetaObject &metaObject)
     return result;
 }
 
+QpMetaObject QpMetaObject::forObject(const QObject *object)
+{
+    return forClassName(object->metaObject()->className());
+}
+
+QpMetaObject QpMetaObject::forObject(QSharedPointer<QObject> object)
+{
+    return forObject(object.data());
+}
+
 QpMetaObject QpMetaObject::forClassName(const QString &className)
 {
     auto it = QpMetaObjectPrivate::metaObjectForName.find(className);

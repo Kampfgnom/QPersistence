@@ -28,13 +28,13 @@ void setPrimaryKey(QObject *object, int key)
 QDateTime creationTimeInDatabase(QObject *object)
 {
     QpSqlDataAccessObjectHelper *daoHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
-    return daoHelper->readCreationTime(QpMetaObject::forClassName(object->metaObject()->className()), object);
+    return daoHelper->readCreationTime(QpMetaObject::forObject(object), object);
 }
 
 QDateTime updateTimeInDatabase(QObject *object)
 {
     QpSqlDataAccessObjectHelper *daoHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
-    return daoHelper->readUpdateTime(QpMetaObject::forClassName(object->metaObject()->className()), object);
+    return daoHelper->readUpdateTime(QpMetaObject::forObject(object), object);
 }
 
 QDateTime updateTimeInObject(QObject *object)

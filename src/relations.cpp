@@ -59,7 +59,7 @@ QpWeakRelation<T>::QpWeakRelation(const QString &name, QObject *parent) :
     data->parent = parent;
     data->resolved = false;
     data->cleared = false;
-    data->metaProperty = QpMetaObject::forClassName(parent->metaObject()->className()).metaProperty(name);
+    data->metaProperty = QpMetaObject::forObject(parent).metaProperty(name);
     data->cardinality = data->metaProperty.cardinality();
 }
 
@@ -229,7 +229,7 @@ QpStrongRelation<T>::QpStrongRelation(const QString &name, QObject *parent) :
     data->name = name;
     data->parent = parent;
     data->resolved = false;
-    data->metaProperty = QpMetaObject::forClassName(parent->metaObject()->className()).metaProperty(name);
+    data->metaProperty = QpMetaObject::forObject(parent).metaProperty(name);
     data->cardinality = data->metaProperty.cardinality();
 }
 

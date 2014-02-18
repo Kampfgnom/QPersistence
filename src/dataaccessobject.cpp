@@ -236,7 +236,7 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
         return Qp::Error;
     }
 
-    foreach(QpMetaProperty relation, QpMetaObject::forClassName(object->metaObject()->className()).relationProperties()) {
+    foreach(QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
         QpRelationResolver::readRelationFromDatabase(relation, obj);
     }
 
