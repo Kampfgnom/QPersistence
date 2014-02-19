@@ -64,6 +64,9 @@ QModelIndex QpSortFilterProxyObjectModel<T>::index(int row, int column, const QM
 template<class T>
 bool QpSortFilterProxyObjectModel<T>::lessThan(const QModelIndex &left, const QModelIndex &right) const
 {
+    if(sortRole() < Qt::UserRole)
+        return QSortFilterProxyModel::lessThan(left, right);
+
     QSharedPointer<T> o1 = sourceModel()->objectByIndex(left);
     QSharedPointer<T> o2 = sourceModel()->objectByIndex(right);
 
@@ -79,6 +82,9 @@ bool QpSortFilterProxyObjectModel<T>::lessThan(QSharedPointer<T> left, QSharedPo
 template<class T>
 bool QpSortFilterProxyObjectModel<T>::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
 {
+    if(filterRole() < Qt::UserRole)
+        return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
+
     QSharedPointer<T> o = sourceModel()->objectByIndex(sourceModel()->index(source_row, 0, source_parent));
     return filterAcceptsObject(o);
 }
