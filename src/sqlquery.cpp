@@ -246,7 +246,9 @@ void QpSqlQuery::prepareCreateTable()
     query.append(fields.join(",\n\t"));
 
     foreach(QStringList key, data->uniqueKeys) {
-        query.append(QString(",\n\tUNIQUE KEY (%1)").arg(key.join(", ")));
+        query.append(QString(",\n\t%2 (%1)")
+                     .arg(key.join(", "))
+                     .arg(data->backend->uniqueKeyType()));
     }
 
     foreach (const QStringList foreignKey, data->foreignKeys) {
@@ -382,9 +384,9 @@ void QpSqlQuery::prepareInsert()
 {
     QString query("INSERT ");
     if(data->ignore)
-        query.append(" IGNORE ");
+        query.append(data->backend->orIgnore());
 
-    query.append("INTO ");
+    query.append(" INTO ");
 
     query.append(data->table).append("\n\t(");
 

@@ -17,8 +17,8 @@ public:
 
     void VERIFY_QP_ERROR();
 
-protected:
-    void initDatabase();
+    static void initDatabase();
+    static QVariant NULLKEY();
 };
 
 #endif // RELATIONTESTBASE_H

@@ -26,6 +26,7 @@ public:
 
     explicit SynchronizeTest(QObject *parent = 0);
 
+#ifndef QP_LOCALDB
     static QList<int> childInts()
     {
         return QList<int>() << 1 << 2 << 3;
@@ -55,6 +56,7 @@ private slots:
 private:
     QProcess *startChangerProcess(int id, ChangerMode mode);
     static QProcess *m_currentProcess;
+#endif
 };
 
 #endif // TST_SYNCHRONIZETEST_H

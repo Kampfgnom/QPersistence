@@ -68,7 +68,7 @@ void OneToOneRelationTest::testInitialDatabaseFKEmpty()
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
     QCOMPARE(childFK(parent), QVariant());
-    QCOMPARE(parentFK(child), QVariant(QVariant().toInt()));
+    QCOMPARE(parentFK(child), RelationTestBase::NULLKEY());
 }
 
 void OneToOneRelationTest::testDatabaseFKInsertFromParent()
@@ -107,7 +107,7 @@ void OneToOneRelationTest::testDatabaseFKChangeFromParent()
     parent->setChildObjectOneToOne(newChild);
     Qp::update(parent);
 
-    QCOMPARE(parentFK(child), QVariant(QVariant().toInt()));
+    QCOMPARE(parentFK(child), RelationTestBase::NULLKEY());
     QCOMPARE(childFK(parent), QVariant(Qp::primaryKey(newChild)));
     QCOMPARE(parentFK(newChild), QVariant(Qp::primaryKey(parent)));
 }
@@ -124,7 +124,7 @@ void OneToOneRelationTest::testDatabaseFKChangeFromChild()
     parent->setChildObjectOneToOne(newChild);
     Qp::update(newChild);
 
-    QCOMPARE(parentFK(child), QVariant(QVariant().toInt()));
+    QCOMPARE(parentFK(child), RelationTestBase::NULLKEY());
     QCOMPARE(childFK(parent), QVariant(Qp::primaryKey(newChild)));
     QCOMPARE(parentFK(newChild), QVariant(Qp::primaryKey(parent)));
 }
@@ -141,7 +141,7 @@ void OneToOneRelationTest::testDatabaseFKClearFromParent()
     Qp::update(parent);
 
     QCOMPARE(childFK(parent), QVariant());
-    QCOMPARE(parentFK(child), QVariant(QVariant().toInt()));
+    QCOMPARE(parentFK(child), RelationTestBase::NULLKEY());
 }
 
 void OneToOneRelationTest::testDatabaseFKClearFromChild()
@@ -156,9 +156,10 @@ void OneToOneRelationTest::testDatabaseFKClearFromChild()
     Qp::update(child);
 
     QCOMPARE(childFK(parent), QVariant());
-    QCOMPARE(parentFK(child), QVariant(QVariant().toInt()));
+    QCOMPARE(parentFK(child), RelationTestBase::NULLKEY());
 }
 
+#ifndef QP_LOCALDB
 void OneToOneRelationTest::testDatabaseUpdateTimes()
 {
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
@@ -239,3 +240,4 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
         QCOMPARE(updateTimeChild2Afterchild3Update, updateTimeChild2AfterUpdate);
     }
 }
+#endif

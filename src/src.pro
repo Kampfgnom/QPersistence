@@ -10,6 +10,7 @@ QT              += sql
 CONFIG          += static c++11
 QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
 INCLUDEPATH     += $$QPERSISTENCE_INCLUDEPATH
+DEFINES         += QP_LOCALDB
 
 ### Files ###
 

@@ -1,6 +1,7 @@
 #ifndef LOCK_H
 #define LOCK_H
 
+
 #include <QtCore/QExplicitlySharedDataPointer>
 #include <QtCore/QSharedPointer>
 
@@ -15,6 +16,9 @@ class QpLockData;
 class QpLock
 {
 public:
+    QpLock();
+
+#ifndef QP_LOCALDB
     enum Status {
         UnkownStatus,
         Unlocked,
@@ -30,7 +34,6 @@ public:
     static QpLock tryLock(QSharedPointer<QObject> object);
     static QpLock unlock(QSharedPointer<QObject> object);
 
-    QpLock();
     QpLock(const QpLock &);
     QpLock &operator=(const QpLock &);
     ~QpLock();
@@ -44,6 +47,7 @@ private:
     explicit QpLock(const QpError &error);
 
     QExplicitlySharedDataPointer<QpLockData> data;
+#endif
 };
 
 #endif // LOCK_H

@@ -21,8 +21,10 @@ private Q_SLOTS:
     void testDatabaseFKChangeFromParent();
     void testDatabaseFKChangeFromChild();
 
+#ifndef QP_LOCALDB
     void testUpdateTimesFromParent();
     void testUpdateTimesFromChild();
+#endif
 
 private:
     QpMetaProperty m_parentToChildRelation;

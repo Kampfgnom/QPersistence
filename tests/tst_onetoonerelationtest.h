@@ -24,7 +24,9 @@ private Q_SLOTS:
     void testDatabaseFKClearFromParent();
     void testDatabaseFKClearFromChild();
 
+#ifndef QP_LOCALDB
     void testDatabaseUpdateTimes();
+#endif
 
 private:
     QpMetaProperty m_parentToChildRelation;

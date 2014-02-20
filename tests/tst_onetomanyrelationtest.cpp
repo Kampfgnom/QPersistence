@@ -67,12 +67,12 @@ void OneToManyRelationTest::testParentFk(QSharedPointer<ChildObject> child)
     QSharedPointer<ParentObject> parent = child->parentObjectOneToMany();
 
     if(!parent)
-        QCOMPARE(parentFK(child), QVariant(QVariant().toInt()));
+        QCOMPARE(parentFK(child), RelationTestBase::NULLKEY());
 
     if(parent)
         QCOMPARE(parentFK(child), QVariant(Qp::primaryKey(parent)));
     else
-        QCOMPARE(parentFK(child), QVariant(QVariant().toInt()));
+        QCOMPARE(parentFK(child), RelationTestBase::NULLKEY());
 }
 
 void OneToManyRelationTest::testChildFks(QSharedPointer<ParentObject> parent)
@@ -94,7 +94,7 @@ void OneToManyRelationTest::testInitialDatabaseFKEmpty()
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
 
     QCOMPARE(childFKs(parent), QVariantList());
-    QCOMPARE(parentFK(child), QVariant(QVariant().toInt()));
+    QCOMPARE(parentFK(child), RelationTestBase::NULLKEY());
 }
 
 void OneToManyRelationTest::testDatabaseFKInsertFromParent()
@@ -263,6 +263,7 @@ void OneToManyRelationTest::testDatabaseFKChangeFromChild()
     }
 }
 
+#ifndef QP_LOCALDB
 void OneToManyRelationTest::testUpdateTimesFromParent()
 {
     static const int CHILDCOUNT = 3;
@@ -408,3 +409,4 @@ void OneToManyRelationTest::testUpdateTimesFromChild()
         }
     }
 }
+#endif

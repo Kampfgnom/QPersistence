@@ -4,6 +4,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 
+#include "relationtestbase.h"
 #include "parentobject.h"
 #include "childobject.h"
 
@@ -12,26 +13,10 @@ CreationAndUpdateTimesTest::CreationAndUpdateTimesTest(QObject *parent) :
 {
 }
 
+#ifndef QP_LOCALDB
 void CreationAndUpdateTimesTest::initTestCase()
 {
-    QSqlDatabase db = Qp::database();
-    if(!db.isOpen()) {
-        db = QSqlDatabase::addDatabase("QMYSQL");
-        db.setHostName("192.168.100.2");
-        db.setDatabaseName("niklas");
-        db.setUserName("niklas");
-        db.setPassword("niklas");
-
-        QVERIFY2(db.open(), db.lastError().text().toUtf8());
-
-        Qp::setDatabase(db);
-        Qp::setSqlDebugEnabled(false);
-        Qp::registerClass<ParentObject>();
-        Qp::registerClass<ChildObject>();
-        Qp::createCleanSchema();
-    }
-
-    VERIFY_QP_ERROR();
+    RelationTestBase::initDatabase();
 }
 
 void CreationAndUpdateTimesTest::cleanupTestCase()
@@ -84,3 +69,4 @@ void CreationAndUpdateTimesTest::VERIFY_QP_ERROR()
 {
     QVERIFY2(!Qp::lastError().isValid(), Qp::lastError().text().toUtf8());
 }
+#endif

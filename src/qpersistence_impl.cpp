@@ -157,6 +157,7 @@ int primaryKey(QSharedPointer<T> object)
     return Qp::Private::primaryKey(object.data());
 }
 
+#ifndef QP_LOCALDB
 template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object)
 {
     return Qp::Private::creationTimeInDatabase(object.data());
@@ -186,6 +187,7 @@ template<class T> QpLock isLocked(QSharedPointer<T> object)
 {
     return QpLock::isLocked(qSharedPointerCast<QObject>(object));
 }
+#endif
 
 template<class Target, class Source>
 QList<Target> castList(const QList<Source>& list)

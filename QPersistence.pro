@@ -3,13 +3,13 @@ TEMPLATE = subdirs
 CONFIG += ordered
 SUBDIRS = \
     src \
-    examples \
+#    examples \
     tests \
     testDatabaseChanger
 
-src.subdir      = src
-examples.subdir     = examples
-examples.depends    = src
+#src.subdir      = src
+#examples.subdir     = examples
+#examples.depends    = src
 
 OTHER_FILES += \
     README.md \

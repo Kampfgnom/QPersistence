@@ -21,8 +21,10 @@ private Q_SLOTS:
     void testDatabaseFKChangeFromParent();
     void testDatabaseFKChangeFromChild();
 
+#ifndef QP_LOCALDB
     void testUpdateTimesFromParent();
     void testUpdateTimesFromChild();
+#endif
 
 private:
     struct Tree {
@@ -40,7 +42,9 @@ private:
     void testChildFks(QSharedPointer<ParentObject> parent);
 
     void testTree(Tree tree);
+#ifndef QP_LOCALDB
     void testUpdateTimes(QDateTime previousTime, QDateTime newTime, Tree changed, Tree unchanged);
+#endif
 
     Tree createTree();
 

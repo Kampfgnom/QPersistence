@@ -130,6 +130,7 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromChild()
     }
 }
 
+#ifndef QP_LOCALDB
 void ManyToManyRelationsTest::testUpdateTimesFromParent()
 {
     // Add a new child
@@ -273,6 +274,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         testUpdateTimes(previousTime, newTime, changedTree, tree);
     }
 }
+#endif
 
 QVariantList ManyToManyRelationsTest::childFKs(QSharedPointer<ParentObject> parent)
 {
@@ -361,6 +363,7 @@ void ManyToManyRelationsTest::testTree(ManyToManyRelationsTest::Tree tree)
     }
 }
 
+#ifndef QP_LOCALDB
 void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime newTime,
                                               ManyToManyRelationsTest::Tree changed, ManyToManyRelationsTest::Tree completeTree)
 {
@@ -400,6 +403,7 @@ void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime 
         }
     }
 }
+#endif
 
 ManyToManyRelationsTest::Tree ManyToManyRelationsTest::createTree()
 {

@@ -81,6 +81,9 @@ QpError lastError()
 
 bool beginTransaction()
 {
+    if(Qp::database().driverName() != "QMYSQL")
+        return true;
+
     bool transaction = Qp::database().transaction();
     if(!transaction)
         qFatal("START TRANSACTION failed.");
@@ -93,6 +96,9 @@ bool beginTransaction()
 
 CommitResult commitOrRollbackTransaction()
 {
+    if(Qp::database().driverName() != "QMYSQL")
+        return CommitSuccessful;
+
     if(lastError().isValid()) {
         bool rollback = Qp::database().rollback();
         if(!rollback)
@@ -107,8 +113,10 @@ CommitResult commitOrRollbackTransaction()
     }
 
     bool commit = Qp::database().commit();
-    if(!commit)
+    if(!commit) {
+        qWarning() << Qp::database().lastError();
         qFatal("COMMIT failed.");
+    }
 
     if(QpSqlQuery::isDebugEnabled())
         qDebug() << "COMMIT;";
@@ -118,10 +126,12 @@ CommitResult commitOrRollbackTransaction()
         return CommitFailed;
 }
 
+#ifndef QP_LOCALDB
 void enableLocks()
 {
     QpLock::enableLocks();
 }
+#endif
 
 QDateTime databaseTime()
 {

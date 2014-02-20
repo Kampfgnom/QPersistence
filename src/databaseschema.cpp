@@ -19,11 +19,13 @@
 #include <QSqlDriver>
 
 const QString QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
+const QString QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
+#ifndef QP_LOCALDB
 const QString QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
 const QString QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME("_Qp_updateTime");
-const QString QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
 const QString QpDatabaseSchema::TABLENAME_LOCKS("_Qp_locks");
 const QString QpDatabaseSchema::COLUMN_LOCK("_Qp_lock");
+#endif
 
 class QpDatabaseSchemaPrivate : public QSharedData
 {
@@ -125,6 +127,7 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
     // Add the primary key
     data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
 
+#ifndef QP_LOCALDB
     // Add timestamp columns
     data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
     data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
@@ -137,6 +140,7 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
 //                                  QpDatabaseSchema::TABLENAME_LOCKS,
 //                                  QpDatabaseSchema::ONDELETE_CASCADE);
     }
+#endif
 
     data->query.prepareCreateTable();
 
@@ -216,6 +220,7 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
             return false;
     }
 
+#ifndef QP_LOCALDB
     // Check for special columns
     QSqlRecord record = data->database.record(meta.tableName());
 
@@ -246,6 +251,7 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
             return false;
         }
     }
+#endif
 
 
     return true;
@@ -362,7 +368,9 @@ void QpDatabaseSchema::createCleanSchema()
 {
     cleanSchema();
 
+#ifndef QP_LOCALDB
     createLocksTable();
+#endif
 
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
         createTable(metaObject.metaObject());
@@ -375,7 +383,9 @@ void QpDatabaseSchema::createCleanSchema()
 
 void QpDatabaseSchema::adjustSchema()
 {
+#ifndef QP_LOCALDB
     createLocksTable();
+#endif
 
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
         createTableIfNotExists(metaObject.metaObject());
@@ -384,6 +394,7 @@ void QpDatabaseSchema::adjustSchema()
     }
 }
 
+#ifndef QP_LOCALDB
 void QpDatabaseSchema::createLocksTable()
 {
     if (!QpLock::isLocksEnabled())
@@ -402,6 +413,7 @@ void QpDatabaseSchema::createLocksTable()
         setLastError(data->query);
     }
 }
+#endif
 
 QpError QpDatabaseSchema::lastError() const
 {

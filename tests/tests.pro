@@ -11,7 +11,7 @@ QT              += sql testlib
 CONFIG          += c++11 console
 CONFIG          -= app_bundle
 QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
-DEFINES         += SRCDIR=\\\"$$PWD/\\\"
+DEFINES         += SRCDIR=\\\"$$PWD/\\\" SQLITE QP_LOCALDB
 
 
 ### Qp ###

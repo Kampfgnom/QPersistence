@@ -2,14 +2,16 @@
 
 #include <QProcess>
 #include <QSqlError>
+#include "relationtestbase.h"
 
-QProcess *SynchronizeTest::m_currentProcess(nullptr);
 
 SynchronizeTest::SynchronizeTest(QObject *parent) :
     QObject(parent)
 {
 }
 
+#ifndef QP_LOCALDB
+QProcess *SynchronizeTest::m_currentProcess(nullptr);
 void SynchronizeTest::cleanup(QProcess *process)
 {
     Q_ASSERT(process == m_currentProcess);
@@ -21,22 +23,7 @@ void SynchronizeTest::cleanup(QProcess *process)
 
 void SynchronizeTest::initDatabase()
 {
-    QSqlDatabase db = Qp::database();
-    if(!db.isOpen()) {
-        db = QSqlDatabase::addDatabase("QMYSQL");
-        db.setHostName("192.168.100.2");
-        db.setDatabaseName("niklas");
-        db.setUserName("niklas");
-        db.setPassword("niklas");
-
-        QVERIFY2(db.open(), db.lastError().text().toUtf8());
-
-        Qp::setDatabase(db);
-        Qp::setSqlDebugEnabled(false);
-        Qp::registerClass<ParentObject>();
-        Qp::registerClass<ChildObject>();
-        Qp::createCleanSchema();
-    }
+    RelationTestBase::initDatabase();
 }
 
 void SynchronizeTest::testUpdateTimeChangesFromOtherProcess()
@@ -254,3 +241,4 @@ QProcess *SynchronizeTest::startChangerProcess(int id, ChangerMode mode)
     m_currentProcess->start();
     return m_currentProcess;
 }
+#endif

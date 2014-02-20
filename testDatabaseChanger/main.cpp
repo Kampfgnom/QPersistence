@@ -8,6 +8,7 @@
 
 #include <QGuiApplication>
 
+#ifndef QP_LOCALDB
 void lockedCounter(QSharedPointer<ParentObject> parent) {
 
     for(int i = 0; i < 100; ++i) {
@@ -18,11 +19,13 @@ void lockedCounter(QSharedPointer<ParentObject> parent) {
         Qp::unlock(parent);
     }
 }
+#endif
 
 int main(int argc, char *argv[])
 {
     qDebug() << "Starting changer";
     QGuiApplication a(argc, argv);
+#ifndef QP_LOCALDB
     if(a.arguments().size() != 3) {
         qWarning() << "Usage: qpersistencetestdatabasechanger <id>";
         return -1;
@@ -134,6 +137,7 @@ int main(int argc, char *argv[])
             QTest::qSleep(1000);
         }
     }
+#endif
 
     return 0;
 }

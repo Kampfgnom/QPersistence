@@ -62,6 +62,11 @@ QString QpSqliteBackend::primaryKeyType() const
     return QLatin1String("INTEGER PRIMARY KEY AUTOINCREMENT");
 }
 
+QString QpSqliteBackend::uniqueKeyType() const
+{
+    return QLatin1String("UNIQUE");
+}
+
 QString QpSqliteBackend::variantTypeToSqlType(QVariant::Type type) const
 {
     switch (type) {
@@ -96,6 +101,11 @@ QString QpMySqlBackend::primaryKeyType() const
     return QLatin1String("INTEGER PRIMARY KEY AUTO_INCREMENT");
 }
 
+QString QpMySqlBackend::uniqueKeyType() const
+{
+    return QLatin1String("UNIQUE KEY");
+}
+
 QString QpMySqlBackend::variantTypeToSqlType(QVariant::Type type) const
 {
     switch (type) {
@@ -128,10 +138,20 @@ QString QpMySqlBackend::variantTypeToSqlType(QVariant::Type type) const
 
 QString QpSqliteBackend::nowTimestamp() const
 {
-    return QLatin1String("now");
+    return QLatin1String("date('now')");
+}
+
+QString QpSqliteBackend::orIgnore() const
+{
+    return QLatin1String("OR IGNORE");
 }
 
 QString QpMySqlBackend::nowTimestamp() const
 {
     return QLatin1String("NOW()");
+}
+
+QString QpMySqlBackend::orIgnore() const
+{
+    return QLatin1String("IGNORE");
 }

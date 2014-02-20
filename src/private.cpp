@@ -25,6 +25,7 @@ void setPrimaryKey(QObject *object, int key)
     object->setProperty("_Qp_ID",key);
 }
 
+#ifndef QP_LOCALDB
 QDateTime creationTimeInDatabase(QObject *object)
 {
     QpSqlDataAccessObjectHelper *daoHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
@@ -41,6 +42,7 @@ QDateTime updateTimeInObject(QObject *object)
 {
     return object->property(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME.toLatin1()).toDateTime();
 }
+#endif
 
 void enableSharedFromThis(QSharedPointer<QObject> object)
 {

@@ -2,12 +2,14 @@
 
 #include <QSqlError>
 #include <QTimer>
+#include "relationtestbase.h"
 
 LockTest::LockTest(QObject *parent) :
     QObject(parent)
 {
 }
 
+#ifndef QP_LOCALDB
 QProcess *LockTest::m_currentProcess(nullptr);
 
 void LockTest::cleanup(QProcess *process)
@@ -23,23 +25,7 @@ void LockTest::cleanup(QProcess *process)
 
 void LockTest::initTestCase()
 {
-    QSqlDatabase db = Qp::database();
-    if(!db.isOpen()) {
-        db = QSqlDatabase::addDatabase("QMYSQL");
-        db.setHostName("192.168.100.2");
-        db.setDatabaseName("niklas");
-        db.setUserName("niklas");
-        db.setPassword("niklas");
-
-        QVERIFY2(db.open(), db.lastError().text().toUtf8());
-
-        Qp::enableLocks();
-        Qp::setDatabase(db);
-        Qp::setSqlDebugEnabled(false);
-        Qp::registerClass<ParentObject>();
-        Qp::registerClass<ChildObject>();
-        Qp::createCleanSchema();
-    }
+    RelationTestBase::initDatabase();
 }
 
 void LockTest::testLockAndUnlockLocally()
@@ -126,3 +112,4 @@ QProcess *LockTest::startChangerProcess(int id, SynchronizeTest::ChangerMode mod
     return m_currentProcess;
 }
 
+#endif

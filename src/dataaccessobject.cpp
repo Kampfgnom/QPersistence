@@ -187,6 +187,7 @@ QSharedPointer<QObject> QpDaoBase::createObject()
 
 Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 {
+#ifndef QP_LOCALDB
     QDateTime databaseTime = Qp::updateTimeInDatabase(object);
     QDateTime objectTime = Qp::updateTimeInObject(object);
 
@@ -194,6 +195,7 @@ Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
         return Qp::UpdateConflict;
 
     Q_ASSERT(databaseTime == objectTime);
+#endif
 
     if (!data->sqlDataAccessObjectHelper->updateObject(data->metaObject, object.data())) {
         setLastError(data->sqlDataAccessObjectHelper->lastError());
@@ -218,6 +220,7 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
     return true;
 }
 
+#ifndef QP_LOCALDB
 Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object)
 {
     QObject *obj = object.data();
@@ -256,6 +259,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(const QDateTime &time)
                                                 QpSqlCondition::GreaterThan,
                                                 time));
 }
+#endif
 
 uint qHash(const QVariant &var)
 {

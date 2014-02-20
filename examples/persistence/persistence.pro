@@ -11,6 +11,7 @@ TEMPLATE        = app
 QT              += sql widgets testlib
 CONFIG          += c++11
 QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
+DEFINES         += QP_LOCALDB
 
 ### Qp ###
 

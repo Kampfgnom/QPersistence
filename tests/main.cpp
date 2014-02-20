@@ -19,13 +19,15 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    RUNTEST(LockTest);
     RUNTEST(CacheTest);
     RUNTEST(OneToOneRelationTest);
     RUNTEST(OneToManyRelationTest);
     RUNTEST(ManyToManyRelationsTest);
     RUNTEST(CreationAndUpdateTimesTest);
+#ifdef MYSQL
+    RUNTEST(LockTest);
     RUNTEST(SynchronizeTest);
+#endif
 
     return 0;
 }

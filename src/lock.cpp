@@ -1,4 +1,7 @@
 #include "lock.h"
+
+#ifndef QP_LOCALDB
+
 #include <QSharedData>
 
 #include "databaseschema.h"
@@ -160,13 +163,18 @@ void QpLockData::removeLock(int id, QSharedPointer<QObject> object)
     if(localLocks.contains(object))
         localLocks.remove(object);
 }
-
+#endif
 /**********************************************************
  *  QpLock
  */
-QpLock::QpLock() : data(new QpLockData)
+QpLock::QpLock()
+#ifndef QP_LOCALDB
+     : data(new QpLockData)
+#endif
 {
 }
+
+#ifndef QP_LOCALDB
 
 QpLock::QpLock(const QpError &error) : data(new QpLockData)
 {
@@ -321,3 +329,5 @@ QpLock::Status QpLock::status() const
 {
     return data->status;
 }
+
+#endif

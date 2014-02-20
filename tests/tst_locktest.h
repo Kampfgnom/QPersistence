@@ -16,6 +16,7 @@ class LockTest : public QObject
 public:
     explicit LockTest(QObject *parent = 0);
 
+#ifndef QP_LOCALDB
     static void cleanup(QProcess *process);
 
     void testSynchronizedCounter();
@@ -32,6 +33,7 @@ private slots:
 private:
     QProcess *startChangerProcess(int id, SynchronizeTest::ChangerMode mode);
     static QProcess *m_currentProcess;
+#endif
 };
 
 #endif // TST_LOCKTEST_H
