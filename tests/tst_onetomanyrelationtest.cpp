@@ -1,5 +1,7 @@
 #include "tst_onetomanyrelationtest.h"
 
+#include "../src/sqlbackend.h"
+
 OneToManyRelationTest::OneToManyRelationTest(QObject *parent) :
     RelationTestBase(parent)
 {
@@ -263,9 +265,12 @@ void OneToManyRelationTest::testDatabaseFKChangeFromChild()
     }
 }
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
 void OneToManyRelationTest::testUpdateTimesFromParent()
 {
+    if(!QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature))
+        return;
+
     static const int CHILDCOUNT = 3;
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QList<QSharedPointer<ChildObject>> children;
@@ -324,6 +329,9 @@ void OneToManyRelationTest::testUpdateTimesFromParent()
 
 void OneToManyRelationTest::testUpdateTimesFromChild()
 {
+    if(!QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature))
+        return;
+
     static const int CHILDCOUNT = 3;
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QList<QSharedPointer<ChildObject>> children;

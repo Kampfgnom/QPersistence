@@ -1,7 +1,7 @@
 #ifndef TST_ONETOMANYRELATIONTEST_H
 #define TST_ONETOMANYRELATIONTEST_H
 
-#include "relationtestbase.h"
+#include "database.h"
 
 class OneToManyRelationTest : public RelationTestBase
 {
@@ -21,7 +21,7 @@ private Q_SLOTS:
     void testDatabaseFKChangeFromParent();
     void testDatabaseFKChangeFromChild();
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
     void testUpdateTimesFromParent();
     void testUpdateTimesFromChild();
 #endif

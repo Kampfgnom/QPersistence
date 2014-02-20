@@ -16,7 +16,7 @@ class LockTest : public QObject
 public:
     explicit LockTest(QObject *parent = 0);
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
     static void cleanup(QProcess *process);
 
     void testSynchronizedCounter();

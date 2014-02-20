@@ -42,8 +42,9 @@ public:
     QSharedPointer<QObject> createObject();
     Qp::UpdateResult updateObject(QSharedPointer<QObject> object);
     bool removeObject(QSharedPointer<QObject> object);
-#ifndef QP_LOCALDB
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object);
+
+#ifndef QP_NO_TIMESTAMPS
     QList<QSharedPointer<QObject>> createdSince(const QDateTime &time);
     QList<QSharedPointer<QObject>> updatedSince(const QDateTime &time);
 #endif

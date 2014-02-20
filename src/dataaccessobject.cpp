@@ -187,14 +187,16 @@ QSharedPointer<QObject> QpDaoBase::createObject()
 
 Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 {
-#ifndef QP_LOCALDB
-    QDateTime databaseTime = Qp::updateTimeInDatabase(object);
-    QDateTime objectTime = Qp::updateTimeInObject(object);
+#ifndef QP_NO_TIMESTAMPS
+    if(QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature)) {
+        QDateTime databaseTime = Qp::updateTimeInDatabase(object);
+        QDateTime objectTime = Qp::updateTimeInObject(object);
 
-    if(databaseTime > objectTime)
-        return Qp::UpdateConflict;
+        if(databaseTime > objectTime)
+            return Qp::UpdateConflict;
 
-    Q_ASSERT(databaseTime == objectTime);
+        Q_ASSERT(databaseTime == objectTime);
+    }
 #endif
 
     if (!data->sqlDataAccessObjectHelper->updateObject(data->metaObject, object.data())) {
@@ -220,15 +222,19 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
     return true;
 }
 
-#ifndef QP_LOCALDB
 Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object)
 {
     QObject *obj = object.data();
-    QDateTime localTime = Qp::Private::updateTimeInObject(obj);
-    QDateTime remoteTime = Qp::Private::updateTimeInDatabase(obj);
 
-    if(localTime == remoteTime)
-        return Qp::Unchanged;
+#ifndef QP_NO_TIMESTAMPS
+    if(QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature)) {
+        QDateTime localTime = Qp::Private::updateTimeInObject(obj);
+        QDateTime remoteTime = Qp::Private::updateTimeInDatabase(obj);
+
+        if(localTime == remoteTime)
+            return Qp::Unchanged;
+    }
+#endif
 
     int id = Qp::primaryKey(object);
     if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, obj)) {
@@ -246,8 +252,10 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
     return Qp::Updated;
 }
 
+#ifndef QP_NO_TIMESTAMPS
 QList<QSharedPointer<QObject> > QpDaoBase::createdSince(const QDateTime &time)
 {
+    Q_ASSERT(QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature));
     return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME,
                                                 QpSqlCondition::GreaterThan,
                                                 time));
@@ -255,6 +263,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::createdSince(const QDateTime &time)
 
 QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(const QDateTime &time)
 {
+    Q_ASSERT(QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature));
     return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME,
                                                 QpSqlCondition::GreaterThan,
                                                 time));

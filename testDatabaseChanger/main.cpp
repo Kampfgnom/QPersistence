@@ -8,7 +8,7 @@
 
 #include <QGuiApplication>
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
 void lockedCounter(QSharedPointer<ParentObject> parent) {
 
     for(int i = 0; i < 100; ++i) {
@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 {
     qDebug() << "Starting changer";
     QGuiApplication a(argc, argv);
-#ifndef QP_LOCALDB
+#if !defined QP_NO_LOCKS || !defined QP_NO_TIMESTAMPS
     if(a.arguments().size() != 3) {
         qWarning() << "Usage: qpersistencetestdatabasechanger <id>";
         return -1;
@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
         parent->increaseCounter();
         Qp::update(parent);
     }
+#ifndef SQLITE
     else if(mode == SynchronizeTest::Counter) {
         for(int i = 0; i < SynchronizeTest::childInts().size(); ++i) {
             parent->increaseCounter();
@@ -137,6 +138,7 @@ int main(int argc, char *argv[])
             QTest::qSleep(1000);
         }
     }
+#endif
 #endif
 
     return 0;

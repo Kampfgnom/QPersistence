@@ -18,9 +18,11 @@ class QpDatabaseSchema : public QObject
 public:
     static const QString COLUMN_NAME_PRIMARY_KEY;
     static const QString ONDELETE_CASCADE;
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
     static const QString COLUMN_NAME_CREATION_TIME;
     static const QString COLUMN_NAME_UPDATE_TIME;
+#endif
+#ifndef QP_NO_LOCKS
     static const QString TABLENAME_LOCKS;
     static const QString COLUMN_LOCK;
     static const QString COLUMN_LOCKTIME;
@@ -49,7 +51,7 @@ public:
     void cleanSchema();
     void createCleanSchema();
     void adjustSchema();
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
     void createLocksTable();
 #endif
 

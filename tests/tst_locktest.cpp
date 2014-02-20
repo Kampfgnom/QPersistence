@@ -2,14 +2,14 @@
 
 #include <QSqlError>
 #include <QTimer>
-#include "relationtestbase.h"
+#include "database.h"
 
 LockTest::LockTest(QObject *parent) :
     QObject(parent)
 {
 }
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
 QProcess *LockTest::m_currentProcess(nullptr);
 
 void LockTest::cleanup(QProcess *process)

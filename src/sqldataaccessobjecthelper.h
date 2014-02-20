@@ -28,7 +28,7 @@ public:
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
     QDateTime readUpdateTime(const QpMetaObject &metaObject, QObject *object);
     QDateTime readCreationTime(const QpMetaObject &metaObject, QObject *object);
 #endif

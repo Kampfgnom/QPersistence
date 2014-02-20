@@ -26,7 +26,7 @@ public:
 
     explicit SynchronizeTest(QObject *parent = 0);
 
-#ifndef QP_LOCALDB
+#ifndef SQLITE
     static QList<int> childInts()
     {
         return QList<int>() << 1 << 2 << 3;

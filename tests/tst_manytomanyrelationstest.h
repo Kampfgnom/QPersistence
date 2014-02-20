@@ -1,7 +1,7 @@
 #ifndef TST_MANYTOMANYRELATIONSTEST_H
 #define TST_MANYTOMANYRELATIONSTEST_H
 
-#include "relationtestbase.h"
+#include "database.h"
 
 class ManyToManyRelationsTest : public RelationTestBase
 {
@@ -21,7 +21,7 @@ private Q_SLOTS:
     void testDatabaseFKChangeFromParent();
     void testDatabaseFKChangeFromChild();
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
     void testUpdateTimesFromParent();
     void testUpdateTimesFromChild();
 #endif
@@ -42,7 +42,7 @@ private:
     void testChildFks(QSharedPointer<ParentObject> parent);
 
     void testTree(Tree tree);
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
     void testUpdateTimes(QDateTime previousTime, QDateTime newTime, Tree changed, Tree unchanged);
 #endif
 

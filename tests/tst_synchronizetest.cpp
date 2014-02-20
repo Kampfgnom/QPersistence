@@ -2,7 +2,7 @@
 
 #include <QProcess>
 #include <QSqlError>
-#include "relationtestbase.h"
+#include "database.h"
 
 
 SynchronizeTest::SynchronizeTest(QObject *parent) :
@@ -10,7 +10,7 @@ SynchronizeTest::SynchronizeTest(QObject *parent) :
 {
 }
 
-#ifndef QP_LOCALDB
+#ifndef SQLITE
 QProcess *SynchronizeTest::m_currentProcess(nullptr);
 void SynchronizeTest::cleanup(QProcess *process)
 {

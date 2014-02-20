@@ -10,7 +10,7 @@ class CreationAndUpdateTimesTest : public QObject
 public:
     explicit CreationAndUpdateTimesTest(QObject *parent = 0);
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
 private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();

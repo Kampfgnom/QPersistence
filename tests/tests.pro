@@ -11,7 +11,7 @@ QT              += sql testlib
 CONFIG          += c++11 console
 CONFIG          -= app_bundle
 QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
-DEFINES         += SRCDIR=\\\"$$PWD/\\\" SQLITE QP_LOCALDB
+DEFINES         += SRCDIR=\\\"$$PWD/\\\"
 
 
 ### Qp ###
@@ -26,19 +26,19 @@ SOURCES +=  \
     main.cpp \
     tst_cachetest.cpp \
     tst_creationandupdatetimestest.cpp \
-    relationtestbase.cpp \
     tst_onetoonerelationtest.cpp \
     tst_onetomanyrelationtest.cpp \
     tst_manytomanyrelationstest.cpp \
     tst_synchronizetest.cpp \
-    tst_locktest.cpp
+    tst_locktest.cpp \
+    database.cpp
 
 HEADERS += \
     tst_cachetest.h \
     tst_creationandupdatetimestest.h \
-    relationtestbase.h \
     tst_onetoonerelationtest.h \
     tst_onetomanyrelationtest.h \
     tst_manytomanyrelationstest.h \
     tst_synchronizetest.h \
-    tst_locktest.h
+    tst_locktest.h \
+    database.h

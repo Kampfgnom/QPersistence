@@ -1,6 +1,8 @@
 #include "sqlbackend.h"
 #include <QSharedData>
 
+#include "qpersistence.h"
+
 #include <QHash>
 #include <QSqlDatabase>
 
@@ -43,6 +45,11 @@ QpSqlBackend *QpSqlBackend::forDatabase(const QSqlDatabase &database)
     return backend;
 }
 
+bool QpSqlBackend::hasFeature(QpSqlBackend::Feature feature)
+{
+    return (QpSqliteBackend::forDatabase(Qp::database())->features() & feature);
+}
+
 QpSqlBackend::QpSqlBackend(QObject *parent) :
     QObject(parent)
 {
@@ -55,6 +62,11 @@ QpSqlBackend::~QpSqlBackend()
 QpSqliteBackend::QpSqliteBackend(QObject *parent) :
     QpSqlBackend(parent)
 {
+}
+
+QpSqlBackend::Features QpSqliteBackend::features() const
+{
+    return 0;
 }
 
 QString QpSqliteBackend::primaryKeyType() const
@@ -94,6 +106,12 @@ QString QpSqliteBackend::variantTypeToSqlType(QVariant::Type type) const
 QpMySqlBackend::QpMySqlBackend(QObject *parent) :
     QpSqlBackend(parent)
 {
+}
+
+QpSqlBackend::Features QpMySqlBackend::features() const
+{
+    return QpSqliteBackend::LocksFeature
+            | QpSqliteBackend::TimestampsFeature;
 }
 
 QString QpMySqlBackend::primaryKeyType() const

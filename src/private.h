@@ -17,7 +17,7 @@ void setLastError(const QpError &error);
 
 int primaryKey(QObject *object);
 void setPrimaryKey(QObject *object, int key);
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
 QDateTime creationTimeInDatabase(QObject *object);
 QDateTime updateTimeInDatabase(QObject *object);
 QDateTime updateTimeInObject(QObject *object);

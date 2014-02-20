@@ -25,7 +25,7 @@ void setPrimaryKey(QObject *object, int key)
     object->setProperty("_Qp_ID",key);
 }
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
 QDateTime creationTimeInDatabase(QObject *object)
 {
     QpSqlDataAccessObjectHelper *daoHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());

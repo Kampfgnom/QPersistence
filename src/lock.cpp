@@ -1,12 +1,13 @@
 #include "lock.h"
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
 
 #include <QSharedData>
 
 #include "databaseschema.h"
 #include "error.h"
 #include "qpersistence.h"
+#include "sqlbackend.h"
 #include "sqlcondition.h"
 #include "sqlquery.h"
 
@@ -168,13 +169,13 @@ void QpLockData::removeLock(int id, QSharedPointer<QObject> object)
  *  QpLock
  */
 QpLock::QpLock()
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
      : data(new QpLockData)
 #endif
 {
 }
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
 
 QpLock::QpLock(const QpError &error) : data(new QpLockData)
 {
@@ -200,7 +201,7 @@ QpLock::~QpLock()
 
 bool QpLock::isLocksEnabled()
 {
-    return QpLockData::locksEnabled;
+    return QpLockData::locksEnabled && QpSqlBackend::hasFeature(QpSqlBackend::LocksFeature);
 }
 
 void QpLock::enableLocks()

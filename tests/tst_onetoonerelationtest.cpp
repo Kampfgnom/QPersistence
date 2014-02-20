@@ -1,5 +1,7 @@
 #include "tst_onetoonerelationtest.h"
 
+#include "../src/sqlbackend.h"
+
 OneToOneRelationTest::OneToOneRelationTest(QObject *parent) :
     RelationTestBase(parent)
 {
@@ -159,9 +161,12 @@ void OneToOneRelationTest::testDatabaseFKClearFromChild()
     QCOMPARE(parentFK(child), RelationTestBase::NULLKEY());
 }
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
 void OneToOneRelationTest::testDatabaseUpdateTimes()
 {
+    if(!QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature))
+        return;
+
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
     QSharedPointer<ChildObject> child2 = Qp::create<ChildObject>();

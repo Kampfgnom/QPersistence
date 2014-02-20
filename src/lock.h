@@ -18,7 +18,7 @@ class QpLock
 public:
     QpLock();
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
     enum Status {
         UnkownStatus,
         Unlocked,

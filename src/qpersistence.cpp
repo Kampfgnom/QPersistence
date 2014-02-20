@@ -126,7 +126,7 @@ CommitResult commitOrRollbackTransaction()
         return CommitFailed;
 }
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
 void enableLocks()
 {
     QpLock::enableLocks();

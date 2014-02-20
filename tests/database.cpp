@@ -1,4 +1,4 @@
-#include "relationtestbase.h"
+#include "database.h"
 
 #include <QSqlError>
 
@@ -26,7 +26,7 @@ void RelationTestBase::initDatabase()
         QVERIFY2(db.open(), db.lastError().text().toUtf8());
 
         Qp::setDatabase(db);
-        Qp::setSqlDebugEnabled(true);
+        Qp::setSqlDebugEnabled(false);
         Qp::registerClass<ParentObject>();
         Qp::registerClass<ChildObject>();
         Qp::createCleanSchema();
@@ -40,6 +40,7 @@ QVariant RelationTestBase::NULLKEY()
 #elif SQLITE
     return QVariant(QVariant().toString());
 #endif
+    return QVariant();
 }
 
 void RelationTestBase::VERIFY_QP_ERROR()

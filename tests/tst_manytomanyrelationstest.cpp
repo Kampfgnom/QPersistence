@@ -1,5 +1,7 @@
 #include "tst_manytomanyrelationstest.h"
 
+#include "../src/sqlbackend.h"
+
 ManyToManyRelationsTest::ManyToManyRelationsTest(QObject *parent) :
     RelationTestBase(parent)
 {
@@ -130,9 +132,12 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromChild()
     }
 }
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
 void ManyToManyRelationsTest::testUpdateTimesFromParent()
 {
+    if(!QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature))
+        return;
+
     // Add a new child
     {
         Tree tree = createTree();
@@ -205,6 +210,9 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
 
 void ManyToManyRelationsTest::testUpdateTimesFromChild()
 {
+    if(!QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature))
+        return;
+
     // Add a new child
     {
         Tree tree = createTree();
@@ -363,10 +371,13 @@ void ManyToManyRelationsTest::testTree(ManyToManyRelationsTest::Tree tree)
     }
 }
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
 void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime newTime,
                                               ManyToManyRelationsTest::Tree changed, ManyToManyRelationsTest::Tree completeTree)
 {
+    if(!QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature))
+        return;
+
     foreach(QSharedPointer<ParentObject> parent, completeTree.parents) {
         if(changed.parents.contains(parent)) {
             QCOMPARE(Qp::updateTimeInDatabase(parent), newTime);

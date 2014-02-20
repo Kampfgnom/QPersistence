@@ -157,7 +157,7 @@ int primaryKey(QSharedPointer<T> object)
     return Qp::Private::primaryKey(object.data());
 }
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
 template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object)
 {
     return Qp::Private::creationTimeInDatabase(object.data());
@@ -171,8 +171,10 @@ template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object)
 template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object)
 {
     return Qp::Private::updateTimeInObject(object.data());
-}
+}      
+#endif
 
+#ifndef QP_NO_LOCKS
 template<class T> QpLock tryLock(QSharedPointer<T> object)
 {
     return QpLock::tryLock(qSharedPointerCast<QObject>(object));

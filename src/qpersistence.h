@@ -22,13 +22,11 @@ enum CommitResult {
     CommitFailed
 };
 
-#ifndef QP_LOCALDB
 enum SynchronizeResult : short {
     Error,
     Unchanged,
     Updated
 };
-#endif
 
 enum UpdateResult : short {
     UpdateSuccess,
@@ -41,8 +39,10 @@ QSqlDatabase database();
 bool adjustDatabaseSchema();
 bool createCleanSchema();
 QpError lastError();
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
 void enableLocks();
+#endif
+#ifndef QP_NO_TIMESTAMPS
 QDateTime databaseTime();
 #endif
 
@@ -63,13 +63,17 @@ template<class T> QSharedPointer<T> create();
 template<class T> UpdateResult update(QSharedPointer<T> object);
 template<class T> bool remove(QSharedPointer<T> object);
 template<class T> SynchronizeResult synchronize(QSharedPointer<T> object);
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
 template<class T> QList<QSharedPointer<T>> createdSince(const QDateTime &time);
 template<class T> QList<QSharedPointer<T>> updatedSince(const QDateTime &time);
 template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object);
 template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object);
 template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object);
+#endif
+#ifndef QP_NO_LOCKS
 template<class T> QpLock tryLock(QSharedPointer<T> object);
+template<class T> QpLock unlock(QSharedPointer<T> object);
+template<class T> QpLock isLocked(QSharedPointer<T> object);
 #endif
 
 template<class K, class V> void registerMappableTypes();

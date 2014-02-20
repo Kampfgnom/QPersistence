@@ -1,7 +1,7 @@
 #ifndef ONETOONERELATIONTEST_H
 #define ONETOONERELATIONTEST_H
 
-#include "relationtestbase.h"
+#include "database.h"
 
 class OneToOneRelationTest : public RelationTestBase
 {
@@ -24,7 +24,7 @@ private Q_SLOTS:
     void testDatabaseFKClearFromParent();
     void testDatabaseFKClearFromChild();
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
     void testDatabaseUpdateTimes();
 #endif
 

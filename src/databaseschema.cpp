@@ -20,9 +20,11 @@
 
 const QString QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
 const QString QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
-#ifndef QP_LOCALDB
+#ifndef QP_NO_TIMESTAMPS
 const QString QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
 const QString QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME("_Qp_updateTime");
+#endif
+#ifndef QP_NO_LOCKS
 const QString QpDatabaseSchema::TABLENAME_LOCKS("_Qp_locks");
 const QString QpDatabaseSchema::COLUMN_LOCK("_Qp_lock");
 #endif
@@ -127,18 +129,22 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
     // Add the primary key
     data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
 
-#ifndef QP_LOCALDB
-    // Add timestamp columns
-    data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
-    data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
+#ifndef QP_NO_TIMESTAMPS
+    if(QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature)) {
+        // Add timestamp columns
+        data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
+        data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
+    }
+#endif
 
+#ifndef QP_NO_LOCKS
     if(QpLock::isLocksEnabled()) {
         QString columnType = variantTypeToSqlType(QVariant::Int);
         data->query.addField(QpDatabaseSchema::COLUMN_LOCK, columnType);
-//        data->query.addForeignKey(QpDatabaseSchema::COLUMN_LOCK,
-//                                  QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-//                                  QpDatabaseSchema::TABLENAME_LOCKS,
-//                                  QpDatabaseSchema::ONDELETE_CASCADE);
+        //        data->query.addForeignKey(QpDatabaseSchema::COLUMN_LOCK,
+        //                                  QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+        //                                  QpDatabaseSchema::TABLENAME_LOCKS,
+        //                                  QpDatabaseSchema::ONDELETE_CASCADE);
     }
 #endif
 
@@ -220,28 +226,37 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
             return false;
     }
 
-#ifndef QP_LOCALDB
+#if !defined QP_NO_LOCKS || !defined QP_NO_TIMESTAMPS
     // Check for special columns
     QSqlRecord record = data->database.record(meta.tableName());
 
+#ifndef QP_NO_TIMESTAMPS
     bool hasCreationTimeColumn = record.contains(COLUMN_NAME_CREATION_TIME);
     bool hasUpdateTimeColumn = record.contains(COLUMN_NAME_UPDATE_TIME);
+#endif
+
+#ifndef QP_NO_LOCKS
     bool hasLockColumn = record.contains(COLUMN_LOCK);
+#endif
 
     if(!hasCreationTimeColumn
             || !hasUpdateTimeColumn) {
         data->query.clear();
         data->query.setTable(meta.tableName());
 
+#ifndef QP_NO_TIMESTAMPS
         // Add timestamp columns
-        if(!hasCreationTimeColumn)
+        if(!hasCreationTimeColumn && QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature))
             data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
 
-        if(!hasUpdateTimeColumn)
+        if(!hasUpdateTimeColumn && QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature))
             data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
+#endif
 
-        if(!hasLockColumn)
+#ifndef QP_NO_LOCKS
+        if(!hasLockColumn && QpLock::isLocksEnabled())
             data->query.addField(COLUMN_LOCK, variantTypeToSqlType(QVariant::Int));
+#endif
 
         data->query.prepareAlterTable();
 
@@ -368,7 +383,7 @@ void QpDatabaseSchema::createCleanSchema()
 {
     cleanSchema();
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
     createLocksTable();
 #endif
 
@@ -383,7 +398,7 @@ void QpDatabaseSchema::createCleanSchema()
 
 void QpDatabaseSchema::adjustSchema()
 {
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
     createLocksTable();
 #endif
 
@@ -394,7 +409,7 @@ void QpDatabaseSchema::adjustSchema()
     }
 }
 
-#ifndef QP_LOCALDB
+#ifndef QP_NO_LOCKS
 void QpDatabaseSchema::createLocksTable()
 {
     if (!QpLock::isLocksEnabled())
