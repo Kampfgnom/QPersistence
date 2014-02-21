@@ -39,16 +39,24 @@ QSharedPointer<QObject> QpBelongsToOneBase::object() const
     return object;
 }
 
-void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> object) const
+void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> newObject) const
 {
-    QSharedPointer<QObject> previous = this->object();
-    if(previous == object)
+    QSharedPointer<QObject> previousObject = this->object();
+    if(previousObject == newObject)
         return;
 
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
+    data->object = newObject.toWeakRef();
 
-    if(previous)
-        reverse.write(previous.data(), objectVariant(QSharedPointer<QObject>()));
+    if(previousObject){
+        if(reverse.isToOneRelationProperty()) {
+            reverse.write(previousObject.data(), objectVariant(QSharedPointer<QObject>()));
+        }
+        else {
+            invokeMethod(reverse.removeObjectMethod(), previousObject.data(), Qp::sharedFrom(data->parent));
+        }
+    }
 
-    data->object = object.toWeakRef();
+    // Set again, because it may happen, that resetting the previousObjects relation has also reset this value.
+    data->object = newObject.toWeakRef();
 }

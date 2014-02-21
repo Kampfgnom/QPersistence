@@ -23,13 +23,85 @@ void OneToManyRelationTest::cleanupTestCase()
 void OneToManyRelationTest::testOneToManyRelation()
 {
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
-    QList<QSharedPointer<ChildObject>> children;
+    parent->setObjectName("P1");
+    QList<QSharedPointer<ChildObject>> shouldHaveChildren;
 
-    for(int i = 0; i < 3; ++i) {
+    // Add children to P1
+    for(int i = 0; i < 6; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+        child->setObjectName(QString("P1_C%1").arg(i));
+        parent->addHasMany(child);
+        shouldHaveChildren.append(child);
+    }
 
+    // Verify tree
+    {
+        QList<QSharedPointer<ChildObject>> hasChildren = parent->hasMany();
+        foreach(QSharedPointer<ChildObject> child, shouldHaveChildren) {
+            QVERIFY(hasChildren.contains(child));
+            QCOMPARE(child->belongsToOneMany(), parent);
+            hasChildren.removeOne(child);
+        }
+        QVERIFY(hasChildren.isEmpty());
+    }
 
-        children.append(child);
+    // Remove children
+    {
+        QList<QSharedPointer<ChildObject>> removedChildren;
+        removedChildren.append(shouldHaveChildren.takeAt(1));
+        removedChildren.append(shouldHaveChildren.takeAt(2));
+        foreach(QSharedPointer<ChildObject> child, removedChildren) {
+            parent->removeHasMany(child);
+        }
+
+        QList<QSharedPointer<ChildObject>> hasChildren = parent->hasMany();
+        foreach(QSharedPointer<ChildObject> child, shouldHaveChildren) {
+            QVERIFY(hasChildren.contains(child));
+            QCOMPARE(child->belongsToOneMany(), parent);
+            hasChildren.removeOne(child);
+        }
+        QVERIFY(hasChildren.isEmpty());
+
+        foreach(QSharedPointer<ChildObject> child, removedChildren) {
+            QCOMPARE(child->belongsToOneMany(), QSharedPointer<ParentObject>());
+        }
+    }
+
+    // Move children to other parent
+    {
+        QSharedPointer<ParentObject> parent2 = Qp::create<ParentObject>();
+        parent2->setObjectName("P2");
+
+        QList<QSharedPointer<ChildObject>> shouldHaveChildren2;
+        QList<QSharedPointer<ChildObject>> movedChildren;
+        movedChildren.append(shouldHaveChildren.takeAt(1));
+        movedChildren.append(shouldHaveChildren.takeAt(2));
+        foreach(QSharedPointer<ChildObject> child, movedChildren) {
+            parent2->addHasMany(child);
+            shouldHaveChildren2.append(child);
+        }
+
+        // verify parent1 children
+        {
+            QList<QSharedPointer<ChildObject>> hasChildren = parent->hasMany();
+            foreach(QSharedPointer<ChildObject> child, shouldHaveChildren) {
+                QVERIFY(hasChildren.contains(child));
+                QCOMPARE(child->belongsToOneMany(), parent);
+                hasChildren.removeOne(child);
+            }
+            QVERIFY(hasChildren.isEmpty());
+        }
+
+        // verify parent2 children
+        {
+            QList<QSharedPointer<ChildObject>> hasChildren = parent2->hasMany();
+            foreach(QSharedPointer<ChildObject> child, shouldHaveChildren2) {
+                QVERIFY(hasChildren.contains(child));
+                QCOMPARE(child->belongsToOneMany(), parent2);
+                hasChildren.removeOne(child);
+            }
+            QVERIFY(hasChildren.isEmpty());
+        }
     }
 }
 

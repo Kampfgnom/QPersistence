@@ -9,13 +9,13 @@ class QpHasOneData : public QSharedData {
 public:
     QpHasOneData() : QSharedData(),
         parent(nullptr),
-        cleared(false)
+        resolved(false)
     {}
 
     QSharedPointer<QObject> object;
     QpMetaProperty metaProperty;
     QObject *parent;
-    bool cleared;
+    bool resolved;
 };
 
 QpHasOneBase::QpHasOneBase(const QString &name, QObject *parent) :
@@ -32,34 +32,44 @@ QpHasOneBase::~QpHasOneBase()
 
 QSharedPointer<QObject> QpHasOneBase::object() const
 {
-    if(data->object)
+    if(data->resolved)
         return data->object;
 
-    if(!data->cleared)
-        data->object = QpRelationResolver::resolveToOneRelation(data->metaProperty.name(), data->parent);
+    data->object = QpRelationResolver::resolveToOneRelation(data->metaProperty.name(), data->parent);
+    data->resolved = true;
 
     return data->object;
 }
 
-void QpHasOneBase::setObject(const QSharedPointer<QObject> object) const
+void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
 {
-    if(!object)
-        data->cleared = true;
+    QSharedPointer<QObject> previousObject = object();
 
-    if(data->object == object)
+    if(previousObject == newObject)
         return;
 
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
+    data->object = newObject;
 
-    QSharedPointer<QObject> previous = data->object;
+    QSharedPointer<QObject> sharedParent = Qp::sharedFrom(data->parent);
+    if(previousObject) {
+        if(reverse.isToOneRelationProperty()) {
+            reverse.write(previousObject.data(), objectVariant(QSharedPointer<QObject>()));
+        }
+        else {
+            invokeMethod(reverse.removeObjectMethod(), previousObject.data(), sharedParent);
+        }
+    }
 
-    data->object = object;
+    if(newObject){
+        if(reverse.isToOneRelationProperty()) {
+            reverse.write(newObject.data(), objectVariant(sharedParent));
+        }
+        else {
+            invokeMethod(reverse.addObjectMethod(), newObject.data(), sharedParent);
+        }
+    }
 
-    if(previous)
-        reverse.write(previous.data(), objectVariant(QSharedPointer<QObject>()));
-
-    data->object = object;
-
-    if(object)
-        reverse.write(object.data(), objectVariant(Qp::sharedFrom(data->parent)));
+    // Set again, because it may happen, that setting the reverse relations has also changed this value.
+    data->object = newObject;
 }

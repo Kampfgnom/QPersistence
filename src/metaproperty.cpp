@@ -136,15 +136,24 @@ bool QpMetaProperty::isRelationProperty() const
 
 bool QpMetaProperty::isToOneRelationProperty() const
 {
-    QString type(typeName());
-    Q_ASSERT(!type.isEmpty());
-    return type.startsWith("QSharedPointer<")
-            || type.startsWith("QWeakPointer<");
+    if(data->cardinality == UnknownCardinality) {
+        QString type(typeName());
+        Q_ASSERT(!type.isEmpty());
+        return type.startsWith("QSharedPointer<")
+                || type.startsWith("QWeakPointer<");
+    }
+
+    return data->cardinality == OneToOneCardinality
+            || data->cardinality == ManyToOneCardinality;
 }
 
 bool QpMetaProperty::isToManyRelationProperty() const
 {
-    return TOMANYRELATIONREGEXP.match(typeName()).hasMatch();
+    if(data->cardinality == UnknownCardinality)
+        return TOMANYRELATIONREGEXP.match(typeName()).hasMatch();
+
+    return data->cardinality == OneToManyCardinality
+            || data->cardinality == ManyToManyCardinality;
 }
 
 bool QpMetaProperty::hasTableForeignKey() const
@@ -297,6 +306,32 @@ QString QpMetaProperty::tableName() const
     }
 
     return shortName(result);
+}
+
+QMetaMethod QpMetaProperty::addObjectMethod()
+{
+    static QMetaObject mo = metaObject().metaObject();
+    QString signature("add%1(QSharedPointer<%2>)");
+    QString propertyName = name();
+    propertyName[0] = propertyName.at(0).toTitleCase();
+    signature = signature.arg(propertyName).arg(reverseClassName());
+    int index = mo.indexOfMethod(QMetaObject::normalizedSignature(signature.toUtf8()));
+    Q_ASSERT(index > 0);
+    return mo.method(index);
+}
+
+QMetaMethod QpMetaProperty::removeObjectMethod()
+{
+    static QMetaObject mo = metaObject().metaObject();
+    QString signature("remove%1(QSharedPointer<%2>)");
+    QString propertyName = name();
+    propertyName[0] = propertyName.at(0).toTitleCase();
+    signature = signature.arg(propertyName).arg(reverseClassName());
+    QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
+    int index = mo.indexOfMethod(normalized);
+
+    Q_ASSERT(index > 0);
+    return mo.method(index);
 }
 
 bool QpMetaProperty::isMappingProperty() const

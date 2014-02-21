@@ -59,6 +59,8 @@ public:
 
     QList<QSharedPointer<ChildObject> > hasMany() const;
     void setHasMany(QList<QSharedPointer<ChildObject> > arg);
+
+public slots:
     void addHasMany(QSharedPointer<ChildObject> arg);
     void removeHasMany(QSharedPointer<ChildObject> arg);
 

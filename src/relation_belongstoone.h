@@ -4,6 +4,7 @@
 #include <QExplicitlySharedDataPointer>
 #include <QSharedPointer>
 #include <QVariant>
+#include <QMetaMethod>
 
 class QpBelongsToOneData;
 
@@ -18,6 +19,7 @@ public:
 
 protected:
     virtual QVariant objectVariant(QSharedPointer<QObject> object) const = 0;
+    virtual void invokeMethod(QMetaMethod method, QObject *object, QSharedPointer<QObject> arg) const = 0;
 
 private:
     QExplicitlySharedDataPointer<QpBelongsToOneData> data;
@@ -37,6 +39,11 @@ protected:
     QVariant objectVariant(QSharedPointer<QObject> object) const
     {
         return QVariant::fromValue<QSharedPointer<T>>(qSharedPointerCast<T>(object));
+    }
+
+    void invokeMethod(QMetaMethod method, QObject *object, QSharedPointer<QObject> arg) const Q_DECL_OVERRIDE
+    {
+        method.invoke(object, Q_ARG(QSharedPointer<T>, qSharedPointerCast<T>(arg)));
     }
 };
 

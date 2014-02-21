@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 //    RUNTEST(LockTest);
 //    RUNTEST(CacheTest);
     RUNTEST(OneToOneRelationTest);
-//    RUNTEST(OneToManyRelationTest);
+    RUNTEST(OneToManyRelationTest);
 //    RUNTEST(ManyToManyRelationsTest);
 //    RUNTEST(CreationAndUpdateTimesTest);
 //    RUNTEST(SynchronizeTest);
