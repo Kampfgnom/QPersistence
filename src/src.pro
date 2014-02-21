@@ -34,7 +34,8 @@ HEADERS += \
     lock.h \
     relation_hasone.h \
     relation_belongstoone.h \
-    relation_hasmany.h
+    relation_hasmany.h \
+    relation_belongstomany.h
 
 SOURCES += \
         cache.cpp \
@@ -58,4 +59,5 @@ SOURCES += \
     lock.cpp \
     relation_hasone.cpp \
     relation_belongstoone.cpp \
-    relation_hasmany.cpp
+    relation_hasmany.cpp \
+    relation_belongstomany.cpp

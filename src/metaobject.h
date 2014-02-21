@@ -45,6 +45,9 @@ public:
 
     QString sqlFilter() const;
 
+    QMetaMethod removeObjectMethod(const QpMetaProperty &property);
+    QMetaMethod addObjectMethod(const QpMetaProperty &property);
+
 private:
     friend class QpDaoBase;
     static QpMetaObject registerMetaObject(const QMetaObject &metaObject);

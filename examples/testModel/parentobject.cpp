@@ -12,7 +12,8 @@ ParentObject::ParentObject(QObject *parent) :
     m_childObjectsManyToMany("childObjectsManyToMany", this),
     m_counter(0),
     m_hasOne(QpRelation(&ParentObject::hasOne)),
-    m_hasMany(QpRelation(&ParentObject::hasMany))
+    m_hasMany(QpRelation(&ParentObject::hasMany)),
+    m_hasManyMany(QpRelation(&ParentObject::hasManyMany))
 {
 }
 
@@ -151,6 +152,26 @@ void ParentObject::setHasOne(QSharedPointer<ChildObject> arg)
 void ParentObject::setHasMany(QList<QSharedPointer<ChildObject> > arg)
 {
     m_hasMany = arg;
+}
+
+QList<QSharedPointer<ChildObject> > ParentObject::hasManyMany() const
+{
+    return m_hasManyMany;
+}
+
+void ParentObject::setHasManyMany(QList<QSharedPointer<ChildObject> > arg)
+{
+    m_hasManyMany = arg;
+}
+
+void ParentObject::addHasManyMany(QSharedPointer<ChildObject> arg)
+{
+    m_hasManyMany.append(arg);
+}
+
+void ParentObject::removeHasManyMany(QSharedPointer<ChildObject> arg)
+{
+    m_hasManyMany.remove(arg);
 }
 
 void ParentObject::addHasMany(QSharedPointer<ChildObject> arg)

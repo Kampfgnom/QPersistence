@@ -50,10 +50,19 @@ void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> newObject) cons
 
     if(previousObject){
         if(reverse.isToOneRelationProperty()) {
-            reverse.write(previousObject.data(), objectVariant(QSharedPointer<QObject>()));
+            QString className = data->metaProperty.metaObject().className();
+            reverse.write(previousObject.data(), Qp::Private::variantCast(QSharedPointer<QObject>(), className));
         }
         else {
-            invokeMethod(reverse.removeObjectMethod(), previousObject.data(), Qp::sharedFrom(data->parent));
+
+            QSharedPointer<QObject> shared = Qp::sharedFrom(data->parent);
+            QVariant wrapper = Qp::Private::variantCast(shared);
+
+            QpMetaObject reverseObject = reverse.metaObject();
+            QMetaMethod method = reverseObject.removeObjectMethod(reverse);
+
+            Q_ASSERT(method.invoke(previousObject.data(), Qt::DirectConnection,
+                                   QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));
         }
     }
 

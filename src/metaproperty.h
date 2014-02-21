@@ -51,9 +51,6 @@ public:
 
     QString tableName() const;
 
-    QMetaMethod addObjectMethod();
-    QMetaMethod removeObjectMethod();
-
     // Maps
     bool isMappingProperty() const;
     QString mappingFromTypeName() const;

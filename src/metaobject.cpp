@@ -217,4 +217,28 @@ QString QpMetaObject::classInformation(const QString &informationName, bool asse
     return value;
 }
 
+QMetaMethod QpMetaObject::addObjectMethod(const QpMetaProperty &property)
+{
+    QString signature("add%1(QSharedPointer<%2>)");
+    QString propertyName = property.name();
+    propertyName[0] = propertyName.at(0).toTitleCase();
+    signature = signature.arg(propertyName).arg(property.reverseClassName());
+    QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
+    int index = data->metaObject.indexOfMethod(normalized);
 
+    Q_ASSERT(index > 0);
+    return data->metaObject.method(index);
+}
+
+QMetaMethod QpMetaObject::removeObjectMethod(const QpMetaProperty &property)
+{
+    QString signature("remove%1(QSharedPointer<%2>)");
+    QString propertyName = property.name();
+    propertyName[0] = propertyName.at(0).toTitleCase();
+    signature = signature.arg(propertyName).arg(property.reverseClassName());
+    QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
+    int index = data->metaObject.indexOfMethod(normalized);
+
+    Q_ASSERT(index > 0);
+    return data->metaObject.method(index);
+}

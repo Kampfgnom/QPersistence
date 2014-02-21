@@ -20,6 +20,57 @@ void ManyToManyRelationsTest::cleanupTestCase()
 {
 }
 
+struct TestTree {
+    QList<QSharedPointer<ParentObject>> p;
+    QList<QSharedPointer<ChildObject>> c;
+    QHash<QSharedPointer<ChildObject> , QList<QSharedPointer<ParentObject>>> parents;
+    QHash<QSharedPointer<ParentObject>, QList<QSharedPointer<ChildObject>>> children;
+};
+
+void testTreeTest(TestTree tree) {
+    for(auto it = tree.children.begin(); it != tree.children.end(); ++it) {
+        QSharedPointer<ParentObject> parent = it.key();
+        QList<QSharedPointer<ChildObject>> shouldHaveChildren = it.value();
+        QList<QSharedPointer<ChildObject>> hasChildren = parent->hasManyMany();
+        foreach(QSharedPointer<ChildObject> child, shouldHaveChildren) {
+            QVERIFY(hasChildren.contains(child));
+            hasChildren.removeOne(child);
+        }
+        QVERIFY(hasChildren.isEmpty());
+    }
+    for(auto it = tree.parents.begin(); it != tree.parents.end(); ++it) {
+        QSharedPointer<ChildObject> child = it.key();
+        QList<QSharedPointer<ParentObject>> shouldHaveParents = it.value();
+        QList<QSharedPointer<ParentObject>> hasParents = child->belongsToManyMany();
+        foreach(QSharedPointer<ParentObject> parent, shouldHaveParents) {
+            QVERIFY(hasParents.contains(parent));
+            hasParents.removeOne(parent);
+        }
+        QVERIFY(hasParents.isEmpty());
+    }
+}
+
+void ManyToManyRelationsTest::testManyToManyRelation()
+{
+    TestTree tree;
+
+    for(int j = 0; j < PARENTCOUNT; ++j) {
+        QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+        parent->setObjectName(QString("P%1").arg(j));
+        tree.p.append(parent);
+
+        for(int i = 0; i < CHILDCOUNT; ++i) {
+            QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+            child->setObjectName(QString("P%1_C%2").arg(j).arg(i));
+            tree.children[parent].append(child);
+            tree.parents[child].append(parent);
+            parent->addHasManyMany(child);
+            tree.c.append(child);
+        }
+    }
+    testTreeTest(tree);
+}
+
 void ManyToManyRelationsTest::testInitialDatabaseFKsEmpty()
 {
     QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();

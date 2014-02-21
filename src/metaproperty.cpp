@@ -308,32 +308,6 @@ QString QpMetaProperty::tableName() const
     return shortName(result);
 }
 
-QMetaMethod QpMetaProperty::addObjectMethod()
-{
-    static QMetaObject mo = metaObject().metaObject();
-    QString signature("add%1(QSharedPointer<%2>)");
-    QString propertyName = name();
-    propertyName[0] = propertyName.at(0).toTitleCase();
-    signature = signature.arg(propertyName).arg(reverseClassName());
-    int index = mo.indexOfMethod(QMetaObject::normalizedSignature(signature.toUtf8()));
-    Q_ASSERT(index > 0);
-    return mo.method(index);
-}
-
-QMetaMethod QpMetaProperty::removeObjectMethod()
-{
-    static QMetaObject mo = metaObject().metaObject();
-    QString signature("remove%1(QSharedPointer<%2>)");
-    QString propertyName = name();
-    propertyName[0] = propertyName.at(0).toTitleCase();
-    signature = signature.arg(propertyName).arg(reverseClassName());
-    QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
-    int index = mo.indexOfMethod(normalized);
-
-    Q_ASSERT(index > 0);
-    return mo.method(index);
-}
-
 bool QpMetaProperty::isMappingProperty() const
 {
     return QString(typeName()).startsWith("QMap");

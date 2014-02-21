@@ -1,63 +1,69 @@
-#include "relation_hasmany.h"
+#include "relation_belongstomany.h"
 #include <QSharedData>
 
 #include "metaproperty.h"
 #include "relationresolver.h"
 #include "qpersistence.h"
 
-class QpHasManyData : public QSharedData {
+class QpBelongsToManyData : public QSharedData {
 public:
-    QpHasManyData() : QSharedData(),
+    QpBelongsToManyData() : QSharedData(),
         resolved(false),
         parent(nullptr)
     {}
 
     bool resolved;
-    QList<QSharedPointer<QObject>> objects;
+    QList<QWeakPointer<QObject>> objects;
     QpMetaProperty metaProperty;
     QObject *parent;
 };
 
-QpHasManyBase::QpHasManyBase(const QString &name, QObject *parent) :
-    data(new QpHasManyData)
+QpBelongsToManyBase::QpBelongsToManyBase(const QString &name, QObject *parent) :
+    data(new QpBelongsToManyData)
 {
     data->parent = parent;
     QString n = name.mid(name.lastIndexOf("::") + 2);
     data->metaProperty = QpMetaObject::forObject(parent).metaProperty(n);
 }
 
-QpHasManyBase::~QpHasManyBase()
+QpBelongsToManyBase::~QpBelongsToManyBase()
 {
 }
 
-QList<QSharedPointer<QObject> > QpHasManyBase::objects() const
+QList<QSharedPointer<QObject> > QpBelongsToManyBase::objects() const
 {
-    if(data->resolved)
-        return data->objects;
+    if(data->resolved) {
+        bool ok = false;
+        QList<QSharedPointer<QObject> > objs = Qp::Private::makeListStrong(data->objects, &ok);
+        if(ok)
+            return objs;
+    }
 
-    data->objects = QpRelationResolver::resolveToManyRelation(data->metaProperty.name(), data->parent);
+    QList<QSharedPointer<QObject> > objs = QpRelationResolver::resolveToManyRelation(data->metaProperty.name(), data->parent);
+    data->objects = Qp::Private::makeListWeak(objs);
     data->resolved = true;
-    return data->objects;
+    return objs;
 }
 
-void QpHasManyBase::append(QSharedPointer<QObject> object)
+void QpBelongsToManyBase::append(QSharedPointer<QObject> object)
 {
-    objects(); // resolve
+    QList<QSharedPointer<QObject>> obj = objects(); Q_UNUSED(obj); // resolve and keep a strong ref, while we're working here
 
-    if(data->objects.contains(object))
+    QWeakPointer<QObject> weakRef = object.toWeakRef();
+    if(data->objects.contains(weakRef))
         return;
 
-    data->objects.append(object);
+    data->objects.append(weakRef);
 
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
     QSharedPointer<QObject> sharedParent = Qp::sharedFrom(data->parent);
-    QString className = data->metaProperty.metaObject().className();
 
     if(object){
         if(reverse.isToOneRelationProperty()) {
-            reverse.write(object.data(), Qp::Private::variantCast(sharedParent, className));
+            reverse.write(object.data(), Qp::Private::variantCast(sharedParent));
         }
         else {
+            QString className = data->metaProperty.metaObject().className();
 
             QSharedPointer<QObject> shared = Qp::sharedFrom(data->parent);
             QVariant wrapper = Qp::Private::variantCast(shared, className);
@@ -69,30 +75,29 @@ void QpHasManyBase::append(QSharedPointer<QObject> object)
                                    QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));
         }
     }
-
-    if(!data->objects.contains(object))
-        data->objects.append(object);
 }
 
-void QpHasManyBase::remove(QSharedPointer<QObject> object)
+void QpBelongsToManyBase::remove(QSharedPointer<QObject> object)
 {
-    objects(); // resolve
-    int removeCount = data->objects.removeAll(object);
+    QList<QSharedPointer<QObject>> obj = objects(); Q_UNUSED(obj); // resolve and keep a strong ref, while we're working here
+
+    int removeCount = data->objects.removeAll(object.toWeakRef());
     Q_ASSERT(removeCount <= 1);
 
     if(removeCount == 0)
         return;
 
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
-    QString className = data->metaProperty.metaObject().className();
 
     if(object){
         if(reverse.isToOneRelationProperty()) {
+            QString className = data->metaProperty.metaObject().className();
             reverse.write(object.data(), Qp::Private::variantCast(QSharedPointer<QObject>(), className));
         }
         else {
+
             QSharedPointer<QObject> shared = Qp::sharedFrom(data->parent);
-            QVariant wrapper = Qp::Private::variantCast(shared, className);
+            QVariant wrapper = Qp::Private::variantCast(shared);
 
             QpMetaObject reverseObject = reverse.metaObject();
             QMetaMethod method = reverseObject.removeObjectMethod(reverse);
@@ -103,8 +108,8 @@ void QpHasManyBase::remove(QSharedPointer<QObject> object)
     }
 }
 
-void QpHasManyBase::setObjects(const QList<QSharedPointer<QObject>> objects) const
+void QpBelongsToManyBase::setObjects(const QList<QSharedPointer<QObject>> objects) const
 {
-    data->objects = objects;
+    data->objects = Qp::Private::makeListWeak(objects);
     data->resolved = true;
 }

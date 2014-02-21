@@ -49,27 +49,40 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
         return;
 
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
+    QString className = data->metaProperty.metaObject().className();
     data->object = newObject;
 
     QSharedPointer<QObject> sharedParent = Qp::sharedFrom(data->parent);
     if(previousObject) {
         if(reverse.isToOneRelationProperty()) {
-            reverse.write(previousObject.data(), objectVariant(QSharedPointer<QObject>()));
+            reverse.write(previousObject.data(), Qp::Private::variantCast(QSharedPointer<QObject>(), className));
         }
         else {
-            invokeMethod(reverse.removeObjectMethod(), previousObject.data(), sharedParent);
+            QVariant wrapper = Qp::Private::variantCast(sharedParent);
+
+            QpMetaObject reverseObject = reverse.metaObject();
+            QMetaMethod method = reverseObject.removeObjectMethod(reverse);
+
+            Q_ASSERT(method.invoke(previousObject.data(), Qt::DirectConnection,
+                                   QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));
         }
     }
 
     if(newObject){
         if(reverse.isToOneRelationProperty()) {
-            reverse.write(newObject.data(), objectVariant(sharedParent));
+            reverse.write(newObject.data(), Qp::Private::variantCast(sharedParent));
         }
         else {
-            invokeMethod(reverse.addObjectMethod(), newObject.data(), sharedParent);
+            QVariant wrapper = Qp::Private::variantCast(sharedParent);
+
+            QpMetaObject reverseObject = reverse.metaObject();
+            QMetaMethod method = reverseObject.addObjectMethod(reverse);
+
+            Q_ASSERT(method.invoke(newObject.data(), Qt::DirectConnection,
+                                   QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));
         }
     }
 
-    // Set again, because it may happen, that setting the reverse relations has also changed this value.
+    // Set again, because it may (will) happen, that setting the reverse relations has also changed this value.
     data->object = newObject;
 }
