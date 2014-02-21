@@ -189,7 +189,7 @@ void OneToManyRelationTest::testDatabaseFKInsertFromParent()
     QList<QSharedPointer<ChildObject>> children;
     for(int i = 0; i < CHILDCOUNT; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObjectOneToMany(child);
+        parent->addChildObjectsOneToMany(child);
         children.append(child);
     }
     Qp::update(parent);
@@ -207,7 +207,7 @@ void OneToManyRelationTest::testDatabaseFKInsertFromChild()
     QList<QSharedPointer<ChildObject>> children;
     for(int i = 0; i < CHILDCOUNT; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObjectOneToMany(child);
+        parent->addChildObjectsOneToMany(child);
         Qp::update(child);
         children.append(child);
     }
@@ -225,7 +225,7 @@ void OneToManyRelationTest::testDatabaseFKChangeFromParent()
     QList<QSharedPointer<ChildObject>> children;
     for(int i = 0; i < CHILDCOUNT; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObjectOneToMany(child);
+        parent->addChildObjectsOneToMany(child);
         children.append(child);
     }
     Qp::update(parent);
@@ -233,7 +233,7 @@ void OneToManyRelationTest::testDatabaseFKChangeFromParent()
     // Add new child
     {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObjectOneToMany(child);
+        parent->addChildObjectsOneToMany(child);
         children.append(child);
         Qp::update(parent);
 
@@ -246,7 +246,7 @@ void OneToManyRelationTest::testDatabaseFKChangeFromParent()
     // Remove child
     {
         QSharedPointer<ChildObject> child = parent->childObjectsOneToMany().first();
-        parent->removeChildObjectOneToMany(child);
+        parent->removeChildObjectsOneToMany(child);
         Qp::update(parent);
 
         testChildFks(parent);
@@ -259,7 +259,7 @@ void OneToManyRelationTest::testDatabaseFKChangeFromParent()
 
     // Move child to another parent
     {
-        parent2->addChildObjectOneToMany(parent->childObjectsOneToMany().first());
+        parent2->addChildObjectsOneToMany(parent->childObjectsOneToMany().first());
         Qp::update(parent2);
 
         testChildFks(parent);
@@ -271,7 +271,7 @@ void OneToManyRelationTest::testDatabaseFKChangeFromParent()
 
     // Move another child to another parent
     {
-        parent2->addChildObjectOneToMany(parent->childObjectsOneToMany().last());
+        parent2->addChildObjectsOneToMany(parent->childObjectsOneToMany().last());
         Qp::update(parent2);
 
         testChildFks(parent);
@@ -289,7 +289,7 @@ void OneToManyRelationTest::testDatabaseFKChangeFromChild()
     QList<QSharedPointer<ChildObject>> children;
     for(int i = 0; i < CHILDCOUNT; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObjectOneToMany(child);
+        parent->addChildObjectsOneToMany(child);
         children.append(child);
     }
     Qp::update(parent);
@@ -297,7 +297,7 @@ void OneToManyRelationTest::testDatabaseFKChangeFromChild()
     // Add new child
     {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObjectOneToMany(child);
+        parent->addChildObjectsOneToMany(child);
         children.append(child);
         Qp::update(child);
 
@@ -310,7 +310,7 @@ void OneToManyRelationTest::testDatabaseFKChangeFromChild()
     // Remove child
     {
         QSharedPointer<ChildObject> child = parent->childObjectsOneToMany().first();
-        parent->removeChildObjectOneToMany(child);
+        parent->removeChildObjectsOneToMany(child);
         Qp::update(child);
 
         testChildFks(parent);
@@ -324,7 +324,7 @@ void OneToManyRelationTest::testDatabaseFKChangeFromChild()
     // Move child to another parent
     {
         QSharedPointer<ChildObject> child = parent->childObjectsOneToMany().first();
-        parent2->addChildObjectOneToMany(child);
+        parent2->addChildObjectsOneToMany(child);
         Qp::update(child);
 
         testChildFks(parent);
@@ -337,7 +337,7 @@ void OneToManyRelationTest::testDatabaseFKChangeFromChild()
     // Move another child to another parent
     {
         QSharedPointer<ChildObject> child = parent->childObjectsOneToMany().last();
-        parent2->addChildObjectOneToMany(child);
+        parent2->addChildObjectsOneToMany(child);
         Qp::update(child);
 
         testChildFks(parent);
@@ -355,7 +355,7 @@ void OneToManyRelationTest::testUpdateTimesFromParent()
     QList<QSharedPointer<ChildObject>> children;
     for(int i = 0; i < CHILDCOUNT; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObjectOneToMany(child);
+        parent->addChildObjectsOneToMany(child);
         children.append(child);
     }
     Qp::update(parent);
@@ -386,7 +386,7 @@ void OneToManyRelationTest::testUpdateTimesFromParent()
     // change one child's parent
     QSharedPointer<ParentObject> parent2 = Qp::create<ParentObject>();
     QSharedPointer<ChildObject> changedChild = parent->childObjectsOneToMany().first();
-    parent2->addChildObjectOneToMany(changedChild);
+    parent2->addChildObjectsOneToMany(changedChild);
     Qp::update(parent2);
 
     {
@@ -413,7 +413,7 @@ void OneToManyRelationTest::testUpdateTimesFromChild()
     QList<QSharedPointer<ChildObject>> children;
     for(int i = 0; i < CHILDCOUNT; ++i) {
         QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-        parent->addChildObjectOneToMany(child);
+        parent->addChildObjectsOneToMany(child);
         children.append(child);
         Qp::update(child);
     }
@@ -449,8 +449,8 @@ void OneToManyRelationTest::testUpdateTimesFromChild()
 
     // Create another parent
     QSharedPointer<ParentObject> parent2 = Qp::create<ParentObject>();
-    parent2->addChildObjectOneToMany(Qp::create<ChildObject>());
-    parent2->addChildObjectOneToMany(Qp::create<ChildObject>());
+    parent2->addChildObjectsOneToMany(Qp::create<ChildObject>());
+    parent2->addChildObjectsOneToMany(Qp::create<ChildObject>());
     QDateTime timeParent2 = Qp::updateTimeInDatabase(parent2);
 
 
@@ -463,7 +463,7 @@ void OneToManyRelationTest::testUpdateTimesFromChild()
 
     // change one child's parent
     QSharedPointer<ChildObject> changedChild = parent->childObjectsOneToMany().first();
-    parent2->addChildObjectOneToMany(changedChild);
+    parent2->addChildObjectsOneToMany(changedChild);
     Qp::update(changedChild);
 
     {

@@ -16,7 +16,7 @@ public:
     ~QpHasManyBase();
 
     QList<QSharedPointer<QObject> > objects() const;
-    void append(QSharedPointer<QObject> object);
+    void add(QSharedPointer<QObject> object);
     void remove(QSharedPointer<QObject> object);
     void setObjects(const QList<QSharedPointer<QObject> > objects) const;
 
@@ -32,7 +32,7 @@ public:
     explicit QpHasMany(const QString &name, QObject *parent) : QpHasManyBase(name, parent) {}
     virtual ~QpHasMany() {}
 
-    void append(QSharedPointer<T> object) { QpHasManyBase::append(qSharedPointerCast<QObject>(object)); }
+    void add(QSharedPointer<T> object) { QpHasManyBase::add(qSharedPointerCast<QObject>(object)); }
     void remove(QSharedPointer<T> object) { QpHasManyBase::remove(qSharedPointerCast<QObject>(object)); }
 
     operator QList<QSharedPointer<T> > () const { return Qp::castList<T>(QpHasManyBase::objects()); }

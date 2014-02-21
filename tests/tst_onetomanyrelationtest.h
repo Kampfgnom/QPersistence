@@ -15,8 +15,6 @@ private Q_SLOTS:
 
     void testOneToManyRelation();
 
-
-private:
     void testInitialDatabaseFKEmpty();
 
     void testDatabaseFKInsertFromParent();
@@ -28,6 +26,7 @@ private:
     void testUpdateTimesFromParent();
     void testUpdateTimesFromChild();
 
+private:
     QpMetaProperty m_parentToChildRelation;
     QpMetaProperty m_childToParentRelation;
 

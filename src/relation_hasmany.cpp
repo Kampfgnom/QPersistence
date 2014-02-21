@@ -40,7 +40,7 @@ QList<QSharedPointer<QObject> > QpHasManyBase::objects() const
     return data->objects;
 }
 
-void QpHasManyBase::append(QSharedPointer<QObject> object)
+void QpHasManyBase::add(QSharedPointer<QObject> object)
 {
     objects(); // resolve
 

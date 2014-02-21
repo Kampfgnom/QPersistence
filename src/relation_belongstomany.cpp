@@ -45,7 +45,7 @@ QList<QSharedPointer<QObject> > QpBelongsToManyBase::objects() const
     return objs;
 }
 
-void QpBelongsToManyBase::append(QSharedPointer<QObject> object)
+void QpBelongsToManyBase::add(QSharedPointer<QObject> object)
 {
     QList<QSharedPointer<QObject>> obj = objects(); Q_UNUSED(obj); // resolve and keep a strong ref, while we're working here
 

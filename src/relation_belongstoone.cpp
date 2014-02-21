@@ -8,9 +8,11 @@
 class QpBelongsToOneData : public QSharedData {
 public:
     QpBelongsToOneData() : QSharedData(),
+        cleared(false),
         parent(nullptr)
     {}
 
+    bool cleared;
     QWeakPointer<QObject> object;
     QpMetaProperty metaProperty;
     QObject *parent;
@@ -34,6 +36,9 @@ QSharedPointer<QObject> QpBelongsToOneBase::object() const
     if(object)
         return object;
 
+    if(data->cleared)
+        return QSharedPointer<QObject>();
+
     object = QpRelationResolver::resolveToOneRelation(data->metaProperty.name(), data->parent);
     data->object = object.toWeakRef();
     return object;
@@ -41,7 +46,8 @@ QSharedPointer<QObject> QpBelongsToOneBase::object() const
 
 void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> newObject) const
 {
-    QSharedPointer<QObject> previousObject = this->object();
+    QSharedPointer<QObject> previousObject = object();
+    data->cleared = newObject.isNull();
     if(previousObject == newObject)
         return;
 

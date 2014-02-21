@@ -13,8 +13,8 @@ class ChildObject : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(int someInt READ someInt WRITE setSomeInt)
-    Q_PROPERTY(QSharedPointer<ParentObject> parentObjectOneToOne READ parentObjectOneToOne)
-    Q_PROPERTY(QSharedPointer<ParentObject> parentObjectOneToMany READ parentObjectOneToMany)
+    Q_PROPERTY(QSharedPointer<ParentObject> parentObjectOneToOne READ parentObjectOneToOne WRITE setParentObjectOneToOne)
+    Q_PROPERTY(QSharedPointer<ParentObject> parentObjectOneToMany READ parentObjectOneToMany WRITE setParentObjectOneToMany)
     Q_PROPERTY(QList<QSharedPointer<ParentObject> > parentObjectsManyToMany READ parentObjectsManyToMany WRITE setParentObjectsManyToMany)
 
     Q_PROPERTY(QSharedPointer<ParentObject> belongsToOne READ belongsToOne WRITE setBelongsToOne)
@@ -59,19 +59,20 @@ private slots:
     void addBelongsToManyMany(QSharedPointer<ParentObject> arg);
     void removeBelongsToManyMany(QSharedPointer<ParentObject> arg);
 
+    void setParentObjectsManyToMany(QList<QSharedPointer<ParentObject> > arg);
+    void addParentObjectsManyToMany(QSharedPointer<ParentObject> arg);
+    void removeParentObjectsManyToMany(QSharedPointer<ParentObject> arg);
+
 private:
     int m_someInt;
-    QpWeakRelation<ParentObject> m_parentObjectOneToOne;
-    QpWeakRelation<ParentObject> m_parentObjectOneToMany;
-    QpWeakRelation<ParentObject> m_parentObjectsManyToMany;
+    QpBelongsToOne<ParentObject> m_parentObjectOneToOne;
+    QpBelongsToOne<ParentObject> m_parentObjectOneToMany;
+    QpBelongsToMany<ParentObject> m_parentObjectsManyToMany;
 
     friend class ParentObject;
     void setParentObjectOneToOne(const QSharedPointer<ParentObject> &parentObjectOneToOne);
     void setParentObjectOneToMany(const QSharedPointer<ParentObject> &parentObjectOneToOne);
-    void setParentObjectsManyToMany(QList<QSharedPointer<ParentObject> > arg);
 
-    void addParentObjectManyToMany(QSharedPointer<ParentObject> arg);
-    void removeParentObjectManyToMany(QSharedPointer<ParentObject> arg);
 
     QpBelongsToOne<ParentObject> m_belongsToOne;
     QpBelongsToOne<ParentObject> m_belongsToOneMany;

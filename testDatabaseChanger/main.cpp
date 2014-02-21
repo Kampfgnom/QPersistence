@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
                 child->setSomeInt(SynchronizeTest::childInts().at(indexOneToMany));
                 Qp::update(child);
 
-                parent->addChildObjectOneToMany(child);
+                parent->addChildObjectsOneToMany(child);
             }
             Qp::update(parent);
 
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
                 child->setSomeInt(SynchronizeTest::childInts().at(indexOneToMany));
                 Qp::update(child);
 
-                parent->addChildObjectManyToMany(child);
+                parent->addChildObjectsManyToMany(child);
             }
             Qp::update(parent);
 

@@ -44,27 +44,27 @@ public:
     void setAString(const QString &value);
 
     QSharedPointer<ChildObject> childObjectOneToOne() const;
-    void setChildObjectOneToOne(QSharedPointer<ChildObject> object);
-
     QList<QSharedPointer<ChildObject> > childObjectsOneToMany() const;
-    void addChildObjectOneToMany(QSharedPointer<ChildObject> child);
-    void removeChildObjectOneToMany(QSharedPointer<ChildObject> child);
-
     QList<QSharedPointer<ChildObject> > childObjectsManyToMany() const;
-    void addChildObjectManyToMany(QSharedPointer<ChildObject> arg);
-    void removeChildObjectManyToMany(QSharedPointer<ChildObject> child);
+    QSharedPointer<ChildObject> hasOne() const;
+    QList<QSharedPointer<ChildObject> > hasMany() const;
+    QList<QSharedPointer<ChildObject> > hasManyMany() const;
 
     int counter() const;
     void increaseCounter();
 
-    QSharedPointer<ChildObject> hasOne() const;
-    void setHasOne(QSharedPointer<ChildObject> arg);
-
-    QList<QSharedPointer<ChildObject> > hasMany() const;
-
-    QList<QSharedPointer<ChildObject> > hasManyMany() const;
-
 public slots:
+    void setHasOne(QSharedPointer<ChildObject> arg);
+    void setChildObjectOneToOne(QSharedPointer<ChildObject> object);
+
+    void setChildObjectsOneToMany(QList<QSharedPointer<ChildObject> > arg);
+    void addChildObjectsOneToMany(QSharedPointer<ChildObject> child);
+    void removeChildObjectsOneToMany(QSharedPointer<ChildObject> child);
+
+    void setChildObjectsManyToMany(QList<QSharedPointer<ChildObject> > arg);
+    void addChildObjectsManyToMany(QSharedPointer<ChildObject> arg);
+    void removeChildObjectsManyToMany(QSharedPointer<ChildObject> child);
+
     void setHasMany(QList<QSharedPointer<ChildObject> > arg);
     void addHasMany(QSharedPointer<ChildObject> arg);
     void removeHasMany(QSharedPointer<ChildObject> arg);
@@ -75,13 +75,11 @@ public slots:
 
 private:
     void setCounter(int arg);
-    void setChildObjectsOneToMany(QList<QSharedPointer<ChildObject> > arg);
-    void setChildObjectsManyToMany(QList<QSharedPointer<ChildObject> > arg);
 
     QString m_astring;
-    QpStrongRelation<ChildObject> m_childObjectOneToOne;
-    QpStrongRelation<ChildObject> m_childObjectsOneToMany;
-    QpStrongRelation<ChildObject> m_childObjectsManyToMany;
+    QpHasOne<ChildObject> m_childObjectOneToOne;
+    QpHasMany<ChildObject> m_childObjectsOneToMany;
+    QpHasMany<ChildObject> m_childObjectsManyToMany;
     int m_counter;
 
     QpHasOne<ChildObject> m_hasOne;

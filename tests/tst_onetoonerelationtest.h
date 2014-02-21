@@ -15,7 +15,6 @@ private Q_SLOTS:
 
     void testOneToOneRelation();
 
-private:
     void testInitialDatabaseFKEmpty();
 
     void testDatabaseFKInsertFromParent();

@@ -97,7 +97,7 @@ void ManyToManyRelationsTest::testDatabaseFKInsertFromChild()
         for(int i = 0; i < CHILDCOUNT; ++i) {
             QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
             children.append(child);
-            parent->addChildObjectManyToMany(child);
+            parent->addChildObjectsManyToMany(child);
             Qp::update(child);
         }
 
@@ -117,7 +117,7 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromParent()
         Tree tree = createTree();
         QSharedPointer<ParentObject> addedToParent = tree.parents.first();
         QSharedPointer<ChildObject> addedChild = Qp::create<ChildObject>();
-        addedToParent->addChildObjectManyToMany(addedChild);
+        addedToParent->addChildObjectsManyToMany(addedChild);
         Qp::update(addedToParent);
         testTree(tree);
     }
@@ -127,7 +127,7 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromParent()
         Tree tree = createTree();
         QSharedPointer<ParentObject> removedFromParent = tree.parents.at(1);
         QSharedPointer<ChildObject> removedChild = Qp::create<ChildObject>();
-        removedFromParent->removeChildObjectManyToMany(removedChild);
+        removedFromParent->removeChildObjectsManyToMany(removedChild);
         Qp::update(removedFromParent);
         testTree(tree);
     }
@@ -138,7 +138,7 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromParent()
         QSharedPointer<ParentObject> addedFromParent = tree.parents.first();
         QSharedPointer<ParentObject> addedToParent = tree.parents.at(1);
         QSharedPointer<ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
-        addedToParent->addChildObjectManyToMany(changedChild);
+        addedToParent->addChildObjectsManyToMany(changedChild);
         Qp::update(addedToParent);
 
         testTree(tree);
@@ -153,7 +153,7 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromChild()
 
         QSharedPointer<ParentObject> addedToParent = tree.parents.first();
         QSharedPointer<ChildObject> addedChild = Qp::create<ChildObject>();
-        addedToParent->addChildObjectManyToMany(addedChild);
+        addedToParent->addChildObjectsManyToMany(addedChild);
         Qp::update(addedChild);
         testTree(tree);
     }
@@ -163,7 +163,7 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromChild()
         Tree tree = createTree();
         QSharedPointer<ParentObject> removedFromParent = tree.parents.at(1);
         QSharedPointer<ChildObject> removedChild = Qp::create<ChildObject>();
-        removedFromParent->removeChildObjectManyToMany(removedChild);
+        removedFromParent->removeChildObjectsManyToMany(removedChild);
         Qp::update(removedChild);
         testTree(tree);
     }
@@ -174,7 +174,7 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromChild()
         QSharedPointer<ParentObject> addedFromParent = tree.parents.first();
         QSharedPointer<ParentObject> addedToParent = tree.parents.at(1);
         QSharedPointer<ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
-        addedToParent->addChildObjectManyToMany(changedChild);
+        addedToParent->addChildObjectsManyToMany(changedChild);
         Qp::update(changedChild);
 
         testTree(tree);
@@ -195,7 +195,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
 
-        addedToParent->addChildObjectManyToMany(addedChild);
+        addedToParent->addChildObjectsManyToMany(addedChild);
         Qp::update(addedToParent);
 
         changedTree.children.append(addedChild);
@@ -217,7 +217,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
 
-        removedFromParent->removeChildObjectManyToMany(removedChild);
+        removedFromParent->removeChildObjectsManyToMany(removedChild);
         Qp::update(removedFromParent);
 
         changedTree.children.append(removedChild);
@@ -240,7 +240,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
 
-        addedToParent->addChildObjectManyToMany(changedChild);
+        addedToParent->addChildObjectsManyToMany(changedChild);
         Qp::update(addedToParent);
 
         // The added-from parent does not change by this operation!
@@ -267,7 +267,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
 
-        addedToParent->addChildObjectManyToMany(addedChild);
+        addedToParent->addChildObjectsManyToMany(addedChild);
         Qp::update(addedChild);
 
         changedTree.children.append(addedChild);
@@ -289,7 +289,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
 
-        removedFromParent->removeChildObjectManyToMany(removedChild);
+        removedFromParent->removeChildObjectsManyToMany(removedChild);
         Qp::update(removedChild);
 
         changedTree.children.append(removedChild);
@@ -312,7 +312,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         qDebug() << "Sleeping 1 second...";
         QTest::qSleep(1000);
 
-        addedToParent->addChildObjectManyToMany(changedChild);
+        addedToParent->addChildObjectsManyToMany(changedChild);
         Qp::update(changedChild);
 
         // The added-from parent does not change by this operation!
@@ -462,7 +462,7 @@ ManyToManyRelationsTest::Tree ManyToManyRelationsTest::createTree()
         for(int i = 0; i < CHILDCOUNT; ++i) {
             QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
             children.append(child);
-            parent->addChildObjectManyToMany(child);
+            parent->addChildObjectsManyToMany(child);
         }
 
         parents.append(parent);

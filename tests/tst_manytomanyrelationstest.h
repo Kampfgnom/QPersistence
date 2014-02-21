@@ -15,7 +15,6 @@ private Q_SLOTS:
 
     void testManyToManyRelation();
 
-private:
     void testInitialDatabaseFKsEmpty();
 
     void testDatabaseFKInsertFromParent();
