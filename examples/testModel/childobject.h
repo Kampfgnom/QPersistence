@@ -54,7 +54,7 @@ public:
 
     QList<QSharedPointer<ParentObject>> belongsToManyMany() const;
 
-private slots:
+public slots:
     void setBelongsToManyMany(QList<QSharedPointer<ParentObject>> arg);
     void addBelongsToManyMany(QSharedPointer<ParentObject> arg);
     void removeBelongsToManyMany(QSharedPointer<ParentObject> arg);

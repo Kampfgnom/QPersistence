@@ -50,16 +50,16 @@ void testTreeTest(TestTree tree) {
     }
 }
 
-void ManyToManyRelationsTest::testManyToManyRelation()
-{
+TestTree createTree() {
     TestTree tree;
 
-    for(int j = 0; j < PARENTCOUNT; ++j) {
+    // Create some objects
+    for(int j = 0; j < 7; ++j) {
         QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
         parent->setObjectName(QString("P%1").arg(j));
         tree.p.append(parent);
 
-        for(int i = 0; i < CHILDCOUNT; ++i) {
+        for(int i = 0; i < 7; ++i) {
             QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
             child->setObjectName(QString("P%1_C%2").arg(j).arg(i));
             tree.children[parent].append(child);
@@ -68,7 +68,78 @@ void ManyToManyRelationsTest::testManyToManyRelation()
             tree.c.append(child);
         }
     }
-    testTreeTest(tree);
+
+    for(int i = 0; i < tree.p.size(); ++i) {
+        for(int j = 0; j < tree.c.size(); ++j) {
+            QSharedPointer<ParentObject> parent = tree.p.at(i);
+            QSharedPointer<ChildObject> child = tree.c.at(j);
+            child->addBelongsToManyMany(parent);
+            tree.children[parent].removeAll(child);
+            tree.children[parent].append(child);
+            tree.parents[child].removeAll(parent);
+            tree.parents[child].append(parent);
+        }
+    }
+
+    return tree;
+}
+
+void ManyToManyRelationsTest::testManyToManyRelation()
+{
+    {
+        TestTree tree = ::createTree();
+        testTreeTest(tree);
+    }
+
+    {
+        TestTree tree = ::createTree();
+        // Remove some children from parents
+        for(auto it = tree.children.begin(); it != tree.children.end(); ++it) {
+            QSharedPointer<ParentObject> parent = it.key();
+            QList<QSharedPointer<ChildObject>> hasChildren = parent->hasManyMany();
+
+            {
+                QSharedPointer<ChildObject> removed = hasChildren.at(1);
+                parent->removeHasManyMany(removed);
+
+                tree.children[parent].removeAll(removed);
+                tree.parents[removed].removeAll(parent);
+            }
+            {
+                QSharedPointer<ChildObject> removed = hasChildren.at(1);
+                parent->removeHasManyMany(removed);
+
+                tree.children[parent].removeAll(removed);
+                tree.parents[removed].removeAll(parent);
+            }
+        }
+        testTreeTest(tree);
+    }
+
+    {
+        TestTree tree = ::createTree();
+        // Remove some parents from children
+        for(auto it = tree.parents.begin(); it != tree.parents.end(); ++it) {
+            QSharedPointer<ChildObject> child = it.key();
+            QList<QSharedPointer<ParentObject>> hasParents = child->belongsToManyMany();
+
+            {
+                QSharedPointer<ParentObject> removed = hasParents.at(1);
+                child->removeBelongsToManyMany(removed);
+
+                tree.children[removed].removeAll(child);
+                tree.parents[child].removeAll(removed);
+            }
+            {
+                QSharedPointer<ParentObject> removed = hasParents.at(1);
+                child->removeBelongsToManyMany(removed);
+
+                tree.children[removed].removeAll(child);
+                tree.parents[child].removeAll(removed);
+            }
+        }
+        testTreeTest(tree);
+    }
 }
 
 void ManyToManyRelationsTest::testInitialDatabaseFKsEmpty()
