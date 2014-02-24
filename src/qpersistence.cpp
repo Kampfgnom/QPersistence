@@ -123,6 +123,11 @@ void enableLocks()
     QpLock::enableLocks();
 }
 
+void addAdditionalLockInformationField(const QString &field, QVariant::Type type)
+{
+    QpLock::addAdditionalInformationField(field, type);
+}
+
 QDateTime databaseTime()
 {
     QpSqlQuery query(Qp::database());

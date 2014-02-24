@@ -389,17 +389,34 @@ void QpDatabaseSchema::createLocksTable()
     if (!QpLock::isLocksEnabled())
         return;
 
-    if (existsTable(QpDatabaseSchema::TABLENAME_LOCKS))
-        return;
+    if (!existsTable(QpDatabaseSchema::TABLENAME_LOCKS)) {
 
-    data->query.clear();
-    data->query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
-    data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
-    data->query.prepareCreateTable();
+        data->query.clear();
+        data->query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
+        data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
 
-    if ( !data->query.exec()
-         || data->query.lastError().isValid()) {
-        setLastError(data->query);
+        foreach(QString field, QpLock::additionalInformationFields().keys()) {
+            QString type = variantTypeToSqlType(QpLock::additionalInformationFields().value(field));
+            data->query.addField(field, type);
+        }
+
+        data->query.prepareCreateTable();
+
+        if ( !data->query.exec()
+             || data->query.lastError().isValid()) {
+            setLastError(data->query);
+        }
+    }
+    else {
+        QSqlRecord record = data->database.record(QpDatabaseSchema::TABLENAME_LOCKS);
+
+        foreach(QString field, QpLock::additionalInformationFields().keys()) {
+            if (record.indexOf(field) != -1)
+                continue;
+
+            QString type = variantTypeToSqlType(QpLock::additionalInformationFields().value(field));
+            addColumn(QpDatabaseSchema::TABLENAME_LOCKS, field, type);
+        }
     }
 }
 

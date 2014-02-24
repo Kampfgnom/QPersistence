@@ -38,12 +38,6 @@ public:
     void addColumn(const QString &table, const QString &column, const QString &type);
     bool dropColumns(const QString &table, const QStringList &columns);
 
-    template<class O> bool existsTable() { return existsTable(&O::staticMetaObject); }
-    template<class O> void createTable() { createTable(&O::staticMetaObject); }
-    template<class O> void createTableIfNotExists() { createTableIfNotExists(&O::staticMetaObject); }
-    template<class O> void dropTable() { dropTable(&O::staticMetaObject); }
-    template<class O> void addMissingColumns() { addMissingColumns(&O::staticMetaObject); }
-
     void cleanSchema();
     void createCleanSchema();
     void adjustSchema();

@@ -22,19 +22,23 @@ public:
     QpError error;
     QpLock::Status status;
     QSharedPointer<QObject> object;
+    QHash<QString, QVariant> information;
 
-    static QpLock insertLock(QSharedPointer<QObject> object);
+    static QpLock insertLock(QSharedPointer<QObject> object, QHash<QString,QVariant> additionalInformation);
     static QpLock selectLock(int id, QSharedPointer<QObject> object);
     static int selectLockId(QSharedPointer<QObject> object, bool forUpdate);
     static void removeLock(int id, QSharedPointer<QObject> object);
 
     static bool locksEnabled;
-    static QHash<QSharedPointer<QObject>, QpLock> localLocks;
+    static QHash<QString, QVariant::Type> additionalFields;
 };
 
-bool QpLockData::locksEnabled = false;
-QHash<QSharedPointer<QObject>, QpLock> QpLockData::localLocks;
+typedef QHash<QSharedPointer<QObject>, QpLock> LocksHash;
+Q_GLOBAL_STATIC(LocksHash, LOCALLOCKS)
+#undef COMMA
 
+bool QpLockData::locksEnabled = false;
+QHash<QString, QVariant::Type> QpLockData::additionalFields;
 
 QpLockData::QpLockData() : QSharedData(),
     id(-1),
@@ -43,16 +47,19 @@ QpLockData::QpLockData() : QSharedData(),
 
 QpLockData::~QpLockData()
 {
-    if(object)
-        localLocks.remove(object);
 }
 
-QpLock QpLockData::insertLock(QSharedPointer<QObject> object)
+QpLock QpLockData::insertLock(QSharedPointer<QObject> object, QHash<QString,QVariant> additionalInformation)
 {
     QpMetaObject metaObject = QpMetaObject::forObject(object);
     QpSqlQuery query(Qp::database());
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
     query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+
+    foreach(QString field, QpLockData::additionalFields.keys()) {
+        query.addField(field, additionalInformation.value(field));
+    }
+
     query.prepareInsert();
 
     if (!query.exec() || query.lastError().isValid()) {
@@ -63,6 +70,10 @@ QpLock QpLockData::insertLock(QSharedPointer<QObject> object)
     lock.data->object = object;
     lock.data->id = query.lastInsertId().toInt();
     lock.data->status = QpLock::LockedLocally;
+
+    foreach(QString field, QpLockData::additionalFields.keys()) {
+        lock.data->information.insert(field, additionalInformation.value(field));
+    }
 
     query.clear();
     query.setTable(metaObject.tableName());
@@ -76,7 +87,7 @@ QpLock QpLockData::insertLock(QSharedPointer<QObject> object)
         return QpLock(QpError(query.lastError()));
     }
 
-    localLocks.insert(object, lock);
+    LOCALLOCKS()->insert(object, lock);
     return lock;
 }
 
@@ -84,6 +95,10 @@ QpLock QpLockData::selectLock(int id, QSharedPointer<QObject> object)
 {
     QpSqlQuery query(Qp::database());
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    foreach(QString field, QpLockData::additionalFields.keys()) {
+        query.addField(field);
+    }
     query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
                                            id));
@@ -97,8 +112,15 @@ QpLock QpLockData::selectLock(int id, QSharedPointer<QObject> object)
 
     QpLock lock;
     lock.data->object = object;
-    lock.data->id = query.value(0).toInt();
+    lock.data->id = query.value(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY).toInt();
     lock.data->status = QpLock::LockedRemotely;
+
+    foreach(QString field, QpLockData::additionalFields.keys()) {
+        QVariant value = query.value(field);
+        value.convert(QpLockData::additionalFields.value(field));
+        lock.data->information.insert(field, value);
+    }
+
     return lock;
 }
 
@@ -157,8 +179,8 @@ void QpLockData::removeLock(int id, QSharedPointer<QObject> object)
         return;
     }
 
-    if(localLocks.contains(object))
-        localLocks.remove(object);
+    if(LOCALLOCKS()->contains(object))
+        LOCALLOCKS()->remove(object);
 }
 
 /**********************************************************
@@ -195,6 +217,16 @@ bool QpLock::isLocksEnabled()
     return QpLockData::locksEnabled;
 }
 
+void QpLock::addAdditionalInformationField(const QString &name, QVariant::Type type)
+{
+    QpLockData::additionalFields.insert(name, type);
+}
+
+QHash<QString, QVariant::Type> QpLock::additionalInformationFields()
+{
+    return QpLockData::additionalFields;
+}
+
 void QpLock::enableLocks()
 {
     QpLockData::locksEnabled = true;
@@ -210,10 +242,15 @@ QSharedPointer<QObject> QpLock::object() const
     return data->object;
 }
 
+QVariant QpLock::additionalInformation(const QString &name) const
+{
+    return data->information.value(name);
+}
+
 QpLock QpLock::isLocked(QSharedPointer<QObject> object)
 {
-    if(QpLockData::localLocks.contains(object))
-        return QpLockData::localLocks.value(object);
+    if(LOCALLOCKS()->contains(object))
+        return LOCALLOCKS()->value(object);
 
     if(!Qp::beginTransaction()) {
         QpError error = Qp::lastError();
@@ -246,10 +283,10 @@ QpLock QpLock::isLocked(QSharedPointer<QObject> object)
 
 }
 
-QpLock QpLock::tryLock(QSharedPointer<QObject> object)
+QpLock QpLock::tryLock(QSharedPointer<QObject> object, QHash<QString, QVariant> additionalInformation)
 {
-    if(QpLockData::localLocks.contains(object))
-        return QpLockData::localLocks.value(object);
+    if(LOCALLOCKS()->contains(object))
+        return LOCALLOCKS()->value(object);
 
     if(!Qp::beginTransaction()) {
         QpError error = Qp::lastError();
@@ -264,7 +301,7 @@ QpLock QpLock::tryLock(QSharedPointer<QObject> object)
 
     if (lockId == 0) {
         // There is no other lock
-        lock = QpLockData::insertLock(object);
+        lock = QpLockData::insertLock(object, additionalInformation);
     }
     else {
         // There is already a lock
@@ -296,7 +333,7 @@ QpLock QpLock::unlock(QSharedPointer<QObject> object)
     if (lockId != 0) {
         // There is a lock
         lock = QpLockData::selectLock(lockId, object);
-        QpLock localLock = QpLockData::localLocks.value(object);
+        QpLock localLock = LOCALLOCKS()->value(object);
 
         if(localLock.status() == LockedLocally) {
             Q_ASSERT(lock.data->id == localLock.data->id);

@@ -20,6 +20,15 @@ public:
 
     void testSynchronizedCounter();
 
+    static QHash<QString, QVariant> info()
+    {
+        QHash<QString, QVariant> info;
+        info.insert("aString", "asdagasg");
+        info.insert("someNUmber", 123415);
+        info.insert("date", QDate(123,12,24));
+        return info;
+    }
+
 private slots:
     void startProcess();
 
@@ -28,6 +37,9 @@ private slots:
     void testLockAndUnlockLocally();
     void testLockAndUnlockRemotely();
     void testLockRemotelyAndUnlockLocally();
+
+    void testLockInformationLocal();
+    void testLockInformationRemote();
 
 private:
     QProcess *startChangerProcess(int id, SynchronizeTest::ChangerMode mode);

@@ -40,6 +40,7 @@ bool adjustDatabaseSchema();
 bool createCleanSchema();
 QpError lastError();
 void enableLocks();
+void addAdditionalLockInformationField(const QString &field, QVariant::Type type = QVariant::UserType);
 QDateTime databaseTime();
 
 bool beginTransaction();
@@ -64,7 +65,7 @@ template<class T> QList<QSharedPointer<T>> updatedSince(const QDateTime &time);
 template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object);
 template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object);
 template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object);
-template<class T> QpLock tryLock(QSharedPointer<T> object);
+template<class T> QpLock tryLock(QSharedPointer<T> object, QHash<QString,QVariant> additionalInformation = QHash<QString,QVariant>());
 
 template<class K, class V> void registerMappableTypes();
 template<class T> void registerSetType();

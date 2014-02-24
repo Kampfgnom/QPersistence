@@ -5,6 +5,7 @@
 #include "../src/sqlcondition.h"
 #include <QtTest>
 #include "../tests/tst_synchronizetest.h"
+#include "../tests/tst_locktest.h"
 
 #include <QGuiApplication>
 
@@ -39,6 +40,11 @@ int main(int argc, char *argv[])
         db.setUserName("niklas");
         db.setPassword("niklas");
 
+        foreach(QString field, LockTest::info().keys()) {
+            Qp::addAdditionalLockInformationField(field);
+        }
+
+        Qp::enableLocks();
         Qp::setDatabase(db);
         Qp::setSqlDebugEnabled(false);
         Qp::registerClass<ParentObject>();
@@ -76,7 +82,9 @@ int main(int argc, char *argv[])
     }
     else if(mode == SynchronizeTest::LockAndUnlock) {
         QTest::qSleep(1000);
-        Qp::tryLock(parent);
+        QHash<QString, QVariant> i = LockTest::info();
+        Qp::tryLock(parent, i);
+
         QTest::qSleep(1000);
         Qp::unlock(parent);
     }

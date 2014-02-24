@@ -33,6 +33,10 @@ void LockTest::initTestCase()
 
         QVERIFY2(db.open(), db.lastError().text().toUtf8());
 
+        foreach(QString field, info().keys()) {
+            Qp::addAdditionalLockInformationField(field, info().value(field).type());
+        }
+
         Qp::enableLocks();
         Qp::setDatabase(db);
         Qp::setSqlDebugEnabled(false);
@@ -83,6 +87,28 @@ void LockTest::testLockRemotelyAndUnlockLocally()
     QCOMPARE(Qp::isLocked(parent).status(), QpLock::Unlocked);
 }
 
+void LockTest::testLockInformationLocal()
+{
+    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockAndUnlock));
+
+    QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
+    QpLock lock = Qp::isLocked(parent);
+    foreach(QString field, info().keys()) {
+        QCOMPARE(lock.additionalInformation(field), info().value(field));
+    }
+}
+
+void LockTest::testLockInformationRemote()
+{
+    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+
+    QHash<QString, QVariant> i = info();
+    QpLock lock = Qp::tryLock(parent, i);
+    foreach(QString field, i.keys()) {
+        QCOMPARE(lock.additionalInformation(field), i.value(field));
+    }
+}
 
 void LockTest::testSynchronizedCounter()
 {
@@ -106,6 +132,8 @@ void LockTest::testSynchronizedCounter()
     Qp::synchronize(parent);
     QCOMPARE(parent->counter(), 200);
 }
+
+
 
 void LockTest::startProcess()
 {

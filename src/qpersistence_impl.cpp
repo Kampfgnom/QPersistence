@@ -172,9 +172,9 @@ template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object)
     return Qp::Private::updateTimeInObject(object.data());
 }
 
-template<class T> QpLock tryLock(QSharedPointer<T> object)
+template<class T> QpLock tryLock(QSharedPointer<T> object, QHash<QString,QVariant> additionalInformation)
 {
-    return QpLock::tryLock(qSharedPointerCast<QObject>(object));
+    return QpLock::tryLock(qSharedPointerCast<QObject>(object), additionalInformation);
 }
 
 template<class T> QpLock unlock(QSharedPointer<T> object)
