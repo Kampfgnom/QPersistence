@@ -54,6 +54,8 @@ public:
     void prepareInsert();
     void prepareDelete();
 
+    QMetaProperty propertyForIndex(const QSqlRecord &record, const QMetaObject *metaObject, int index) const;
+
     void addBindValue(const QVariant &val);
 
     static QVariant variantToSqlStorableVariant(const QVariant &val);

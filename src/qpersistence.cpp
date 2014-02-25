@@ -137,7 +137,13 @@ QDateTime databaseTime()
         return QDateTime();
     }
 
-    return query.value(0).toDateTime();
+    return dateFromDouble(query.value(0).toDouble());
+}
+
+QDateTime dateFromDouble(double value)
+{
+    QString string = QString("%1").arg(value, 17, 'f', 3);
+    return QDateTime::fromString(string, "yyyyMMddHHmmss.zzz");
 }
 
 }

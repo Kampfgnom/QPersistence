@@ -118,7 +118,7 @@ QString QpMySqlBackend::variantTypeToSqlType(QVariant::Type type) const
     case QVariant::Char:
         return QLatin1String("CHAR");
     case QVariant::Double:
-        return QLatin1String("FLOAT");
+        return QLatin1String("DOUBLE");
     case QVariant::UserType:
     default:
         return QLatin1String("BLOB");
@@ -133,5 +133,5 @@ QString QpSqliteBackend::nowTimestamp() const
 
 QString QpMySqlBackend::nowTimestamp() const
 {
-    return QLatin1String("NOW()");
+    return QLatin1String("NOW() + 0");
 }

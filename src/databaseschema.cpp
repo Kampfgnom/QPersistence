@@ -18,9 +18,9 @@
 #include <QStringList>
 #include <QSqlDriver>
 
-const QString QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
-const QString QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
-const QString QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME("_Qp_updateTime");
+const char* QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
+const char* QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
+const char* QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME("_Qp_updateTime");
 const QString QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
 const QString QpDatabaseSchema::TABLENAME_LOCKS("_Qp_locks");
 const QString QpDatabaseSchema::COLUMN_LOCK("_Qp_lock");
@@ -126,8 +126,8 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
     data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
 
     // Add timestamp columns
-    data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
-    data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
+    data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::Double));
+    data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::Double));
 
     if(QpLock::isLocksEnabled()) {
         QString columnType = variantTypeToSqlType(QVariant::Int);
@@ -230,10 +230,10 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
 
         // Add timestamp columns
         if(!hasCreationTimeColumn)
-            data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
+            data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::Double));
 
         if(!hasUpdateTimeColumn)
-            data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
+            data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::Double));
 
         if(!hasLockColumn)
             data->query.addField(COLUMN_LOCK, variantTypeToSqlType(QVariant::Int));

@@ -8,7 +8,6 @@
 #include "error.h"
 
 #include <QDateTime>
-#include <QDebug>
 #include <QSharedPointer>
 
 namespace Qp {
@@ -17,37 +16,43 @@ namespace Private {
 
 int primaryKey(QObject *object)
 {
-    return object->property("_Qp_ID").toInt();
+    return object->property(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY).toInt();
 }
 
 void setPrimaryKey(QObject *object, int key)
 {
-    object->setProperty("_Qp_ID",key);
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,key);
 }
 
-QDateTime creationTimeInDatabase(QObject *object)
+double creationTimeInDatabase(QObject *object)
 {
     QpSqlDataAccessObjectHelper *daoHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
     return daoHelper->readCreationTime(QpMetaObject::forObject(object), object);
 }
 
-QDateTime updateTimeInDatabase(QObject *object)
+double updateTimeInDatabase(QObject *object)
 {
     QpSqlDataAccessObjectHelper *daoHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
     return daoHelper->readUpdateTime(QpMetaObject::forObject(object), object);
 }
 
-QDateTime updateTimeInObject(QObject *object)
+double updateTimeInObject(QObject *object)
 {
-    return object->property(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME.toLatin1()).toDateTime();
+    return object->property(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME).toDouble();
 }
+
+typedef QHash<const QObject *, QWeakPointer<QObject>> WeakPointerHash;
+Q_GLOBAL_STATIC(WeakPointerHash, WeakPointers)
 
 void enableSharedFromThis(QSharedPointer<QObject> object)
 {
-    QWeakPointer<QObject> weak = object.toWeakRef();
-    QVariant variant = QVariant::fromValue<QWeakPointer<QObject> >(weak);
-    object->setProperty(QPERSISTENCE_SHARED_POINTER_PROPERTY.toLatin1(),
-                        variant);
+    WeakPointers()->insert(object.data(), object.toWeakRef());
+}
+
+QSharedPointer<QObject> sharedFrom(const QObject *object)
+{
+    QWeakPointer<QObject> weak = WeakPointers()->value(object);
+    return weak.toStrongRef();
 }
 
 void setLastError(const QpError &error)

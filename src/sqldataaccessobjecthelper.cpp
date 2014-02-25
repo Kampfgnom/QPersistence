@@ -126,7 +126,7 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
     if(!query.first())
         return false;
 
-    readQueryIntoObject(query, object);
+    readQueryIntoObject(query, query.record(), object);
     return object;
 }
 
@@ -168,9 +168,9 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
     }
 
     Qp::Private::setPrimaryKey(object, query.lastInsertId().toInt());
-    QDateTime time = readCreationTime(metaObject, object);
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME.toLatin1(), time);
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME.toLatin1(), time);
+    double time = readCreationTime(metaObject, object);
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, time);
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME, time);
 
     return true;
 }
@@ -196,7 +196,7 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
         return false;
     }
 
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME.toLatin1(), readUpdateTime(metaObject, object));
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, readUpdateTime(metaObject, object));
 
     // Update related objects
     return adjustRelationsInDatabase(metaObject, object);
@@ -212,17 +212,18 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
     }
 }
 
-void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery &query, QObject *object)
+void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record, QObject *object)
 {
-    QSqlRecord record = query.record();
     int fieldCount = record.count();
     for (int i = 0; i < fieldCount; ++i) {
-        QByteArray fieldName = record.fieldName(i).toLatin1();
+
+        QMetaProperty property = query.propertyForIndex(record, object->metaObject(), i);
+        if(!property.isValid())
+            continue;
+
         QVariant value = query.value(i);
 
-        int propertyIndex = object->metaObject()->indexOfProperty(fieldName);
-        QMetaProperty property = object->metaObject()->property(propertyIndex);
-        if(propertyIndex > 0 && property.isEnumType()) {
+        if(property.isEnumType()) {
             value = value.toInt();
         }
         else {
@@ -230,8 +231,11 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QSqlQuery &query, QO
             value = QpSqlQuery::variantFromSqlStorableVariant(value, type);
         }
 
-        object->setProperty(fieldName, value);
+        property.write(object, value);
     }
+
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, query.value(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, query.value(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME));
 }
 
 bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object)
@@ -592,7 +596,7 @@ bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, Q
     return true;
 }
 
-QDateTime QpSqlDataAccessObjectHelper::readUpdateTime(const QpMetaObject &metaObject, QObject *object)
+double QpSqlDataAccessObjectHelper::readUpdateTime(const QpMetaObject &metaObject, QObject *object)
 {
     Q_ASSERT(object);
 
@@ -608,16 +612,16 @@ QDateTime QpSqlDataAccessObjectHelper::readUpdateTime(const QpMetaObject &metaOb
     if (!query.exec()
             || query.lastError().isValid()) {
         setLastError(query);
-        return QDateTime();
+        return -1.0;
     }
 
     if(!query.first())
-        return QDateTime();
+        return -1.0;
 
-    return query.value(0).toDateTime();
+    return query.value(0).toDouble();
 }
 
-QDateTime QpSqlDataAccessObjectHelper::readCreationTime(const QpMetaObject &metaObject, QObject *object)
+double QpSqlDataAccessObjectHelper::readCreationTime(const QpMetaObject &metaObject, QObject *object)
 {
     Q_ASSERT(object);
 
@@ -633,13 +637,13 @@ QDateTime QpSqlDataAccessObjectHelper::readCreationTime(const QpMetaObject &meta
     if (!query.exec()
             || query.lastError().isValid()) {
         setLastError(query);
-        return QDateTime();
+        return -1.0;
     }
 
     if(!query.first())
-        return QDateTime();
+        return -1.0;
 
-    return query.value(0).toDateTime();
+    return query.value(0).toDouble();
 }
 
 QpError QpSqlDataAccessObjectHelper::lastError() const

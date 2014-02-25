@@ -13,6 +13,7 @@
 #include <QSharedData>
 #include <QStringList>
 #include <QSqlDriver>
+#include <QSqlRecord>
 #define COMMA ,
 
 class QpSqlQueryPrivate : public QSharedData {
@@ -41,6 +42,8 @@ public:
     bool canBulkExec;
     bool ignore;
     bool forUpdate;
+
+    QHash<int, int> propertyIndexes;
 
     static bool debugEnabled;
     static QList<QpSqlQuery> bulkQueries;
@@ -149,6 +152,7 @@ void QpSqlQuery::clear()
     data->canBulkExec = false;
     data->ignore = false;
     data->forUpdate = false;
+    data->propertyIndexes.clear();
 }
 
 bool QpSqlQuery::isDebugEnabled()
@@ -443,6 +447,23 @@ void QpSqlQuery::prepareDelete()
         addBindValue(value);
     }
     data->canBulkExec = true;
+}
+
+QMetaProperty QpSqlQuery::propertyForIndex(const QSqlRecord &record, const QMetaObject *metaObject, int index) const
+{
+    int propertyIndex = data->propertyIndexes.value(index, -123);
+    if(propertyIndex > 0)
+        return metaObject->property(propertyIndex);
+    if(propertyIndex != -123)
+        return QMetaProperty();
+
+    propertyIndex = metaObject->indexOfProperty(record.fieldName(index).toLatin1());
+    data->propertyIndexes.insert(index, propertyIndex);
+
+    if(propertyIndex <= 0)
+        return QMetaProperty();
+
+    return metaObject->property(propertyIndex);
 }
 
 void QpSqlQuery::addBindValue(const QVariant &val)

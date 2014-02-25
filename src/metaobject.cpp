@@ -4,7 +4,6 @@
 #include "metaproperty.h"
 #include "qpersistence.h"
 
-#include <QDebug>
 #include <QHash>
 #include <QMetaClassInfo>
 #include <QString>

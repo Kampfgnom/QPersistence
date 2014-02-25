@@ -11,6 +11,7 @@
 #include "sqlquery.h"
 
 #include <QSqlError>
+#include <QSqlRecord>
 
 class QpDaoBaseData : public QSharedData
 {
@@ -26,7 +27,6 @@ public:
     mutable QpError lastError;
     mutable QpCache cache;
     mutable int count;
-    QDateTime lastSync;
 
     static QHash<QString, QpDaoBase *> daoPerMetaObjectName;
 };
@@ -104,11 +104,6 @@ QList<int> QpDaoBase::allKeys(int skip, int count) const
 
 QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, const QpSqlCondition &condition) const
 {
-    int myCount = this->count();
-
-    if (count <= 0 && myCount != 0)
-        count = myCount;
-
     QpSqlQuery query = data->sqlDataAccessObjectHelper->readAllObjects(data->metaObject, skip, count, condition);
 
     if (data->sqlDataAccessObjectHelper->lastError().isValid()) {
@@ -118,8 +113,10 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, c
 
     QList<QSharedPointer<QObject> > result;
     result.reserve(count);
+    QSqlRecord record = query.record();
+    int index = record.indexOf(QLatin1String(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
     while(query.next()) {
-        int key = query.value(QLatin1String("_Qp_ID")).toInt();
+        int key = query.value(index).toInt();
 
         QSharedPointer<QObject> currentObject;
         if (data->cache.contains(key)) {
@@ -129,7 +126,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, c
         if(!currentObject) {
             QObject *object = createInstance();
             currentObject = data->cache.insert(key, object);
-            data->sqlDataAccessObjectHelper->readQueryIntoObject(query, object);
+            data->sqlDataAccessObjectHelper->readQueryIntoObject(query, record, object);
             Qp::Private::enableSharedFromThis(currentObject);
         }
 
@@ -187,8 +184,8 @@ QSharedPointer<QObject> QpDaoBase::createObject()
 
 Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 {
-    QDateTime databaseTime = Qp::updateTimeInDatabase(object);
-    QDateTime objectTime = Qp::updateTimeInObject(object);
+    double databaseTime = Qp::Private::updateTimeInDatabase(object.data());
+    double objectTime = Qp::Private::updateTimeInObject(object.data());
 
     if(databaseTime > objectTime)
         return Qp::UpdateConflict;
@@ -221,8 +218,8 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
 Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object)
 {
     QObject *obj = object.data();
-    QDateTime localTime = Qp::Private::updateTimeInObject(obj);
-    QDateTime remoteTime = Qp::Private::updateTimeInDatabase(obj);
+    double localTime = Qp::Private::updateTimeInObject(obj);
+    double remoteTime = Qp::Private::updateTimeInDatabase(obj);
 
     if(localTime == remoteTime)
         return Qp::Unchanged;
@@ -247,14 +244,14 @@ QList<QSharedPointer<QObject> > QpDaoBase::createdSince(const QDateTime &time)
 {
     return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME,
                                                 QpSqlCondition::GreaterThan,
-                                                time));
+                                                time.toString("yyyyMMddHHmmss.zzz").toDouble()));
 }
 
 QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(const QDateTime &time)
 {
     return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME,
                                                 QpSqlCondition::GreaterThan,
-                                                time));
+                                                time.toString("yyyyMMddHHmmss.zzz").toDouble()));
 }
 
 uint qHash(const QVariant &var)

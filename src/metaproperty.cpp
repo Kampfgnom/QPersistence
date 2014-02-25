@@ -3,7 +3,6 @@
 #include "metaobject.h"
 #include "qpersistence.h"
 
-#include <QDebug>
 #include <QMetaClassInfo>
 #include <QRegularExpression>
 #include <QStringList>

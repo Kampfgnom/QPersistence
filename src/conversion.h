@@ -1,12 +1,12 @@
 #ifndef QPERSISTENCE_CONVERSION_H
 #define QPERSISTENCE_CONVERSION_H
 
-#include <QtCore/QDebug>
 #include <QtCore/QHash>
 #include <QtCore/QRegularExpression>
 #include <QtCore/QRegularExpressionMatch>
 #include <QtCore/QSharedPointer>
 #include <QtCore/QStringList>
+#include <QtCore/QSetIterator>
 #include <QtCore/QVariant>
 
 #include "dataaccessobject.h"

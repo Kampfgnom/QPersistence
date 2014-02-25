@@ -28,9 +28,9 @@ public:
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);
-    QDateTime readUpdateTime(const QpMetaObject &metaObject, QObject *object);
-    QDateTime readCreationTime(const QpMetaObject &metaObject, QObject *object);
-    void readQueryIntoObject(const QSqlQuery &query,
+    double readUpdateTime(const QpMetaObject &metaObject, QObject *object);
+    double readCreationTime(const QpMetaObject &metaObject, QObject *object);
+    void readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record,
                              QObject *object);
 
     QpError lastError() const;

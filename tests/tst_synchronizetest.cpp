@@ -22,6 +22,7 @@ void SynchronizeTest::cleanup(QProcess *process)
 void SynchronizeTest::initDatabase()
 {
     QSqlDatabase db = Qp::database();
+    Qp::setSqlDebugEnabled(false);
     if(!db.isOpen()) {
         db = QSqlDatabase::addDatabase("QMYSQL");
         db.setHostName("192.168.100.2");
@@ -32,7 +33,6 @@ void SynchronizeTest::initDatabase()
         QVERIFY2(db.open(), db.lastError().text().toUtf8());
 
         Qp::setDatabase(db);
-        Qp::setSqlDebugEnabled(false);
         Qp::registerClass<ParentObject>();
         Qp::registerClass<ChildObject>();
         Qp::createCleanSchema();
@@ -207,17 +207,19 @@ void SynchronizeTest::testCreatedSince()
 {
     int count = 20;
     QDateTime now = Qp::databaseTime();
+    qDebug() << "Searching for new objects since " << now;
 
     QTest::qSleep(1000);
     QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(count, CreateAndUpdate));
 
     QList<QSharedPointer<ParentObject>> result;
 
-    QTRY_VERIFY((result = Qp::createdSince<ParentObject>(now)).size() == count);
+    QTRY_COMPARE((result = Qp::createdSince<ParentObject>(now)).size(), count);
 
     now = Qp::creationTimeInDatabase(result.last());
+    qDebug() << "Searching for new objects since " << now;
 
-    QTRY_VERIFY((result = Qp::createdSince<ParentObject>(now)).size() == count);
+    QTRY_COMPARE((result = Qp::createdSince<ParentObject>(now)).size(), count);
     QCOMPARE(result.size(), count);
 }
 
@@ -231,9 +233,9 @@ void SynchronizeTest::testUpdatedSince()
 
     QList<QSharedPointer<ParentObject>> result;
 
-    QTRY_VERIFY((result = Qp::createdSince<ParentObject>(now)).size() == count * 2);
+    QTRY_COMPARE((result = Qp::updatedSince<ParentObject>(now)).size(), count * 2);
     now = Qp::creationTimeInDatabase(result.last());
-    QTRY_VERIFY((result = Qp::updatedSince<ParentObject>(now)).size() == count * 2);
+    QTRY_COMPARE((result = Qp::updatedSince<ParentObject>(now)).size(), count * 2);
 }
 
 void SynchronizeTest::startProcess()

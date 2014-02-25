@@ -14,6 +14,7 @@ class ParentObject : public QObject
     Q_OBJECT
     Q_PROPERTY(QString aString READ aString WRITE setAString)
     Q_PROPERTY(int counter READ counter WRITE setCounter)
+    Q_PROPERTY(QDateTime date READ date WRITE setDate)
     Q_PROPERTY(QSharedPointer<ChildObject> childObjectOneToOne READ childObjectOneToOne WRITE setChildObjectOneToOne)
     Q_PROPERTY(QList<QSharedPointer<ChildObject> > childObjectsOneToMany READ childObjectsOneToMany WRITE setChildObjectsOneToMany)
     Q_PROPERTY(QList<QSharedPointer<ChildObject> > childObjectsManyToMany READ childObjectsManyToMany WRITE setChildObjectsManyToMany)
@@ -53,6 +54,9 @@ public:
     int counter() const;
     void increaseCounter();
 
+    QDateTime date() const;
+    void setDate(QDateTime arg);
+
 public slots:
     void setHasOne(QSharedPointer<ChildObject> arg);
     void setChildObjectOneToOne(QSharedPointer<ChildObject> object);
@@ -73,6 +77,7 @@ public slots:
     void addHasManyMany(QSharedPointer<ChildObject> arg);
     void removeHasManyMany(QSharedPointer<ChildObject> arg);
 
+
 private:
     void setCounter(int arg);
 
@@ -85,6 +90,7 @@ private:
     QpHasOne<ChildObject> m_hasOne;
     QpHasMany<ChildObject> m_hasMany;
     QpHasMany<ChildObject> m_hasManyMany;
+    QDateTime m_date;
 };
 
 #endif // PARENTOBJECT_H

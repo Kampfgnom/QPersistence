@@ -12,14 +12,15 @@ namespace Private {
 const QString QPERSISTENCE_SHARED_POINTER_PROPERTY("_Qp_sharedpointer");
 
 void enableSharedFromThis(QSharedPointer<QObject> object);
+QSharedPointer<QObject> sharedFrom(const QObject *object);
 
 void setLastError(const QpError &error);
 
 int primaryKey(QObject *object);
 void setPrimaryKey(QObject *object, int key);
-QDateTime creationTimeInDatabase(QObject *object);
-QDateTime updateTimeInDatabase(QObject *object);
-QDateTime updateTimeInObject(QObject *object);
+double creationTimeInDatabase(QObject *object);
+double updateTimeInDatabase(QObject *object);
+double updateTimeInObject(QObject *object);
 
 template<class T> QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bool *ok = 0);
 template<class T> QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list);

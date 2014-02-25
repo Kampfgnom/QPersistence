@@ -6,8 +6,9 @@
 #include "private.h"
 #include "relationresolver.h"
 
-#include <QSharedPointer>
-#include <QWeakPointer>
+#include <QtCore/QSharedPointer>
+#include <QtCore/QWeakPointer>
+#include <QtCore/QDebug>
 
 namespace Qp {
 
@@ -123,13 +124,13 @@ SynchronizeResult synchronize(QSharedPointer<T> object)
 }
 
 template<class T>
-QList<QSharedPointer<T>> createdSince(const QDateTime &time)
+QList<QSharedPointer<T> > createdSince(const QDateTime &time)
 {
     return castList<T>(QpDaoBase::forClass(T::staticMetaObject)->createdSince(time));
 }
 
 template<class T>
-QList<QSharedPointer<T>> updatedSince(const QDateTime &time)
+QList<QSharedPointer<T> > updatedSince(const QDateTime &time)
 {
     return castList<T>(QpDaoBase::forClass(T::staticMetaObject)->updatedSince(time));
 }
@@ -145,10 +146,7 @@ bool remove(QSharedPointer<T> object)
 template<class T>
 QSharedPointer<T> sharedFrom(const T *object)
 {
-    QVariant variant = object->property(Qp::Private::QPERSISTENCE_SHARED_POINTER_PROPERTY.toLatin1());
-    QWeakPointer<QObject> weak = variant.value<QWeakPointer<QObject> >();
-    QSharedPointer<QObject> strong = weak.toStrongRef();
-    return qSharedPointerCast<T>(strong);
+    return qSharedPointerCast<T>(Qp::Private::sharedFrom(object));
 }
 
 template<class T>
@@ -157,19 +155,21 @@ int primaryKey(QSharedPointer<T> object)
     return Qp::Private::primaryKey(object.data());
 }
 
+QDateTime dateFromDouble(double value);
+
 template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object)
 {
-    return Qp::Private::creationTimeInDatabase(object.data());
+    return dateFromDouble(Qp::Private::creationTimeInDatabase(object.data()));
 }
 
 template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object)
 {
-    return Qp::Private::updateTimeInDatabase(object.data());
+    return dateFromDouble(Qp::Private::updateTimeInDatabase(object.data()));
 }
 
 template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object)
 {
-    return Qp::Private::updateTimeInObject(object.data());
+    return dateFromDouble(Qp::Private::updateTimeInObject(object.data()));
 }
 
 template<class T> QpLock tryLock(QSharedPointer<T> object, QHash<QString,QVariant> additionalInformation)

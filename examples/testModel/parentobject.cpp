@@ -82,6 +82,16 @@ void ParentObject::increaseCounter()
     setCounter(counter() + 1);
 }
 
+QDateTime ParentObject::date() const
+{
+    return m_date;
+}
+
+void ParentObject::setDate(QDateTime arg)
+{
+    m_date = arg;
+}
+
 QSharedPointer<ChildObject> ParentObject::hasOne() const
 {
     return m_hasOne;
