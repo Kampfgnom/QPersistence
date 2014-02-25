@@ -1,15 +1,17 @@
-#ifndef RELATION_BELONGSTOMANY_H
-#define RELATION_BELONGSTOMANY_H
+#ifndef QPERSISTENCE_RELATION_BELONGSTOMANY_H
+#define QPERSISTENCE_RELATION_BELONGSTOMANY_H
 
-#include <QExplicitlySharedDataPointer>
-#include <QSharedPointer>
-#include <QVariant>
-#include <QMetaMethod>
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QtCore/QExplicitlySharedDataPointer>
+#include <QtCore/QMetaMethod>
+#include <QtCore/QSharedPointer>
+#include <QtCore/QVariant>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "qpersistence.h"
 
 class QpBelongsToManyData;
-
 class QpBelongsToManyBase
 {
 public:
@@ -39,4 +41,4 @@ public:
     QpBelongsToMany &operator=(const QList<QSharedPointer<T> > objects) { QpBelongsToManyBase::setObjects(Qp::castList<QObject>(objects)); return *this; }
 };
 
-#endif // RELATION_BELONGSTOMANY_H
+#endif // QPERSISTENCE_RELATION_BELONGSTOMANY_H

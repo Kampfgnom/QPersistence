@@ -5,6 +5,8 @@
 #include <QDebug>
 #include <QPersistence.h>
 
+namespace TestNameSpace {
+
 ParentObject::ParentObject(QObject *parent) :
     QObject(parent),
     m_childObjectOneToOne(QpRelation(&ParentObject::childObjectOneToOne)),
@@ -155,4 +157,6 @@ void ParentObject::setChildObjectsOneToMany(QList<QSharedPointer<ChildObject> > 
 void ParentObject::setChildObjectsManyToMany(QList<QSharedPointer<ChildObject> > arg)
 {
     m_childObjectsManyToMany = arg;
+}
+
 }

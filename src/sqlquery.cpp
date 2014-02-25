@@ -4,6 +4,7 @@
 #include "sqlcondition.h"
 #include "sqlbackend.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QBuffer>
 #include <QByteArray>
 #include <QDebug>
@@ -14,7 +15,7 @@
 #include <QStringList>
 #include <QSqlDriver>
 #include <QSqlRecord>
-#define COMMA ,
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlQueryPrivate : public QSharedData {
 public:
@@ -27,32 +28,31 @@ public:
         forUpdate(false)
     {}
 
+    int count;
     QSqlDatabase database;
     QpSqlBackend *backend;
     QString table;
     QHash<QString, QVariant> fields;
     // inserted directly into query instead of using bindValue
     QHash<QString, QString> rawFields;
-    int count;
-    int skip;
     QpSqlCondition whereCondition;
     QList<QPair<QString, QpSqlQuery::Order> > orderBy;
     QList<QStringList> foreignKeys;
     QList<QStringList> uniqueKeys;
+    QHash<int, int> propertyIndexes;
+    int skip;
     bool canBulkExec;
     bool ignore;
     bool forUpdate;
 
-    QHash<int, int> propertyIndexes;
-
     static bool debugEnabled;
-    static QList<QpSqlQuery> bulkQueries;
     static bool bulkExec;
 };
 
 bool QpSqlQueryPrivate::bulkExec = false;
 bool QpSqlQueryPrivate::debugEnabled = false;
-QList<QpSqlQuery> QpSqlQueryPrivate::bulkQueries;
+
+QP_DEFINE_STATIC_LOCAL(QList<QpSqlQuery>, BulkQueries)
 
 QpSqlQuery::QpSqlQuery() :
     QSqlQuery(),
@@ -95,7 +95,7 @@ bool QpSqlQuery::exec(const QString &queryString)
     if (query.isEmpty()) {
         if (QpSqlQueryPrivate::bulkExec
                 && data->canBulkExec) {
-            QpSqlQueryPrivate::bulkQueries.append(*this);
+            BulkQueries()->append(*this);
         }
         else {
             ok = QSqlQuery::exec();
@@ -314,7 +314,8 @@ void QpSqlQuery::prepareSelect()
     if (!data->orderBy.isEmpty()) {
         query.append("\n\tORDER BY ");
         QStringList orderClauses;
-        foreach (QPair<QString COMMA QpSqlQuery::Order> order, data->orderBy) {
+        typedef QPair<QString, QpSqlQuery::Order> OrderPair;
+        foreach (OrderPair order, data->orderBy) {
             QString orderClause = order.first.prepend("\n\t\t");
             if (order.second == QpSqlQuery::Descending)
                 orderClause.append(" DESC");
@@ -515,14 +516,11 @@ void QpSqlQuery::bulkExec()
 {
     Qp::database().transaction();
     QpSqlQueryPrivate::bulkExec = false;
-    foreach (QpSqlQuery query, QpSqlQueryPrivate::bulkQueries) {
+    foreach (QpSqlQuery query, *BulkQueries()) {
         query.exec();
     }
     Qp::database().commit();
 
-    QpSqlQueryPrivate::bulkQueries.clear();
+    BulkQueries()->clear();
     QpSqlQueryPrivate::bulkExec = false;
 }
-
-
-#undef COMMA

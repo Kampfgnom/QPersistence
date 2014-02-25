@@ -1,7 +1,9 @@
 #include "tst_locktest.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
 #include <QTimer>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 LockTest::LockTest(QObject *parent) :
     QObject(parent)
@@ -40,36 +42,36 @@ void LockTest::initTestCase()
         Qp::enableLocks();
         Qp::setDatabase(db);
         Qp::setSqlDebugEnabled(false);
-        Qp::registerClass<ParentObject>();
-        Qp::registerClass<ChildObject>();
+        Qp::registerClass<TestNameSpace::ParentObject>();
+        Qp::registerClass<TestNameSpace::ChildObject>();
         Qp::createCleanSchema();
     }
 }
 
 void LockTest::testLockAndUnlockLocally()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
 
     QpLock lock = Qp::tryLock(parent);
-    QCOMPARE(qSharedPointerCast<ParentObject>(lock.object()), parent);
+    QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(lock.object()), parent);
     QCOMPARE(lock.status(), QpLock::LockedLocally);
 
     QpLock lockStatus = Qp::isLocked(parent);
-    QCOMPARE(qSharedPointerCast<ParentObject>(lockStatus.object()), parent);
+    QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(lockStatus.object()), parent);
     QCOMPARE(lockStatus.status(), QpLock::LockedLocally);
 
     QpLock unlock = Qp::unlock(parent);
-    QCOMPARE(qSharedPointerCast<ParentObject>(unlock.object()), parent);
+    QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(unlock.object()), parent);
     QCOMPARE(unlock.status(), QpLock::Unlocked);
 
     QpLock unlock2 = Qp::unlock(parent);
-    QCOMPARE(qSharedPointerCast<ParentObject>(unlock2.object()), parent);
+    QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(unlock2.object()), parent);
     QCOMPARE(unlock2.status(), QpLock::Unlocked);
 }
 
 void LockTest::testLockAndUnlockRemotely()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockAndUnlock));
 
     QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
@@ -79,7 +81,7 @@ void LockTest::testLockAndUnlockRemotely()
 
 void LockTest::testLockRemotelyAndUnlockLocally()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockAndUnlock));
 
     QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
@@ -89,7 +91,7 @@ void LockTest::testLockRemotelyAndUnlockLocally()
 
 void LockTest::testLockInformationLocal()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockAndUnlock));
 
     QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
@@ -101,7 +103,7 @@ void LockTest::testLockInformationLocal()
 
 void LockTest::testLockInformationRemote()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
 
     QHash<QString, QVariant> i = info();
     QpLock lock = Qp::tryLock(parent, i);
@@ -114,7 +116,7 @@ void LockTest::testSynchronizedCounter()
 {
     QFAIL("needs mysql server 5.6!");
 
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockedCounting));
 
     // Wait for the remote process to have started

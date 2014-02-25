@@ -1,10 +1,13 @@
-#ifndef RELATION_HASONE_H
-#define RELATION_HASONE_H
+#ifndef QPERSISTENCE_RELATION_HASONE_H
+#define QPERSISTENCE_RELATION_HASONE_H
 
-#include <QExplicitlySharedDataPointer>
-#include <QSharedPointer>
-#include <QVariant>
-#include <QMetaMethod>
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QtCore/QExplicitlySharedDataPointer>
+#include <QtCore/QMetaMethod>
+#include <QtCore/QSharedPointer>
+#include <QtCore/QVariant>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpHasOneData;
 
@@ -38,4 +41,4 @@ public:
     "" #Address, this
 #endif
 
-#endif // RELATION_HASONE_H
+#endif // QPERSISTENCE_RELATION_HASONE_H

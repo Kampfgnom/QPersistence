@@ -1,10 +1,13 @@
 #ifndef QPERSISTENCE_METAOBJECT_H
 #define QPERSISTENCE_METAOBJECT_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QMetaObject>
 #include <QtCore/QObject>
 #include <QtCore/QSharedDataPointer>
 #include <QtCore/QVariant>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 template<class K, class V>
 class QHash;
@@ -29,6 +32,7 @@ public:
     QMetaObject metaObject() const;
 
     QString className() const;
+    QString classNameWithoutNamespace() const;
 
     bool isValid() const;
 

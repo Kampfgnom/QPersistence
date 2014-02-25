@@ -1,8 +1,11 @@
 #ifndef QPERSISTENCE_METAPROPERTY_H
 #define QPERSISTENCE_METAPROPERTY_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QMetaProperty>
 #include <QtCore/QSharedDataPointer>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 struct QMetaObject;
 class QpMetaObject;

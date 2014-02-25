@@ -8,8 +8,10 @@
 #include "sqlbackend.h"
 #include "sqlquery.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QDebug>
 #include <QSqlError>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 namespace Qp {
 

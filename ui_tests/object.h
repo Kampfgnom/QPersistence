@@ -1,6 +1,8 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
+#include "../src/defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QObject>
 #include <QDateTime>
 
@@ -23,5 +25,7 @@ private:
     ulong m_date;
     QString m_string;
 };
+
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #endif // OBJECT_H

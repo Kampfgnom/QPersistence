@@ -1,4 +1,8 @@
+
+#include "../src/defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtTest>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "tst_cachetest.h"
 #include "tst_onetoonerelationtest.h"

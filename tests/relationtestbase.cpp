@@ -1,6 +1,8 @@
 #include "relationtestbase.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 RelationTestBase::RelationTestBase(QObject *parent) :
     QObject(parent)
@@ -21,8 +23,8 @@ void RelationTestBase::initDatabase()
 
         Qp::setDatabase(db);
         Qp::setSqlDebugEnabled(false);
-        Qp::registerClass<ParentObject>();
-        Qp::registerClass<ChildObject>();
+        Qp::registerClass<TestNameSpace::ParentObject>();
+        Qp::registerClass<TestNameSpace::ChildObject>();
         Qp::createCleanSchema();
     }
 

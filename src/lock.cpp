@@ -1,5 +1,4 @@
 #include "lock.h"
-#include <QSharedData>
 
 #include "databaseschema.h"
 #include "error.h"
@@ -7,7 +6,10 @@
 #include "sqlcondition.h"
 #include "sqlquery.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
+#include <QSharedData>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 
 /**********************************************************
@@ -20,9 +22,9 @@ public:
 
     int id;
     QpError error;
-    QpLock::Status status;
     QSharedPointer<QObject> object;
     QHash<QString, QVariant> information;
+    QpLock::Status status;
 
     static QpLock insertLock(QSharedPointer<QObject> object, QHash<QString,QVariant> additionalInformation);
     static QpLock selectLock(int id, QSharedPointer<QObject> object);
@@ -30,15 +32,14 @@ public:
     static void removeLock(int id, QSharedPointer<QObject> object);
 
     static bool locksEnabled;
-    static QHash<QString, QVariant::Type> additionalFields;
 };
 
 typedef QHash<QSharedPointer<QObject>, QpLock> LocksHash;
-Q_GLOBAL_STATIC(LocksHash, LOCALLOCKS)
-#undef COMMA
+QP_DEFINE_STATIC_LOCAL(LocksHash, LOCALLOCKS)
 
 bool QpLockData::locksEnabled = false;
-QHash<QString, QVariant::Type> QpLockData::additionalFields;
+typedef QHash<QString, QVariant::Type> HashStringToVariantType;
+QP_DEFINE_STATIC_LOCAL(HashStringToVariantType, AdditionalFields)
 
 QpLockData::QpLockData() : QSharedData(),
     id(-1),
@@ -56,7 +57,7 @@ QpLock QpLockData::insertLock(QSharedPointer<QObject> object, QHash<QString,QVar
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
     query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
 
-    foreach(QString field, QpLockData::additionalFields.keys()) {
+    foreach(QString field, AdditionalFields()->keys()) {
         query.addField(field, additionalInformation.value(field));
     }
 
@@ -71,7 +72,7 @@ QpLock QpLockData::insertLock(QSharedPointer<QObject> object, QHash<QString,QVar
     lock.data->id = query.lastInsertId().toInt();
     lock.data->status = QpLock::LockedLocally;
 
-    foreach(QString field, QpLockData::additionalFields.keys()) {
+    foreach(QString field, AdditionalFields()->keys()) {
         lock.data->information.insert(field, additionalInformation.value(field));
     }
 
@@ -96,7 +97,7 @@ QpLock QpLockData::selectLock(int id, QSharedPointer<QObject> object)
     QpSqlQuery query(Qp::database());
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
     query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
-    foreach(QString field, QpLockData::additionalFields.keys()) {
+    foreach(QString field, AdditionalFields()->keys()) {
         query.addField(field);
     }
     query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
@@ -115,9 +116,9 @@ QpLock QpLockData::selectLock(int id, QSharedPointer<QObject> object)
     lock.data->id = query.value(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY).toInt();
     lock.data->status = QpLock::LockedRemotely;
 
-    foreach(QString field, QpLockData::additionalFields.keys()) {
+    foreach(QString field, AdditionalFields()->keys()) {
         QVariant value = query.value(field);
-        value.convert(QpLockData::additionalFields.value(field));
+        value.convert(static_cast<int>(AdditionalFields()->value(field)));
         lock.data->information.insert(field, value);
     }
 
@@ -219,12 +220,12 @@ bool QpLock::isLocksEnabled()
 
 void QpLock::addAdditionalInformationField(const QString &name, QVariant::Type type)
 {
-    QpLockData::additionalFields.insert(name, type);
+    AdditionalFields()->insert(name, type);
 }
 
 QHash<QString, QVariant::Type> QpLock::additionalInformationFields()
 {
-    return QpLockData::additionalFields;
+    return *AdditionalFields();
 }
 
 void QpLock::enableLocks()

@@ -1,12 +1,15 @@
 #include "mainwindow.h"
-#include "ui_mainwindow.h"
 
 #include "object.h"
 
 #include <QPersistence.h>
+
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include "ui_mainwindow.h"
 #include <QMessageBox>
 #include <QSqlError>
 #include <QSqlQuery>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),

@@ -1,9 +1,12 @@
 #ifndef QPERSISTENCE_SQLBACKEND_H
 #define QPERSISTENCE_SQLBACKEND_H
 
-#include <QExplicitlySharedDataPointer>
-#include <QObject>
-#include <QVariant>
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QtCore/QExplicitlySharedDataPointer>
+#include <QtCore/QObject>
+#include <QtCore/QVariant>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QSqlDatabase;
 

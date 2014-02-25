@@ -1,7 +1,10 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "../src/defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QMainWindow>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 namespace Ui {
 class MainWindow;

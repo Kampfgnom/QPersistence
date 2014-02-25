@@ -1,8 +1,11 @@
 #ifndef TST_CACHETEST_H
 #define TST_CACHETEST_H
 
+#include "../src/defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QString>
 #include <QtTest>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class CacheTest : public QObject
 {

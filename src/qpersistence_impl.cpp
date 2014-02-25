@@ -6,24 +6,24 @@
 #include "private.h"
 #include "relationresolver.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QSharedPointer>
 #include <QtCore/QWeakPointer>
 #include <QtCore/QDebug>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 namespace Qp {
 
 template<class T>
 void registerClass()
 {
-    static QObject guard;
-
     qRegisterMetaType<QSharedPointer<T> >();
     qRegisterMetaType<QList<QSharedPointer<T> > >();
 
-    new QpDao<T>(&guard);
+    new QpDao<T>(Private::GlobalGuard());
 
     // Create converter
-    Private::ObjectConverter<T> *converter = new Private::ObjectConverter<T>(&guard);
+    Private::ObjectConverter<T> *converter = new Private::ObjectConverter<T>(Private::GlobalGuard());
 
     // Register converter for type
     Private::registerConverter<QList<QSharedPointer<T> > >(converter);
@@ -48,13 +48,12 @@ void registerMappableTypes()
     qRegisterMetaType<QMap<K,V> >();
 
     // Create converter
-    static QObject guard;
-    Private::registerConverter<QMap<K,V> >(new Private::MapConverter<K,V>(&guard));
+    Private::registerConverter<QMap<K,V> >(new Private::MapConverter<K,V>(Private::GlobalGuard()));
 
     if (!Private::canConvertFromSqlStoredVariant<K>())
-        Private::registerConverter<K>(new Private::SqlConverter<K>(&guard));
+        Private::registerConverter<K>(new Private::SqlConverter<K>(Private::GlobalGuard()));
     if (!Private::canConvertFromSqlStoredVariant<V>())
-        Private::registerConverter<V>(new Private::SqlConverter<V>(&guard));
+        Private::registerConverter<V>(new Private::SqlConverter<V>(Private::GlobalGuard()));
 }
 
 template<class T>
@@ -64,11 +63,10 @@ void registerSetType()
     qRegisterMetaType<QSet<T> >();
 
     // Create converter
-    static QObject guard;
-    Private::registerConverter<QSet<T> >(new Private::SetConverter<T>(&guard));
+    Private::registerConverter<QSet<T> >(new Private::SetConverter<T>(Private::GlobalGuard()));
 
     if (!Private::canConvertFromSqlStoredVariant<T>())
-        Private::registerConverter<T>(new Private::SqlConverter<T>(&guard));
+        Private::registerConverter<T>(new Private::SqlConverter<T>(Private::GlobalGuard()));
 }
 
 template<class T> QSharedPointer<T> read(int id)
@@ -191,7 +189,7 @@ template<class Target, class Source>
 QList<Target> castList(const QList<Source>& list)
 {
     QList<Target> result;
-    Q_FOREACH(Source s, list) result.append(static_cast<Target>(s));
+    foreach(Source s, list) result.append(static_cast<Target>(s));
     return result;
 }
 
@@ -200,7 +198,7 @@ QList<QSharedPointer<Target> > castList(const QList<QSharedPointer<Source> >& li
 {
     QList<QSharedPointer<Target> > result;
     result.reserve(list.size());
-    Q_FOREACH(QSharedPointer<Source> s, list) result.append(qSharedPointerCast<Target>(s));
+    foreach(QSharedPointer<Source> s, list) result.append(qSharedPointerCast<Target>(s));
     return result;
 }
 

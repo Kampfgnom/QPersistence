@@ -9,10 +9,10 @@ void ManyToManyRelationsTest::initTestCase()
 {
     RelationTestBase::initDatabase();
 
-    QpMetaObject metaObject = QpMetaObject::forClassName(ParentObject::staticMetaObject.className());
+    QpMetaObject metaObject = QpMetaObject::forClassName(TestNameSpace::ParentObject::staticMetaObject.className());
     m_parentToChildRelation = metaObject.metaProperty("childObjectsManyToMany");
 
-    metaObject = QpMetaObject::forClassName(ChildObject::staticMetaObject.className());
+    metaObject = QpMetaObject::forClassName(TestNameSpace::ChildObject::staticMetaObject.className());
     m_childToParentRelation = metaObject.metaProperty("parentObjectsManyToMany");
 }
 
@@ -21,28 +21,29 @@ void ManyToManyRelationsTest::cleanupTestCase()
 }
 
 struct TestTree {
-    QList<QSharedPointer<ParentObject>> p;
-    QList<QSharedPointer<ChildObject>> c;
-    QHash<QSharedPointer<ChildObject> , QList<QSharedPointer<ParentObject>>> parents;
-    QHash<QSharedPointer<ParentObject>, QList<QSharedPointer<ChildObject>>> children;
+    QList<QSharedPointer<TestNameSpace::ParentObject>> p;
+    QList<QSharedPointer<TestNameSpace::ChildObject>> c;
+    QHash<QSharedPointer<TestNameSpace::ChildObject> , QList<QSharedPointer<TestNameSpace::ParentObject>>> parents;
+    QHash<QSharedPointer<TestNameSpace::ParentObject>, QList<QSharedPointer<TestNameSpace::ChildObject>>> children;
 };
 
+void testTreeTest(TestTree tree);
 void testTreeTest(TestTree tree) {
     for(auto it = tree.children.begin(); it != tree.children.end(); ++it) {
-        QSharedPointer<ParentObject> parent = it.key();
-        QList<QSharedPointer<ChildObject>> shouldHaveChildren = it.value();
-        QList<QSharedPointer<ChildObject>> hasChildren = parent->hasManyMany();
-        foreach(QSharedPointer<ChildObject> child, shouldHaveChildren) {
+        QSharedPointer<TestNameSpace::ParentObject> parent = it.key();
+        QList<QSharedPointer<TestNameSpace::ChildObject>> shouldHaveChildren = it.value();
+        QList<QSharedPointer<TestNameSpace::ChildObject>> hasChildren = parent->hasManyMany();
+        foreach(QSharedPointer<TestNameSpace::ChildObject> child, shouldHaveChildren) {
             QVERIFY(hasChildren.contains(child));
             hasChildren.removeOne(child);
         }
         QVERIFY(hasChildren.isEmpty());
     }
     for(auto it = tree.parents.begin(); it != tree.parents.end(); ++it) {
-        QSharedPointer<ChildObject> child = it.key();
-        QList<QSharedPointer<ParentObject>> shouldHaveParents = it.value();
-        QList<QSharedPointer<ParentObject>> hasParents = child->belongsToManyMany();
-        foreach(QSharedPointer<ParentObject> parent, shouldHaveParents) {
+        QSharedPointer<TestNameSpace::ChildObject> child = it.key();
+        QList<QSharedPointer<TestNameSpace::ParentObject>> shouldHaveParents = it.value();
+        QList<QSharedPointer<TestNameSpace::ParentObject>> hasParents = child->belongsToManyMany();
+        foreach(QSharedPointer<TestNameSpace::ParentObject> parent, shouldHaveParents) {
             QVERIFY(hasParents.contains(parent));
             hasParents.removeOne(parent);
         }
@@ -50,17 +51,18 @@ void testTreeTest(TestTree tree) {
     }
 }
 
+TestTree createTree();
 TestTree createTree() {
     TestTree tree;
 
     // Create some objects
     for(int j = 0; j < 7; ++j) {
-        QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+        QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
         parent->setObjectName(QString("P%1").arg(j));
         tree.p.append(parent);
 
         for(int i = 0; i < 7; ++i) {
-            QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+            QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
             child->setObjectName(QString("P%1_C%2").arg(j).arg(i));
             tree.children[parent].append(child);
             tree.parents[child].append(parent);
@@ -71,8 +73,8 @@ TestTree createTree() {
 
     for(int i = 0; i < tree.p.size(); ++i) {
         for(int j = 0; j < tree.c.size(); ++j) {
-            QSharedPointer<ParentObject> parent = tree.p.at(i);
-            QSharedPointer<ChildObject> child = tree.c.at(j);
+            QSharedPointer<TestNameSpace::ParentObject> parent = tree.p.at(i);
+            QSharedPointer<TestNameSpace::ChildObject> child = tree.c.at(j);
             child->addBelongsToManyMany(parent);
             tree.children[parent].removeAll(child);
             tree.children[parent].append(child);
@@ -95,18 +97,18 @@ void ManyToManyRelationsTest::testManyToManyRelation()
         TestTree tree = ::createTree();
         // Remove some children from parents
         for(auto it = tree.children.begin(); it != tree.children.end(); ++it) {
-            QSharedPointer<ParentObject> parent = it.key();
-            QList<QSharedPointer<ChildObject>> hasChildren = parent->hasManyMany();
+            QSharedPointer<TestNameSpace::ParentObject> parent = it.key();
+            QList<QSharedPointer<TestNameSpace::ChildObject>> hasChildren = parent->hasManyMany();
 
             {
-                QSharedPointer<ChildObject> removed = hasChildren.at(1);
+                QSharedPointer<TestNameSpace::ChildObject> removed = hasChildren.at(1);
                 parent->removeHasManyMany(removed);
 
                 tree.children[parent].removeAll(removed);
                 tree.parents[removed].removeAll(parent);
             }
             {
-                QSharedPointer<ChildObject> removed = hasChildren.at(1);
+                QSharedPointer<TestNameSpace::ChildObject> removed = hasChildren.at(1);
                 parent->removeHasManyMany(removed);
 
                 tree.children[parent].removeAll(removed);
@@ -120,18 +122,18 @@ void ManyToManyRelationsTest::testManyToManyRelation()
         TestTree tree = ::createTree();
         // Remove some parents from children
         for(auto it = tree.parents.begin(); it != tree.parents.end(); ++it) {
-            QSharedPointer<ChildObject> child = it.key();
-            QList<QSharedPointer<ParentObject>> hasParents = child->belongsToManyMany();
+            QSharedPointer<TestNameSpace::ChildObject> child = it.key();
+            QList<QSharedPointer<TestNameSpace::ParentObject>> hasParents = child->belongsToManyMany();
 
             {
-                QSharedPointer<ParentObject> removed = hasParents.at(1);
+                QSharedPointer<TestNameSpace::ParentObject> removed = hasParents.at(1);
                 child->removeBelongsToManyMany(removed);
 
                 tree.children[removed].removeAll(child);
                 tree.parents[child].removeAll(removed);
             }
             {
-                QSharedPointer<ParentObject> removed = hasParents.at(1);
+                QSharedPointer<TestNameSpace::ParentObject> removed = hasParents.at(1);
                 child->removeBelongsToManyMany(removed);
 
                 tree.children[removed].removeAll(child);
@@ -144,8 +146,8 @@ void ManyToManyRelationsTest::testManyToManyRelation()
 
 void ManyToManyRelationsTest::testInitialDatabaseFKsEmpty()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
-    QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
 
     QCOMPARE(childFKs(parent), QVariantList());
     QCOMPARE(parentFKs(child), QVariantList());
@@ -160,13 +162,13 @@ void ManyToManyRelationsTest::testDatabaseFKInsertFromParent()
 void ManyToManyRelationsTest::testDatabaseFKInsertFromChild()
 {
     // Need to create our own tree here, because createTree() updates the parents
-    QList<QSharedPointer<ParentObject>> parents;
-    QList<QSharedPointer<ChildObject>> children;
+    QList<QSharedPointer<TestNameSpace::ParentObject>> parents;
+    QList<QSharedPointer<TestNameSpace::ChildObject>> children;
     for(int j = 0; j < PARENTCOUNT; ++j) {
-        QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+        QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
 
         for(int i = 0; i < CHILDCOUNT; ++i) {
-            QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+            QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
             children.append(child);
             parent->addChildObjectsManyToMany(child);
             Qp::update(child);
@@ -186,8 +188,8 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromParent()
     // Add a new child
     {
         Tree tree = createTree();
-        QSharedPointer<ParentObject> addedToParent = tree.parents.first();
-        QSharedPointer<ChildObject> addedChild = Qp::create<ChildObject>();
+        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.first();
+        QSharedPointer<TestNameSpace::ChildObject> addedChild = Qp::create<TestNameSpace::ChildObject>();
         addedToParent->addChildObjectsManyToMany(addedChild);
         Qp::update(addedToParent);
         testTree(tree);
@@ -196,8 +198,8 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromParent()
     // Remove a child
     {
         Tree tree = createTree();
-        QSharedPointer<ParentObject> removedFromParent = tree.parents.at(1);
-        QSharedPointer<ChildObject> removedChild = Qp::create<ChildObject>();
+        QSharedPointer<TestNameSpace::ParentObject> removedFromParent = tree.parents.at(1);
+        QSharedPointer<TestNameSpace::ChildObject> removedChild = Qp::create<TestNameSpace::ChildObject>();
         removedFromParent->removeChildObjectsManyToMany(removedChild);
         Qp::update(removedFromParent);
         testTree(tree);
@@ -206,9 +208,9 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromParent()
     // Add one child from one parent to another and update the added-to parent
     {
         Tree tree = createTree();
-        QSharedPointer<ParentObject> addedFromParent = tree.parents.first();
-        QSharedPointer<ParentObject> addedToParent = tree.parents.at(1);
-        QSharedPointer<ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
+        QSharedPointer<TestNameSpace::ParentObject> addedFromParent = tree.parents.first();
+        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.at(1);
+        QSharedPointer<TestNameSpace::ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
         addedToParent->addChildObjectsManyToMany(changedChild);
         Qp::update(addedToParent);
 
@@ -222,8 +224,8 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromChild()
     {
         Tree tree = createTree();
 
-        QSharedPointer<ParentObject> addedToParent = tree.parents.first();
-        QSharedPointer<ChildObject> addedChild = Qp::create<ChildObject>();
+        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.first();
+        QSharedPointer<TestNameSpace::ChildObject> addedChild = Qp::create<TestNameSpace::ChildObject>();
         addedToParent->addChildObjectsManyToMany(addedChild);
         Qp::update(addedChild);
         testTree(tree);
@@ -232,8 +234,8 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromChild()
     // Remove a child
     {
         Tree tree = createTree();
-        QSharedPointer<ParentObject> removedFromParent = tree.parents.at(1);
-        QSharedPointer<ChildObject> removedChild = Qp::create<ChildObject>();
+        QSharedPointer<TestNameSpace::ParentObject> removedFromParent = tree.parents.at(1);
+        QSharedPointer<TestNameSpace::ChildObject> removedChild = Qp::create<TestNameSpace::ChildObject>();
         removedFromParent->removeChildObjectsManyToMany(removedChild);
         Qp::update(removedChild);
         testTree(tree);
@@ -242,9 +244,9 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromChild()
     // Add one child from one parent to another
     {
         Tree tree = createTree();
-        QSharedPointer<ParentObject> addedFromParent = tree.parents.first();
-        QSharedPointer<ParentObject> addedToParent = tree.parents.at(1);
-        QSharedPointer<ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
+        QSharedPointer<TestNameSpace::ParentObject> addedFromParent = tree.parents.first();
+        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.at(1);
+        QSharedPointer<TestNameSpace::ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
         addedToParent->addChildObjectsManyToMany(changedChild);
         Qp::update(changedChild);
 
@@ -259,8 +261,8 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
         Tree tree = createTree();
         Tree changedTree;
 
-        QSharedPointer<ParentObject> addedToParent = tree.parents.first();
-        QSharedPointer<ChildObject> addedChild = Qp::create<ChildObject>();
+        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.first();
+        QSharedPointer<TestNameSpace::ChildObject> addedChild = Qp::create<TestNameSpace::ChildObject>();
         QDateTime previousTime = Qp::updateTimeInDatabase(addedChild);
 
         qDebug() << "Sleeping 1 second...";
@@ -281,8 +283,8 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
         Tree tree = createTree();
         Tree changedTree;
 
-        QSharedPointer<ParentObject> removedFromParent = tree.parents.at(1);
-        QSharedPointer<ChildObject> removedChild = removedFromParent->childObjectsManyToMany().first();
+        QSharedPointer<TestNameSpace::ParentObject> removedFromParent = tree.parents.at(1);
+        QSharedPointer<TestNameSpace::ChildObject> removedChild = removedFromParent->childObjectsManyToMany().first();
         QDateTime previousTime = Qp::updateTimeInDatabase(removedChild);
 
         qDebug() << "Sleeping 1 second...";
@@ -303,9 +305,9 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
         Tree tree = createTree();
         Tree changedTree;
 
-        QSharedPointer<ParentObject> addedFromParent = tree.parents.at(0);
-        QSharedPointer<ParentObject> addedToParent = tree.parents.at(1);
-        QSharedPointer<ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
+        QSharedPointer<TestNameSpace::ParentObject> addedFromParent = tree.parents.at(0);
+        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.at(1);
+        QSharedPointer<TestNameSpace::ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
         QDateTime previousTime = Qp::updateTimeInDatabase(changedChild);
 
         qDebug() << "Sleeping 1 second...";
@@ -331,8 +333,8 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         Tree tree = createTree();
         Tree changedTree;
 
-        QSharedPointer<ParentObject> addedToParent = tree.parents.first();
-        QSharedPointer<ChildObject> addedChild = Qp::create<ChildObject>();
+        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.first();
+        QSharedPointer<TestNameSpace::ChildObject> addedChild = Qp::create<TestNameSpace::ChildObject>();
         QDateTime previousTime = Qp::updateTimeInDatabase(addedChild);
 
         qDebug() << "Sleeping 1 second...";
@@ -353,8 +355,8 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         Tree tree = createTree();
         Tree changedTree;
 
-        QSharedPointer<ParentObject> removedFromParent = tree.parents.at(1);
-        QSharedPointer<ChildObject> removedChild = removedFromParent->childObjectsManyToMany().first();
+        QSharedPointer<TestNameSpace::ParentObject> removedFromParent = tree.parents.at(1);
+        QSharedPointer<TestNameSpace::ChildObject> removedChild = removedFromParent->childObjectsManyToMany().first();
         QDateTime previousTime = Qp::updateTimeInDatabase(removedChild);
 
         qDebug() << "Sleeping 1 second...";
@@ -375,9 +377,9 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         Tree tree = createTree();
         Tree changedTree;
 
-        QSharedPointer<ParentObject> addedFromParent = tree.parents.at(0);
-        QSharedPointer<ParentObject> addedToParent = tree.parents.at(1);
-        QSharedPointer<ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
+        QSharedPointer<TestNameSpace::ParentObject> addedFromParent = tree.parents.at(0);
+        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.at(1);
+        QSharedPointer<TestNameSpace::ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
         QDateTime previousTime = Qp::updateTimeInDatabase(changedChild);
 
         qDebug() << "Sleeping 1 second...";
@@ -396,7 +398,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
     }
 }
 
-QVariantList ManyToManyRelationsTest::childFKs(QSharedPointer<ParentObject> parent)
+QVariantList ManyToManyRelationsTest::childFKs(QSharedPointer<TestNameSpace::ParentObject> parent)
 {
     QpSqlQuery select(Qp::database());
     select.setTable(m_childToParentRelation.tableName());
@@ -417,7 +419,7 @@ QVariantList ManyToManyRelationsTest::childFKs(QSharedPointer<ParentObject> pare
     return result;
 }
 
-QVariantList ManyToManyRelationsTest::parentFKs(QSharedPointer<ChildObject> child)
+QVariantList ManyToManyRelationsTest::parentFKs(QSharedPointer<TestNameSpace::ChildObject> child)
 {
     QpSqlQuery select(Qp::database());
     select.setTable(m_parentToChildRelation.tableName());
@@ -438,11 +440,11 @@ QVariantList ManyToManyRelationsTest::parentFKs(QSharedPointer<ChildObject> chil
     return result;
 }
 
-void ManyToManyRelationsTest::testParentFks(QSharedPointer<ChildObject> child)
+void ManyToManyRelationsTest::testParentFks(QSharedPointer<TestNameSpace::ChildObject> child)
 {
     QVariantList fks = parentFKs(child);
 
-    foreach(QSharedPointer<ParentObject> parent, child->parentObjectsManyToMany()) {
+    foreach(QSharedPointer<TestNameSpace::ParentObject> parent, child->parentObjectsManyToMany()) {
         QVariant pk = Qp::primaryKey(parent);
         if(!fks.contains(pk))
             qDebug() << "###########";
@@ -454,11 +456,11 @@ void ManyToManyRelationsTest::testParentFks(QSharedPointer<ChildObject> child)
     QVERIFY(fks.isEmpty());
 }
 
-void ManyToManyRelationsTest::testChildFks(QSharedPointer<ParentObject> parent)
+void ManyToManyRelationsTest::testChildFks(QSharedPointer<TestNameSpace::ParentObject> parent)
 {
     QVariantList fks = childFKs(parent);
 
-    foreach(QSharedPointer<ChildObject> child, parent->childObjectsManyToMany()) {
+    foreach(QSharedPointer<TestNameSpace::ChildObject> child, parent->childObjectsManyToMany()) {
         QVariant pk = Qp::primaryKey(child);
         QVERIFY(fks.contains(pk));
         fks.removeAll(pk);
@@ -469,15 +471,15 @@ void ManyToManyRelationsTest::testChildFks(QSharedPointer<ParentObject> parent)
 
 void ManyToManyRelationsTest::testTree(ManyToManyRelationsTest::Tree tree)
 {
-    foreach(QSharedPointer<ParentObject> parent, tree.parents) {
+    foreach(QSharedPointer<TestNameSpace::ParentObject> parent, tree.parents) {
         testChildFks(parent);
-        foreach(QSharedPointer<ChildObject> child2, parent->childObjectsManyToMany()) {
+        foreach(QSharedPointer<TestNameSpace::ChildObject> child2, parent->childObjectsManyToMany()) {
             testParentFks(child2);
         }
     }
-    foreach(QSharedPointer<ChildObject> child, tree.children) {
+    foreach(QSharedPointer<TestNameSpace::ChildObject> child, tree.children) {
         testParentFks(child);
-        foreach(QSharedPointer<ParentObject> parent, child->parentObjectsManyToMany()) {
+        foreach(QSharedPointer<TestNameSpace::ParentObject> parent, child->parentObjectsManyToMany()) {
             testChildFks(parent);
         }
     }
@@ -486,7 +488,7 @@ void ManyToManyRelationsTest::testTree(ManyToManyRelationsTest::Tree tree)
 void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime newTime,
                                               ManyToManyRelationsTest::Tree changed, ManyToManyRelationsTest::Tree completeTree)
 {
-    foreach(QSharedPointer<ParentObject> parent, completeTree.parents) {
+    foreach(QSharedPointer<TestNameSpace::ParentObject> parent, completeTree.parents) {
         if(changed.parents.contains(parent)) {
             QCOMPARE(Qp::updateTimeInDatabase(parent), newTime);
         }
@@ -494,7 +496,7 @@ void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime 
             QVERIFY(Qp::updateTimeInDatabase(parent) <= previousTime);
         }
 
-        foreach(QSharedPointer<ChildObject> child, parent->childObjectsManyToMany()) {
+        foreach(QSharedPointer<TestNameSpace::ChildObject> child, parent->childObjectsManyToMany()) {
             if(changed.children.contains(child)) {
                 QCOMPARE(Qp::updateTimeInDatabase(child), newTime);
             }
@@ -504,7 +506,7 @@ void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime 
         }
     }
 
-    foreach(QSharedPointer<ChildObject> child, completeTree.children) {
+    foreach(QSharedPointer<TestNameSpace::ChildObject> child, completeTree.children) {
         if(changed.children.contains(child)) {
             QCOMPARE(Qp::updateTimeInDatabase(child), newTime);
         }
@@ -512,7 +514,7 @@ void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime 
             QVERIFY(Qp::updateTimeInDatabase(child) <= previousTime);
         }
 
-        foreach(QSharedPointer<ParentObject> parent, child->parentObjectsManyToMany()) {
+        foreach(QSharedPointer<TestNameSpace::ParentObject> parent, child->parentObjectsManyToMany()) {
             if(changed.parents.contains(parent)) {
                 QCOMPARE(Qp::updateTimeInDatabase(parent), newTime);
             }
@@ -525,13 +527,13 @@ void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime 
 
 ManyToManyRelationsTest::Tree ManyToManyRelationsTest::createTree()
 {
-    QList<QSharedPointer<ParentObject>> parents;
-    QList<QSharedPointer<ChildObject>> children;
+    QList<QSharedPointer<TestNameSpace::ParentObject>> parents;
+    QList<QSharedPointer<TestNameSpace::ChildObject>> children;
     for(int j = 0; j < PARENTCOUNT; ++j) {
-        QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+        QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
 
         for(int i = 0; i < CHILDCOUNT; ++i) {
-            QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+            QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
             children.append(child);
             parent->addChildObjectsManyToMany(child);
         }

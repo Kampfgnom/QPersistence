@@ -1,8 +1,12 @@
 #ifndef TST_LOCKTEST_H
 #define TST_LOCKTEST_H
 
+#include "../src/defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QObject>
 #include <QtTest>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+
 #include <QPersistence.h>
 #include "childobject.h"
 #include "parentobject.h"

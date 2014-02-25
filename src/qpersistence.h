@@ -1,8 +1,11 @@
 #ifndef QPERSISTENCE_H
 #define QPERSISTENCE_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QDateTime>
 #include <QtSql/QSqlDatabase>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "dataaccessobject.h"
 

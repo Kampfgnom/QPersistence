@@ -1,9 +1,12 @@
-#ifndef RELATION_HASMANY_H
-#define RELATION_HASMANY_H
+#ifndef QPERSISTENCE_RELATION_HASMANY_H
+#define QPERSISTENCE_RELATION_HASMANY_H
 
-#include <QExplicitlySharedDataPointer>
-#include <QSharedPointer>
-#include <QVariant>
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QtCore/QExplicitlySharedDataPointer>
+#include <QtCore/QSharedPointer>
+#include <QtCore/QVariant>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "qpersistence.h"
 
@@ -39,4 +42,4 @@ public:
     QpHasMany &operator=(const QList<QSharedPointer<T> > objects) { QpHasManyBase::setObjects(Qp::castList<QObject>(objects)); return *this; }
 };
 
-#endif // RELATION_HASMANY_H
+#endif // QPERSISTENCE_RELATION_HASMANY_H

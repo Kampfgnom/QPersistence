@@ -1,18 +1,21 @@
 #include "private.h"
 
 #include "databaseschema.h"
-#include "metaproperty.h"
-#include "sqldataaccessobjecthelper.h"
-#include "qpersistence.h"
-
 #include "error.h"
+#include "metaproperty.h"
+#include "qpersistence.h"
+#include "sqldataaccessobjecthelper.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QDateTime>
 #include <QSharedPointer>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 namespace Qp {
 
 namespace Private {
+
+QP_DEFINE_STATIC_LOCAL(QObject, GlobalGuard)
 
 int primaryKey(QObject *object)
 {
@@ -42,7 +45,7 @@ double updateTimeInObject(QObject *object)
 }
 
 typedef QHash<const QObject *, QWeakPointer<QObject>> WeakPointerHash;
-Q_GLOBAL_STATIC(WeakPointerHash, WeakPointers)
+QP_DEFINE_STATIC_LOCAL(WeakPointerHash, WeakPointers)
 
 void enableSharedFromThis(QSharedPointer<QObject> object)
 {

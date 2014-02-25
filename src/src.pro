@@ -25,7 +25,6 @@ HEADERS += \
     private.h \
     qpersistence.h \
     relationresolver.h \
-    relations.h \
     sortfilterproxyobjectmodel.h \
     sqlcondition.h \
     sqldataaccessobjecthelper.h \
@@ -35,7 +34,8 @@ HEADERS += \
     relation_hasone.h \
     relation_belongstoone.h \
     relation_hasmany.h \
-    relation_belongstomany.h
+    relation_belongstomany.h \
+    defines.h
 
 SOURCES += \
         cache.cpp \
@@ -50,7 +50,6 @@ SOURCES += \
     qpersistence.cpp \
     qpersistence_impl.cpp \
     relationresolver.cpp \
-    relations.cpp \
     sortfilterproxyobjectmodel.cpp \
     sqlcondition.cpp \
     sqldataaccessobjecthelper.cpp \

@@ -1,6 +1,8 @@
 #ifndef QPERSISTENCE_CONVERSION_H
 #define QPERSISTENCE_CONVERSION_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QHash>
 #include <QtCore/QRegularExpression>
 #include <QtCore/QRegularExpressionMatch>
@@ -8,6 +10,7 @@
 #include <QtCore/QStringList>
 #include <QtCore/QSetIterator>
 #include <QtCore/QVariant>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "dataaccessobject.h"
 
@@ -52,13 +55,13 @@ class ConverterBase : public QObject
 public:
     ConverterBase(QObject *parent) : QObject(parent) {}
     virtual ~ConverterBase() {}
-    virtual QList<QSharedPointer<QObject> > convertList(const QVariant &variant) const { Q_UNUSED(variant) return QList<QSharedPointer<QObject> >(); }
-    virtual QSharedPointer<QObject> convertObject(const QVariant &variant) const { Q_UNUSED(variant) return QSharedPointer<QObject>(); }
-    virtual QVariant convertVariant(QSharedPointer<QObject> object) const { Q_UNUSED(object) return QVariant(); }
-    virtual QVariant convertVariantList(QList<QSharedPointer<QObject> > objects) const { Q_UNUSED(objects) return QVariant(); }
-    virtual QString className() const { return QString(); }
-    virtual QString convertToSqlStorableValue(const QVariant &variant) const { Q_UNUSED(variant) return QString(); }
-    virtual QVariant convertFromSqlStorableValue(const QString &value) const { Q_UNUSED(value) return QVariant(); }
+    virtual QList<QSharedPointer<QObject> > convertList(const QVariant &variant) const;
+    virtual QSharedPointer<QObject> convertObject(const QVariant &variant) const;
+    virtual QVariant convertVariant(QSharedPointer<QObject> object) const;
+    virtual QVariant convertVariantList(QList<QSharedPointer<QObject> > objects) const;
+    virtual QString className() const;
+    virtual QString convertToSqlStorableValue(const QVariant &variant) const;
+    virtual QVariant convertFromSqlStorableValue(const QString &value) const;
 };
 
 template<class O>
@@ -70,7 +73,7 @@ public:
     {
         QList<QSharedPointer<O> > list = variant.value<QList<QSharedPointer<O> > >();
         QList<QSharedPointer<QObject> > result;
-        Q_FOREACH(QSharedPointer<O> object, list) result.append(object);
+        foreach(QSharedPointer<O> object, list) result.append(object);
         return result;
     }
 
@@ -87,7 +90,7 @@ public:
     QVariant convertVariantList(QList<QSharedPointer<QObject> > objects) const
     {
         QList<QSharedPointer<O>  > result;
-        Q_FOREACH(QSharedPointer<QObject> object, objects) result.append(qSharedPointerCast<O>(object));
+        foreach(QSharedPointer<QObject> object, objects) result.append(qSharedPointerCast<O>(object));
         return QVariant::fromValue<QList<QSharedPointer<O>  > >(result);
     }
 

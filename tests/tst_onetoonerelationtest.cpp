@@ -9,10 +9,10 @@ void OneToOneRelationTest::initTestCase()
 {
     RelationTestBase::initDatabase();
 
-    QpMetaObject metaObject = QpMetaObject::forClassName(ParentObject::staticMetaObject.className());
+    QpMetaObject metaObject = QpMetaObject::forClassName(TestNameSpace::ParentObject::staticMetaObject.className());
     m_parentToChildRelation = metaObject.metaProperty("childObjectOneToOne");
 
-    metaObject = QpMetaObject::forClassName(ChildObject::staticMetaObject.className());
+    metaObject = QpMetaObject::forClassName(TestNameSpace::ChildObject::staticMetaObject.className());
     m_childToParentRelation = metaObject.metaProperty("parentObjectOneToOne");
 }
 
@@ -22,9 +22,9 @@ void OneToOneRelationTest::cleanupTestCase()
 
 void OneToOneRelationTest::testOneToOneRelation()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     parent->setObjectName("P1");
-    QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
     child->setObjectName("C1");
 
     parent->setHasOne(child);
@@ -33,24 +33,24 @@ void OneToOneRelationTest::testOneToOneRelation()
     QCOMPARE(child->belongsToOne(), parent);
 
     // Add child to another parent
-    QSharedPointer<ParentObject> parent2 = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent2 = Qp::create<TestNameSpace::ParentObject>();
     parent2->setObjectName("P2");
     parent2->setHasOne(child);
-    QCOMPARE(parent->hasOne(), QSharedPointer<ChildObject>());
+    QCOMPARE(parent->hasOne(), QSharedPointer<TestNameSpace::ChildObject>());
     QCOMPARE(parent2->hasOne(), child);
     QCOMPARE(child->belongsToOne(), parent2);
 
     // Add another child to the parent
-    QSharedPointer<ChildObject> child2 = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child2 = Qp::create<TestNameSpace::ChildObject>();
     child2->setObjectName("C2");
     parent2->setHasOne(child2);
-    QCOMPARE(parent->hasOne(), QSharedPointer<ChildObject>());
+    QCOMPARE(parent->hasOne(), QSharedPointer<TestNameSpace::ChildObject>());
     QCOMPARE(parent2->hasOne(), child2);
-    QCOMPARE(child->belongsToOne(), QSharedPointer<ParentObject>());
+    QCOMPARE(child->belongsToOne(), QSharedPointer<TestNameSpace::ParentObject>());
     QCOMPARE(child2->belongsToOne(), parent2);
 }
 
-QVariant OneToOneRelationTest::childFK(QSharedPointer<ParentObject> parent)
+QVariant OneToOneRelationTest::childFK(QSharedPointer<TestNameSpace::ParentObject> parent)
 {
     QpSqlQuery select(Qp::database());
     select.setTable(m_childToParentRelation.tableName());
@@ -71,7 +71,7 @@ QVariant OneToOneRelationTest::childFK(QSharedPointer<ParentObject> parent)
     return select.value(0);
 }
 
-QVariant OneToOneRelationTest::parentFK(QSharedPointer<ChildObject> child)
+QVariant OneToOneRelationTest::parentFK(QSharedPointer<TestNameSpace::ChildObject> child)
 {
     QpSqlQuery select(Qp::database());
     select.setTable(m_childToParentRelation.tableName());
@@ -94,8 +94,8 @@ QVariant OneToOneRelationTest::parentFK(QSharedPointer<ChildObject> child)
 
 void OneToOneRelationTest::testInitialDatabaseFKEmpty()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
-    QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
 
     QCOMPARE(childFK(parent), QVariant());
     QCOMPARE(parentFK(child), QVariant(QVariant().toInt()));
@@ -103,8 +103,8 @@ void OneToOneRelationTest::testInitialDatabaseFKEmpty()
 
 void OneToOneRelationTest::testDatabaseFKInsertFromParent()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
-    QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
 
     parent->setChildObjectOneToOne(child);
     Qp::update(parent);
@@ -115,8 +115,8 @@ void OneToOneRelationTest::testDatabaseFKInsertFromParent()
 
 void OneToOneRelationTest::testDatabaseFKInsertFromChild()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
-    QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
 
     parent->setChildObjectOneToOne(child);
     Qp::update(child);
@@ -127,13 +127,13 @@ void OneToOneRelationTest::testDatabaseFKInsertFromChild()
 
 void OneToOneRelationTest::testDatabaseFKChangeFromParent()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
-    QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
 
     parent->setChildObjectOneToOne(child);
     Qp::update(parent);
 
-    QSharedPointer<ChildObject> newChild = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ChildObject> newChild = Qp::create<TestNameSpace::ChildObject>();
     parent->setChildObjectOneToOne(newChild);
     Qp::update(parent);
 
@@ -144,13 +144,13 @@ void OneToOneRelationTest::testDatabaseFKChangeFromParent()
 
 void OneToOneRelationTest::testDatabaseFKChangeFromChild()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
-    QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
 
     parent->setChildObjectOneToOne(child);
     Qp::update(child);
 
-    QSharedPointer<ChildObject> newChild = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ChildObject> newChild = Qp::create<TestNameSpace::ChildObject>();
     parent->setChildObjectOneToOne(newChild);
     Qp::update(newChild);
 
@@ -161,13 +161,13 @@ void OneToOneRelationTest::testDatabaseFKChangeFromChild()
 
 void OneToOneRelationTest::testDatabaseFKClearFromParent()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
-    QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
 
     parent->setChildObjectOneToOne(child);
     Qp::update(parent);
 
-    parent->setChildObjectOneToOne(QSharedPointer<ChildObject>());
+    parent->setChildObjectOneToOne(QSharedPointer<TestNameSpace::ChildObject>());
     Qp::update(parent);
 
     QCOMPARE(childFK(parent), QVariant());
@@ -176,13 +176,13 @@ void OneToOneRelationTest::testDatabaseFKClearFromParent()
 
 void OneToOneRelationTest::testDatabaseFKClearFromChild()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
-    QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
 
     parent->setChildObjectOneToOne(child);
     Qp::update(child);
 
-    parent->setChildObjectOneToOne(QSharedPointer<ChildObject>());
+    parent->setChildObjectOneToOne(QSharedPointer<TestNameSpace::ChildObject>());
     Qp::update(child);
 
     QCOMPARE(childFK(parent), QVariant());
@@ -191,10 +191,10 @@ void OneToOneRelationTest::testDatabaseFKClearFromChild()
 
 void OneToOneRelationTest::testDatabaseUpdateTimes()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
-    QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
-    QSharedPointer<ChildObject> child2 = Qp::create<ChildObject>();
-    QSharedPointer<ChildObject> child3 = Qp::create<ChildObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child2 = Qp::create<TestNameSpace::ChildObject>();
+    QSharedPointer<TestNameSpace::ChildObject> child3 = Qp::create<TestNameSpace::ChildObject>();
 
     parent->setChildObjectOneToOne(child);
     Qp::update(child);

@@ -1,20 +1,21 @@
 #include "cache.h"
-#include <QSharedData>
 
 #include "private.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QSharedData>
 #include <QLinkedList>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpCacheData : public QSharedData {
-public:
+public:                      
+    int strongCacheSize;
     QHash<int, QWeakPointer<QObject> > weakCacheById;
     mutable QLinkedList<QSharedPointer<QObject> > strongCache;
 
     // is always in sync with strong cache. will be used to keep track of indizes,
     // because indexOf(QObject*) is much faster than indexOf(QSharedPointer)
     mutable QLinkedList<QObject *> pointerCache;
-
-    int strongCacheSize;
 
     void adjustQueue(QSharedPointer<QObject> accessedObject) const;
 };

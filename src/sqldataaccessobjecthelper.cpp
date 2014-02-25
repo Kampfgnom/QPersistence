@@ -10,6 +10,7 @@
 #include "sqlcondition.h"
 #include "sqlquery.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QDebug>
 #include <QMetaProperty>
 #include <QSqlDatabase>
@@ -18,6 +19,7 @@
 #include <QSqlRecord>
 #include <QStringList>
 #include <QVariant>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlDataAccessObjectHelperPrivate : public QSharedData
 {
@@ -32,7 +34,8 @@ public:
     static QHash<QString, QpSqlDataAccessObjectHelper *> helpersForConnection;
 };
 
-QHash<QString, QpSqlDataAccessObjectHelper *> QpSqlDataAccessObjectHelperPrivate::helpersForConnection;
+typedef QHash<QString, QpSqlDataAccessObjectHelper *> HashStringToDaoHelper;
+QP_DEFINE_STATIC_LOCAL(HashStringToDaoHelper, HelpersForConnection)
 
 QpSqlDataAccessObjectHelper::QpSqlDataAccessObjectHelper(const QSqlDatabase &database, QObject *parent) :
     QObject(parent),
@@ -47,15 +50,13 @@ QpSqlDataAccessObjectHelper::~QpSqlDataAccessObjectHelper()
 
 QpSqlDataAccessObjectHelper *QpSqlDataAccessObjectHelper::forDatabase(const QSqlDatabase &database)
 {
-    static QObject guard;
+    QpSqlDataAccessObjectHelper* asd = new QpSqlDataAccessObjectHelper(database, Qp::Private::GlobalGuard());
 
-    QpSqlDataAccessObjectHelper* asd = new QpSqlDataAccessObjectHelper(database, &guard);
-
-    if (!QpSqlDataAccessObjectHelperPrivate::helpersForConnection.contains(database.connectionName()))
-        QpSqlDataAccessObjectHelperPrivate::helpersForConnection.insert(database.connectionName(),
+    if (!HelpersForConnection()->contains(database.connectionName()))
+        HelpersForConnection()->insert(database.connectionName(),
                                                                         asd);
 
-    return QpSqlDataAccessObjectHelperPrivate::helpersForConnection.value(database.connectionName());
+    return HelpersForConnection()->value(database.connectionName());
 }
 
 int QpSqlDataAccessObjectHelper::count(const QpMetaObject &metaObject) const
@@ -716,20 +717,20 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
     QList<int> keys;
     keys.reserve(query.size());
     while (query.next()) {
-        int key = query.value(0).toInt(&ok);
+        int currentKey = query.value(0).toInt(&ok);
         if (ok)
-            keys.append(key);
+            keys.append(currentKey);
     }
 
     return keys;
 }
 
-void QpSqlDataAccessObjectHelper::setLastError(const QpError &error) const
+[[ noreturn ]] void QpSqlDataAccessObjectHelper::setLastError(const QpError &error) const
 {
-    qWarning() << qPrintable(error.text());
-    qFatal("Aborting due to SQL errors!");
     data->lastError = error;
     Qp::Private::setLastError(error);
+    qWarning() << qPrintable(error.text());
+    qFatal("Aborting due to SQL errors!");
 }
 
 void QpSqlDataAccessObjectHelper::setLastError(const QSqlQuery &query) const

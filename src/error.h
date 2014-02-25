@@ -1,9 +1,12 @@
 #ifndef QPERSISTENCE_ERROR_H
 #define QPERSISTENCE_ERROR_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QSharedDataPointer>
 #include <QtCore/QString>
 #include <QtCore/QVariantMap>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpError;
 
@@ -16,7 +19,7 @@ void setLastError(const QpError &);
 class QSqlError;
 class QSqlQuery;
 
-class QpErrorPrivate;
+class QpErrorData;
 class QpError
 {
 public:
@@ -48,7 +51,7 @@ private:
     friend void Qp::Private::setLastError(const QpError &);
     static void setLastError(const QpError error);
 
-    QSharedDataPointer<QpErrorPrivate> data;
+    QSharedDataPointer<QpErrorData> data;
 };
 
 QDebug operator<<(QDebug dbg, const QpError &error);

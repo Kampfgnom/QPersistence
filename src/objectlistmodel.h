@@ -1,7 +1,10 @@
 #ifndef QPERSISTENCE_OBJECTLISTMODEL_H
 #define QPERSISTENCE_OBJECTLISTMODEL_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QAbstractListModel>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "dataaccessobject.h"
 #include "private.h"
@@ -25,8 +28,8 @@ protected slots:
     virtual void objectRemoved(QSharedPointer<QObject>) = 0;
 
 protected:
-    bool m_objectsFromDao;
     int m_fetchCount;
+    bool m_objectsFromDao;
 };
 
 template<class T>

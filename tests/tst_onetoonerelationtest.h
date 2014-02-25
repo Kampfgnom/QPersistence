@@ -32,8 +32,8 @@ private:
     QpMetaProperty m_parentToChildRelation;
     QpMetaProperty m_childToParentRelation;
 
-    QVariant childFK(QSharedPointer<ParentObject> parent);
-    QVariant parentFK(QSharedPointer<ChildObject> child);
+    QVariant childFK(QSharedPointer<TestNameSpace::ParentObject> parent);
+    QVariant parentFK(QSharedPointer<TestNameSpace::ChildObject> child);
 };
 
 #endif // ONETOONERELATIONTEST_H

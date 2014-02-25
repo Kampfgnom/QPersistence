@@ -28,18 +28,18 @@ private Q_SLOTS:
 
 private:
     struct Tree {
-        QList<QSharedPointer<ParentObject>> parents;
-        QList<QSharedPointer<ChildObject>> children;
+        QList<QSharedPointer<TestNameSpace::ParentObject>> parents;
+        QList<QSharedPointer<TestNameSpace::ChildObject>> children;
     };
 
     QpMetaProperty m_parentToChildRelation;
     QpMetaProperty m_childToParentRelation;
 
-    QVariantList childFKs(QSharedPointer<ParentObject> parent);
-    QVariantList parentFKs(QSharedPointer<ChildObject> child);
+    QVariantList childFKs(QSharedPointer<TestNameSpace::ParentObject> parent);
+    QVariantList parentFKs(QSharedPointer<TestNameSpace::ChildObject> child);
 
-    void testParentFks(QSharedPointer<ChildObject> child);
-    void testChildFks(QSharedPointer<ParentObject> parent);
+    void testParentFks(QSharedPointer<TestNameSpace::ChildObject> child);
+    void testChildFks(QSharedPointer<TestNameSpace::ParentObject> parent);
 
     void testTree(Tree tree);
     void testUpdateTimes(QDateTime previousTime, QDateTime newTime, Tree changed, Tree unchanged);

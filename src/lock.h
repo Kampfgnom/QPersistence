@@ -1,10 +1,13 @@
 #ifndef LOCK_H
 #define LOCK_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QExplicitlySharedDataPointer>
 #include <QtCore/QSharedPointer>
 #include <QtCore/QHash>
 #include <QtCore/QVariant>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 namespace Qp {
 void enableLocks();

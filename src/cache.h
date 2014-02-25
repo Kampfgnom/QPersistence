@@ -1,8 +1,11 @@
 #ifndef QPERSISTENCE_CACHE_H
 #define QPERSISTENCE_CACHE_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QSharedPointer>
 #include <QtCore/QSharedDataPointer>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpCacheData;
 class QpCache

@@ -1,13 +1,15 @@
-#ifndef RELATION_BELONGSTOONE_H
-#define RELATION_BELONGSTOONE_H
+#ifndef QPERSISTENCE_RELATION_BELONGSTOONE_H
+#define QPERSISTENCE_RELATION_BELONGSTOONE_H
 
-#include <QExplicitlySharedDataPointer>
-#include <QSharedPointer>
-#include <QVariant>
-#include <QMetaMethod>
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QtCore/QExplicitlySharedDataPointer>
+#include <QtCore/QMetaMethod>
+#include <QtCore/QSharedPointer>
+#include <QtCore/QVariant>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpBelongsToOneData;
-
 class QpBelongsToOneBase
 {
 public:
@@ -32,4 +34,4 @@ public:
     QpBelongsToOne &operator=(const QSharedPointer<T> object) { setObject(qSharedPointerCast<QObject>(object)); return *this; }
 };
 
-#endif // RELATION_BELONGSTOONE_H
+#endif // QPERSISTENCE_RELATION_BELONGSTOONE_H

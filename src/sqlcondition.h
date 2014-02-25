@@ -1,8 +1,11 @@
 #ifndef QPERSISTENCE_SQLCONDITION_H
 #define QPERSISTENCE_SQLCONDITION_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QSharedDataPointer>
 #include <QtCore/QVariantList>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QVariant;
 

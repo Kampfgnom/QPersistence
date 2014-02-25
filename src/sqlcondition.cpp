@@ -1,23 +1,25 @@
 #include "sqlcondition.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QList>
 #include <QSharedData>
 #include <QStringList>
 #include <QVariant>
 #include <QVariantList>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlConditionData : public QSharedData {
 public:
     QpSqlConditionData() : QSharedData(),
         bindValues(false)
     {}
+    bool bindValues;
     QString rawString;
     QString key;
     QVariant value;
     QpSqlCondition::BooleanOperator booleanOperator;
     QpSqlCondition::ComparisonOperator comparisonOperator;
     QList<QpSqlCondition> conditions;
-    bool bindValues;
 };
 
 QpSqlCondition::QpSqlCondition() :
@@ -170,6 +172,9 @@ QString QpSqlCondition::booleanOperator() const
     case Not:
         return "NOT ";
     }
+
+    Q_ASSERT(false);
+    return QString();
 }
 
 QString QpSqlCondition::comparisonOperator() const
@@ -188,6 +193,9 @@ QString QpSqlCondition::comparisonOperator() const
     case NotEqualTo:
         return " <> ";
     }
+
+    Q_ASSERT(false);
+    return QString();
 }
 
 

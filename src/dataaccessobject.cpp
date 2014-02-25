@@ -10,8 +10,10 @@
 #include "sqldataaccessobjecthelper.h"
 #include "sqlquery.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
 #include <QSqlRecord>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpDaoBaseData : public QSharedData
 {
@@ -22,26 +24,25 @@ public:
     {
     }
 
+    mutable int count;
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper;
     QpMetaObject metaObject;
     mutable QpError lastError;
     mutable QpCache cache;
-    mutable int count;
-
-    static QHash<QString, QpDaoBase *> daoPerMetaObjectName;
 };
 
-QHash<QString, QpDaoBase *> QpDaoBaseData::daoPerMetaObjectName;
+typedef QHash<QString, QpDaoBase *> HashStringToDao;
+QP_DEFINE_STATIC_LOCAL(HashStringToDao, DaoPerMetaObjectName)
 
 QpDaoBase *QpDaoBase::forClass(const QMetaObject &metaObject)
 {
-    Q_ASSERT(QpDaoBaseData::daoPerMetaObjectName.contains(metaObject.className()));
-    return QpDaoBaseData::daoPerMetaObjectName.value(metaObject.className());
+    Q_ASSERT(DaoPerMetaObjectName()->contains(metaObject.className()));
+    return DaoPerMetaObjectName()->value(metaObject.className());
 }
 
 QList<QpDaoBase *> QpDaoBase::dataAccessObjects()
 {
-    return QpDaoBaseData::daoPerMetaObjectName.values();
+    return DaoPerMetaObjectName()->values();
 }
 
 QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
@@ -51,7 +52,7 @@ QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
 {
     data->sqlDataAccessObjectHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
     data->metaObject = QpMetaObject::registerMetaObject(metaObject);
-    QpDaoBaseData::daoPerMetaObjectName.insert(metaObject.className(), this);
+    DaoPerMetaObjectName()->insert(metaObject.className(), this);
 }
 
 QpDaoBase::~QpDaoBase()
@@ -190,7 +191,10 @@ Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
     if(databaseTime > objectTime)
         return Qp::UpdateConflict;
 
-    Q_ASSERT(databaseTime == objectTime);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wused-but-marked-unused"
+    Q_ASSERT(qFuzzyCompare(databaseTime, objectTime));
+#pragma clang diagnostic pop
 
     if (!data->sqlDataAccessObjectHelper->updateObject(data->metaObject, object.data())) {
         setLastError(data->sqlDataAccessObjectHelper->lastError());
@@ -215,13 +219,19 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
     return true;
 }
 
+Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2) Q_REQUIRED_RESULT;
+Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2)
+{
+    return (qAbs(p1 - p2) * 10000000000000000. <= qMin(qAbs(p1), qAbs(p2)));
+}
+
 Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object)
 {
     QObject *obj = object.data();
     double localTime = Qp::Private::updateTimeInObject(obj);
     double remoteTime = Qp::Private::updateTimeInDatabase(obj);
 
-    if(localTime == remoteTime)
+    if(qpFuzzyCompare(localTime, remoteTime))
         return Qp::Unchanged;
 
     int id = Qp::primaryKey(object);
@@ -257,7 +267,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(const QDateTime &time)
 uint qHash(const QVariant &var)
 {
     if (!var.isValid() || var.isNull())
-        return -1;
+        return 0;
 
     switch (var.type())
     {
@@ -288,19 +298,50 @@ uint qHash(const QVariant &var)
     case QVariant::Locale:
     case QVariant::RegExp:
         return qHash( var.toString() );
-    case QVariant::Map:
-    case QVariant::List:
     case QVariant::BitArray:
+    case QVariant::Bitmap:
+    case QVariant::Brush:
+    case QVariant::Color:
+    case QVariant::Cursor:
+    case QVariant::EasingCurve:
+    case QVariant::Font:
+    case QVariant::Hash:
+    case QVariant::Icon:
+    case QVariant::Image:
+    case QVariant::Invalid:
+    case QVariant::KeySequence:
+    case QVariant::LastCoreType:
+    case QVariant::LastType:
+    case QVariant::Line:
+    case QVariant::LineF:
+    case QVariant::List:
+    case QVariant::Matrix4x4:
+    case QVariant::Matrix:
+    case QVariant::ModelIndex:
+    case QVariant::Palette:
+    case QVariant::Pen:
+    case QVariant::Pixmap:
+    case QVariant::Point:
+    case QVariant::PointF:
+    case QVariant::Polygon:
+    case QVariant::PolygonF:
+    case QVariant::Quaternion:
+    case QVariant::Rect:
+    case QVariant::RectF:
+    case QVariant::Region:
+    case QVariant::RegularExpression:
     case QVariant::Size:
     case QVariant::SizeF:
-    case QVariant::Rect:
-    case QVariant::LineF:
-    case QVariant::Line:
-    case QVariant::RectF:
-    case QVariant::Point:
+    case QVariant::SizePolicy:
+    case QVariant::TextFormat:
+    case QVariant::TextLength:
+    case QVariant::Transform:
     case QVariant::UserType:
-    case QVariant::Invalid:
-    default:
+    case QVariant::Uuid:
+    case QVariant::Vector2D:
+    case QVariant::Vector3D:
+    case QVariant::Vector4D:
+    case QVariant::Map:
         Q_ASSERT(false);
     }
 

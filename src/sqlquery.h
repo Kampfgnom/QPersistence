@@ -1,9 +1,12 @@
 #ifndef QPERSISTENCE_SQLQUERY_H
 #define QPERSISTENCE_SQLQUERY_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QExplicitlySharedDataPointer>
 #include <QtCore/QVariant>
 #include <QtSql/QSqlQuery>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlCondition;
 

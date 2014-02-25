@@ -1,11 +1,14 @@
 #include "tst_creationandupdatetimestest.h"
 
-#include <QPersistence.h>
-#include <QSqlError>
-#include <QSqlQuery>
-
 #include "parentobject.h"
 #include "childobject.h"
+
+#include <QPersistence.h>
+
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QSqlError>
+#include <QSqlQuery>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 CreationAndUpdateTimesTest::CreationAndUpdateTimesTest(QObject *parent) :
     QObject(parent)
@@ -26,8 +29,8 @@ void CreationAndUpdateTimesTest::initTestCase()
 
         Qp::setDatabase(db);
         Qp::setSqlDebugEnabled(false);
-        Qp::registerClass<ParentObject>();
-        Qp::registerClass<ChildObject>();
+        Qp::registerClass<TestNameSpace::ParentObject>();
+        Qp::registerClass<TestNameSpace::ChildObject>();
         Qp::createCleanSchema();
     }
 
@@ -40,7 +43,7 @@ void CreationAndUpdateTimesTest::cleanupTestCase()
 
 void CreationAndUpdateTimesTest::testCreationTime()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     VERIFY_QP_ERROR();
 
     QSqlQuery query("SELECT NOW()");
@@ -57,7 +60,7 @@ void CreationAndUpdateTimesTest::testCreationTime()
 
 void CreationAndUpdateTimesTest::testUpdateTime()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     VERIFY_QP_ERROR();
 
     QDateTime creationTime = Qp::creationTimeInDatabase(parent);

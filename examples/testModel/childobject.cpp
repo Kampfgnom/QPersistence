@@ -6,6 +6,8 @@
 
 #include <QDebug>
 
+namespace TestNameSpace {
+
 ChildObject::ChildObject(QObject *parent) :
     QObject(parent),
     m_someInt(0),
@@ -110,4 +112,6 @@ void ChildObject::removeParentObjectsManyToMany(QSharedPointer<ParentObject> arg
 void ChildObject::setParentObjectOneToMany(const QSharedPointer<ParentObject> &parentObject)
 {
     m_parentObjectOneToMany = parentObject;
+}
+
 }

@@ -1,9 +1,13 @@
 #include "relation_belongstomany.h"
-#include <QSharedData>
 
 #include "metaproperty.h"
 #include "relationresolver.h"
 #include "qpersistence.h"
+
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QSharedData>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+
 
 class QpBelongsToManyData : public QSharedData {
 public:

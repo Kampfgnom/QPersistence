@@ -1,9 +1,12 @@
 #ifndef QPERSISTENCE_SQLDATAACCESSOBJECTHELPER_H
 #define QPERSISTENCE_SQLDATAACCESSOBJECTHELPER_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QObject>
 #include <QtCore/QSharedDataPointer>
 #include <QtSql/QSqlDatabase>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QSqlQuery;
 class QpError;
@@ -43,8 +46,8 @@ private:
 
     explicit QpSqlDataAccessObjectHelper(const QSqlDatabase &database, QObject *parent = 0);
 
-    void setLastError(const QpError &error) const;
-    void setLastError(const QSqlQuery &query) const;
+    [[ noreturn ]] void setLastError(const QpError &error) const;
+    [[ noreturn ]] void setLastError(const QSqlQuery &query) const;
 
     void fillValuesIntoQuery(const QpMetaObject &metaObject,
                              const QObject *object,

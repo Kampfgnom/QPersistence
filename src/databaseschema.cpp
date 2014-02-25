@@ -8,6 +8,7 @@
 #include "sqlbackend.h"
 #include "sqlquery.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QDebug>
 #include <QFile>
 #include <QMetaProperty>
@@ -17,13 +18,14 @@
 #include <QSqlRecord>
 #include <QStringList>
 #include <QSqlDriver>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 const char* QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
 const char* QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
 const char* QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME("_Qp_updateTime");
-const QString QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
-const QString QpDatabaseSchema::TABLENAME_LOCKS("_Qp_locks");
-const QString QpDatabaseSchema::COLUMN_LOCK("_Qp_lock");
+const char* QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
+const char* QpDatabaseSchema::TABLENAME_LOCKS("_Qp_locks");
+const char* QpDatabaseSchema::COLUMN_LOCK("_Qp_lock");
 
 class QpDatabaseSchemaPrivate : public QSharedData
 {
@@ -93,7 +95,7 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
     data->query.setTable(meta.tableName());
 
     foreach (QpMetaProperty metaProperty, meta.metaProperties()) {
-        Q_ASSERT(metaProperty.isValid());
+//        Q_ASSERT(metaProperty.isValid());
 
         if (!metaProperty.isStored())
             continue;
@@ -153,7 +155,7 @@ void QpDatabaseSchema::createManyToManyRelationTables(const QMetaObject &metaObj
     QString columnType = variantTypeToSqlType(QVariant::Int);
 
     foreach (QpMetaProperty property, meta.relationProperties()) {
-        Q_ASSERT(property.isValid());
+//        Q_ASSERT(property.isValid());
         if (property.cardinality() != QpMetaProperty::ManyToManyCardinality)
             continue;
 
@@ -554,7 +556,7 @@ QString QpDatabaseSchema::metaPropertyToColumnDefinition(const QpMetaProperty &m
             // The relation need a whole table
             break;
 
-        default:
+        case QpMetaProperty::UnknownCardinality:
             // This is BAD
             Q_ASSERT_X(false, Q_FUNC_INFO,
                        QString("The relation %1 has no cardinality. This is an internal error and should never happen.")
