@@ -191,10 +191,10 @@ Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
     if(databaseTime > objectTime)
         return Qp::UpdateConflict;
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wused-but-marked-unused"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wused-but-marked-unused"
     Q_ASSERT(qFuzzyCompare(databaseTime, objectTime));
-#pragma clang diagnostic pop
+#pragma GCC diagnostic pop
 
     if (!data->sqlDataAccessObjectHelper->updateObject(data->metaObject, object.data())) {
         setLastError(data->sqlDataAccessObjectHelper->lastError());
