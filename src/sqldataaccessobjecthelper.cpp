@@ -732,7 +732,7 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
     return keys;
 }
 
-[[ noreturn ]] void QpSqlDataAccessObjectHelper::setLastError(const QpError &error) const
+void QpSqlDataAccessObjectHelper::setLastError(const QpError &error) const
 {
     data->lastError = error;
     Qp::Private::setLastError(error);

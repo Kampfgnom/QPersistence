@@ -22,7 +22,7 @@ void EnumerationTest::initTestCase()
         QVERIFY2(db.open(), db.lastError().text().toUtf8());
 
         Qp::setDatabase(db);
-        Qp::setSqlDebugEnabled(true);
+        Qp::setSqlDebugEnabled(false);
         Qp::registerClass<TestNameSpace::ParentObject>();
         Qp::registerClass<TestNameSpace::ChildObject>();
         Qp::createCleanSchema();

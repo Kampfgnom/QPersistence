@@ -46,8 +46,8 @@ private:
 
     explicit QpSqlDataAccessObjectHelper(const QSqlDatabase &database, QObject *parent = 0);
 
-    [[ noreturn ]] void setLastError(const QpError &error) const;
-    [[ noreturn ]] void setLastError(const QSqlQuery &query) const;
+    void setLastError(const QpError &error) const;
+    void setLastError(const QSqlQuery &query) const;
 
     void fillValuesIntoQuery(const QpMetaObject &metaObject,
                              const QObject *object,
