@@ -34,11 +34,11 @@ void EnumerationTest::testInitialEnumValue()
     QSharedPointer<TestNameSpace::ParentObject> p = Qp::create<TestNameSpace::ParentObject>();
 
     QpSqlQuery query(Qp::database());
-    query.prepare(QString("SELECT testenum FROM parentobject WHERE _qp_id = %1")
+    query.prepare(QString("SELECT testenum+0 FROM parentobject WHERE _qp_id = %1")
                   .arg(Qp::primaryKey(p)));
     QVERIFY(query.exec());
     QVERIFY(query.first());
-    QCOMPARE(query.value(0).toString(), QLatin1String("InitialValue"));
+    QCOMPARE(query.value(0).toInt(), static_cast<int>(TestNameSpace::ParentObject::InitialValue));
 }
 
 void EnumerationTest::testUpdateEnum()
@@ -48,11 +48,11 @@ void EnumerationTest::testUpdateEnum()
     Qp::update(p);
 
     QpSqlQuery query(Qp::database());
-    query.prepare(QString("SELECT testenum FROM parentobject WHERE _qp_id = %1")
+    query.prepare(QString("SELECT testenum+0 FROM parentobject WHERE _qp_id = %1")
                   .arg(Qp::primaryKey(p)));
     QVERIFY(query.exec());
     QVERIFY(query.first());
-    QCOMPARE(query.value(0).toString(), QLatin1String("Value2"));
+    QCOMPARE(query.value(0).toInt(), static_cast<int>(TestNameSpace::ParentObject::Value2));
 }
 
 void EnumerationTest::testExplicitValue()
@@ -62,29 +62,28 @@ void EnumerationTest::testExplicitValue()
     Qp::update(p);
 
     QpSqlQuery query(Qp::database());
-    query.prepare(QString("SELECT testenum FROM parentobject WHERE _qp_id = %1")
+    query.prepare(QString("SELECT testenum+0 FROM parentobject WHERE _qp_id = %1")
                   .arg(Qp::primaryKey(p)));
     QVERIFY(query.exec());
     QVERIFY(query.first());
-    QCOMPARE(query.value(0).toString(), QLatin1String("ExplicitValue"));
+
+    QMetaProperty property = p->metaObject()->property(p->metaObject()->indexOfProperty("testEnum"));
+    QCOMPARE(property.enumerator().value(query.value(0).toInt()), static_cast<int>(TestNameSpace::ParentObject::ExplicitValue));
 }
 
 void EnumerationTest::testReadEnum()
 {
     int id = 0;
-    void *pp = nullptr;
     {
         QSharedPointer<TestNameSpace::ParentObject> p = Qp::create<TestNameSpace::ParentObject>();
         p->setTestEnum(TestNameSpace::ParentObject::ValueAfterExplicitValue);
         Qp::update(p);
         id = Qp::primaryKey(p);
-        pp = p.data();
 
         Qp::dataAccessObject<TestNameSpace::ParentObject>()->cache().remove(id);
         p.clear();
     }
 
     QSharedPointer<TestNameSpace::ParentObject> p = Qp::read<TestNameSpace::ParentObject>(id);
-    QVERIFY(pp != p.data());
     QCOMPARE(p->testEnum(), TestNameSpace::ParentObject::ValueAfterExplicitValue);
 }

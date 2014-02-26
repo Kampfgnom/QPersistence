@@ -112,6 +112,7 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
 
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
+    selectFields(metaObject, query);
     query.setCount(1);
     query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
@@ -135,6 +136,7 @@ QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaO
 {
     QpSqlQuery query(data->database);
     query.setTable(metaObject.tableName());
+    selectFields(metaObject, query);
     query.setWhereCondition(condition);
     query.setCount(count);
     query.setSkip(skip);
@@ -209,15 +211,29 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
 {
     // Add simple properties
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
-        if(!property.metaProperty().isEnumType()) {
-            query.addField(property.columnName(), property.metaProperty().read(object));
-            continue;
-        }
+        QVariant value = property.metaProperty().read(object);
+        if(property.metaProperty().isEnumType() && !property.metaProperty().isFlagType())
+            value = property.metaProperty().enumerator().valueToKey(value.toInt());
 
-        // Handle enums
-        QVariant value = QpSqlBackend::forDatabase(data->database)->propertyToEnum(property.metaProperty().read(object), property.metaProperty());
+        if(property.metaProperty().isFlagType() && value == QVariant(0))
+            value = "NULL";
+
         query.addField(property.columnName(), value);
     }
+}
+
+void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, QpSqlQuery &query)
+{
+
+    foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
+        QString columnName = property.columnName();
+        if(data->database.driverName() == "QMYSQL" && property.metaProperty().isEnumType())
+            columnName += "+0";
+        query.addField(columnName);
+    }
+
+    query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
 }
 
 void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record, QObject *object)
@@ -231,8 +247,11 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query, c
 
         QVariant value = query.value(i);
 
-        if(property.isEnumType()) {
-            value = QpSqlBackend::forDatabase(data->database)->enumToProperty(value, property);
+        if(property.isFlagType()) {
+            value = value.toInt();
+        }
+        else if(property.isEnumType()) {
+            value = property.enumerator().value(value.toInt());
         }
         else {
             QMetaType::Type type = static_cast<QMetaType::Type>(property.userType());

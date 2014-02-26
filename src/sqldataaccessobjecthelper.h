@@ -53,6 +53,9 @@ private:
                              const QObject *object,
                              QpSqlQuery &query);
 
+    void selectFields(const QpMetaObject &metaObject,
+                      QpSqlQuery &query);
+
     bool adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object);
 
     QList<QpSqlQuery> queriesThatAdjustOneToManyRelation(const QpMetaProperty &relation, QObject *object);

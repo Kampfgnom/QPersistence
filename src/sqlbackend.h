@@ -21,8 +21,6 @@ public:
     virtual QString primaryKeyType() const = 0;
     virtual QString variantTypeToSqlType(QVariant::Type type) const = 0;
     virtual QString nowTimestamp() const = 0;
-    virtual QVariant propertyToEnum(const QVariant &propertyValue, const QMetaProperty &property) const = 0;
-    virtual QVariant enumToProperty(const QVariant &enumValue, const QMetaProperty &property) const = 0;
 };
 
 class QpSqliteBackend : public QpSqlBackend
@@ -32,8 +30,6 @@ public:
     QString primaryKeyType() const Q_DECL_OVERRIDE;
     QString variantTypeToSqlType(QVariant::Type type) const Q_DECL_OVERRIDE;
     QString nowTimestamp() const Q_DECL_OVERRIDE;
-    QVariant propertyToEnum(const QVariant &propertyValue, const QMetaProperty &property) const Q_DECL_OVERRIDE;
-    QVariant enumToProperty(const QVariant &enumValue, const QMetaProperty &property) const Q_DECL_OVERRIDE;
 };
 
 class QpMySqlBackend : public QpSqlBackend
@@ -43,8 +39,6 @@ public:
     QString primaryKeyType() const Q_DECL_OVERRIDE;
     QString variantTypeToSqlType(QVariant::Type type) const Q_DECL_OVERRIDE;
     QString nowTimestamp() const Q_DECL_OVERRIDE;
-    QVariant propertyToEnum(const QVariant &propertyValue, const QMetaProperty &property) const Q_DECL_OVERRIDE;
-    QVariant enumToProperty(const QVariant &enumValue, const QMetaProperty &property) const Q_DECL_OVERRIDE;
 };
 
 #endif // QPERSISTENCE_SQLBACKEND_H

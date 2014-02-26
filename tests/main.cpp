@@ -12,6 +12,9 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include "tst_synchronizetest.h"
 #include "tst_locktest.h"
 #include "tst_enumerationtest.h"
+#include "tst_flagstest.h"
+
+#include "parentobject.h"
 
 #define RUNTEST(TestClass) { \
     TestClass t; \
@@ -25,6 +28,7 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
 
     RUNTEST(LockTest);
+    RUNTEST(FlagsTest);
     RUNTEST(EnumerationTest);
     RUNTEST(CacheTest);
     RUNTEST(OneToOneRelationTest);

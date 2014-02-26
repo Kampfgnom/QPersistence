@@ -118,14 +118,24 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
         }
         else if(metaProperty.metaProperty().isEnumType()) {
             QString columnName = metaProperty.columnName();
-            QMetaEnum metaEnum = metaProperty.metaProperty().enumerator();
-            int count = metaEnum.keyCount();
-            QStringList enumValues;
-            for(int i = 0; i < count; ++i) {
-                enumValues << QString("'%1'").arg(metaEnum.key(i));
-            }
+            QString columnType = variantTypeToSqlType(QVariant::Int);
 
-            QString columnType = QString("ENUM(%1)").arg(enumValues.join(", "));
+            if(data->database.driverName() == QLatin1String("QMYSQL")) {
+                QMetaEnum metaEnum = metaProperty.metaProperty().enumerator();
+                int count = metaEnum.keyCount();
+                Q_ASSERT(metaEnum.value(0) == 0);
+
+                QStringList enumValues;
+                for(int i = 1; i < count; ++i) { // Start at 1 because first value corresponds to MySQL empty string
+                    enumValues << QString("'%1'").arg(metaEnum.key(i));
+                }
+
+                columnType = "ENUM(%1)";
+                if(metaProperty.metaProperty().isFlagType())
+                    columnType = "SET(%1)";
+
+                columnType = columnType.arg(enumValues.join(", "));
+            }
 
             data->query.addField(columnName, columnType);
         }
@@ -147,10 +157,10 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
     if(QpLock::isLocksEnabled()) {
         QString columnType = variantTypeToSqlType(QVariant::Int);
         data->query.addField(QpDatabaseSchema::COLUMN_LOCK, columnType);
-//        data->query.addForeignKey(QpDatabaseSchema::COLUMN_LOCK,
-//                                  QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-//                                  QpDatabaseSchema::TABLENAME_LOCKS,
-//                                  QpDatabaseSchema::ONDELETE_CASCADE);
+        //        data->query.addForeignKey(QpDatabaseSchema::COLUMN_LOCK,
+        //                                  QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+        //                                  QpDatabaseSchema::TABLENAME_LOCKS,
+        //                                  QpDatabaseSchema::ONDELETE_CASCADE);
     }
 
     data->query.prepareCreateTable();
@@ -168,7 +178,7 @@ void QpDatabaseSchema::createManyToManyRelationTables(const QMetaObject &metaObj
     QString columnType = variantTypeToSqlType(QVariant::Int);
 
     foreach (QpMetaProperty property, meta.relationProperties()) {
-//        Q_ASSERT(property.isValid());
+        //        Q_ASSERT(property.isValid());
         if (property.cardinality() != QpMetaProperty::ManyToManyCardinality)
             continue;
 

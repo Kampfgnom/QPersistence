@@ -16,7 +16,8 @@ ParentObject::ParentObject(QObject *parent) :
     m_hasOne(QpRelation(&ParentObject::hasOne)),
     m_hasMany(QpRelation(&ParentObject::hasMany)),
     m_hasManyMany(QpRelation(&ParentObject::hasManyMany)),
-    m_testEnum(InitialValue)
+    m_testEnum(InitialValue),
+    m_testOptions(InitialOption)
 {
 }
 
@@ -103,6 +104,16 @@ ParentObject::TestEnum ParentObject::testEnum() const
 void ParentObject::setTestEnum(ParentObject::TestEnum arg)
 {
     m_testEnum = arg;
+}
+
+ParentObject::TestOptions ParentObject::testOptions() const
+{
+    return m_testOptions;
+}
+
+void ParentObject::setTestOptions(TestOptions arg)
+{
+    m_testOptions = arg;
 }
 
 QSharedPointer<ChildObject> ParentObject::hasOne() const

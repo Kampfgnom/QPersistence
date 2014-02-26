@@ -15,9 +15,11 @@ class ParentObject : public QObject
 {
     Q_OBJECT
     Q_ENUMS(TestEnum)
+    Q_FLAGS(TestOptions)
 
     Q_PROPERTY(QString aString READ aString WRITE setAString)
     Q_PROPERTY(TestEnum testEnum READ testEnum WRITE setTestEnum)
+    Q_PROPERTY(TestOptions testOptions READ testOptions WRITE setTestOptions)
     Q_PROPERTY(int counter READ counter WRITE setCounter)
     Q_PROPERTY(QDateTime date READ date WRITE setDate)
     Q_PROPERTY(QSharedPointer<TestNameSpace::ChildObject> childObjectOneToOne READ childObjectOneToOne WRITE setChildObjectOneToOne)
@@ -44,12 +46,23 @@ class ParentObject : public QObject
 
 public:
     enum TestEnum {
+        NoValue,
         Value1,
         Value2,
         InitialValue,
-        ExplicitValue = 123,
+        ExplicitValue = 13,
         ValueAfterExplicitValue
     };
+
+    enum TestOption {
+        UnknownOption = 0x0,
+        Option1 = 0x1,
+        Option2 = 0x2,
+        Option3 = 0x4,
+        InitialOption = 0x8,
+        CombinedOption = Option1 | Option3
+    };
+    Q_DECLARE_FLAGS(TestOptions, TestOption)
 
     explicit ParentObject(QObject *parent = 0);
     ~ParentObject();
@@ -73,6 +86,9 @@ public:
     TestEnum testEnum() const;
     void setTestEnum(TestEnum arg);
 
+    TestOptions testOptions() const;
+    void setTestOptions(TestOptions arg);
+
 public slots:
     void setHasOne(QSharedPointer<ChildObject> arg);
     void setChildObjectOneToOne(QSharedPointer<ChildObject> object);
@@ -94,7 +110,6 @@ public slots:
     void removeHasManyMany(QSharedPointer<TestNameSpace::ChildObject> arg);
 
 
-
 private:
     void setCounter(int arg);
 
@@ -109,7 +124,10 @@ private:
     QpHasMany<ChildObject> m_hasManyMany;
     QDateTime m_date;
     TestEnum m_testEnum;
+    TestOptions m_testOptions;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(ParentObject::TestOptions)
 
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 

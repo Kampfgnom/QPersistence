@@ -460,7 +460,11 @@ QMetaProperty QpSqlQuery::propertyForIndex(const QSqlRecord &record, const QMeta
     if(propertyIndex != -123)
         return QMetaProperty();
 
-    propertyIndex = metaObject->indexOfProperty(record.fieldName(index).toLatin1());
+    QString fieldName = record.fieldName(index);
+    propertyIndex = metaObject->indexOfProperty(fieldName.toLatin1());
+    if(propertyIndex <= 0)
+        propertyIndex = metaObject->indexOfProperty(fieldName.left(fieldName.length() - 2).toLatin1()); // removes the "+0" from enum and flag fields
+
     data->propertyIndexes.insert(index, propertyIndex);
 
     if(propertyIndex <= 0)

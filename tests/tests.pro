@@ -32,7 +32,8 @@ SOURCES +=  \
     tst_manytomanyrelationstest.cpp \
     tst_synchronizetest.cpp \
     tst_locktest.cpp \
-    tst_enumerationtest.cpp
+    tst_enumerationtest.cpp \
+    tst_flagstest.cpp
 
 HEADERS += \
     tst_cachetest.h \
@@ -43,4 +44,5 @@ HEADERS += \
     tst_manytomanyrelationstest.h \
     tst_synchronizetest.h \
     tst_locktest.h \
-    tst_enumerationtest.h
+    tst_enumerationtest.h \
+    tst_flagstest.h
