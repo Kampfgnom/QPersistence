@@ -118,9 +118,11 @@ bool QpSqlQuery::exec(const QString &queryString)
             index = query.indexOf('?', index + value.length());
             ++i;
         }
-        query.append(";");
-        query.append(QString("\n%1 rows affected.").arg(this->numRowsAffected()));
         qDebug() << qPrintable(query);
+        if(size() >= 0)
+           qDebug() << QString("\n%1 rows returned.").arg(size());
+        if(numRowsAffected())
+           qDebug() << QString("\n%1 rows affected.").arg(numRowsAffected());
     }
 
     return ok;

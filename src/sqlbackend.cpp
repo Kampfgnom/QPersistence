@@ -6,6 +6,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QHash>
 #include <QSharedData>
 #include <QSqlDatabase>
+#include <QMetaProperty>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlBackendData
@@ -231,7 +232,29 @@ QString QpSqliteBackend::nowTimestamp() const
     return QLatin1String("now");
 }
 
+QVariant QpSqliteBackend::propertyToEnum(const QVariant &propertyValue, const QMetaProperty &property) const
+{
+    Q_UNUSED(property);
+    return propertyValue;
+}
+
+QVariant QpSqliteBackend::enumToProperty(const QVariant &enumValue, const QMetaProperty &property) const
+{
+    Q_UNUSED(property);
+    return enumValue;
+}
+
 QString QpMySqlBackend::nowTimestamp() const
 {
     return QLatin1String("NOW() + 0");
+}
+
+QVariant QpMySqlBackend::propertyToEnum(const QVariant &propertyValue, const QMetaProperty &property) const
+{
+    return property.enumerator().valueToKey(propertyValue.toInt());
+}
+
+QVariant QpMySqlBackend::enumToProperty(const QVariant &enumValue, const QMetaProperty &property) const
+{
+    return property.enumerator().keyToValue(enumValue.toString().toUtf8());
 }

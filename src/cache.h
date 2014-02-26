@@ -4,7 +4,7 @@
 #include "defines.h"
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QSharedPointer>
-#include <QtCore/QSharedDataPointer>
+#include <QtCore/QExplicitlySharedDataPointer>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpCacheData;
@@ -25,7 +25,7 @@ public:
     void setMaximumCacheSize(int size);
 
 private:
-    QSharedDataPointer<QpCacheData> data;
+    QExplicitlySharedDataPointer<QpCacheData> data;
 };
 
 #endif // QPERSISTENCE_CACHE_H

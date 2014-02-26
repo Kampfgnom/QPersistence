@@ -209,7 +209,14 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
 {
     // Add simple properties
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
-        query.addField(property.columnName(), property.metaProperty().read(object));
+        if(!property.metaProperty().isEnumType()) {
+            query.addField(property.columnName(), property.metaProperty().read(object));
+            continue;
+        }
+
+        // Handle enums
+        QVariant value = QpSqlBackend::forDatabase(data->database)->propertyToEnum(property.metaProperty().read(object), property.metaProperty());
+        query.addField(property.columnName(), value);
     }
 }
 
@@ -225,7 +232,7 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query, c
         QVariant value = query.value(i);
 
         if(property.isEnumType()) {
-            value = value.toInt();
+            value = QpSqlBackend::forDatabase(data->database)->enumToProperty(value, property);
         }
         else {
             QMetaType::Type type = static_cast<QMetaType::Type>(property.userType());

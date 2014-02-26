@@ -15,7 +15,8 @@ ParentObject::ParentObject(QObject *parent) :
     m_counter(0),
     m_hasOne(QpRelation(&ParentObject::hasOne)),
     m_hasMany(QpRelation(&ParentObject::hasMany)),
-    m_hasManyMany(QpRelation(&ParentObject::hasManyMany))
+    m_hasManyMany(QpRelation(&ParentObject::hasManyMany)),
+    m_testEnum(InitialValue)
 {
 }
 
@@ -92,6 +93,16 @@ QDateTime ParentObject::date() const
 void ParentObject::setDate(QDateTime arg)
 {
     m_date = arg;
+}
+
+ParentObject::TestEnum ParentObject::testEnum() const
+{
+    return m_testEnum;
+}
+
+void ParentObject::setTestEnum(ParentObject::TestEnum arg)
+{
+    m_testEnum = arg;
 }
 
 QSharedPointer<ChildObject> ParentObject::hasOne() const

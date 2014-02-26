@@ -14,7 +14,10 @@ class ChildObject;
 class ParentObject : public QObject
 {
     Q_OBJECT
+    Q_ENUMS(TestEnum)
+
     Q_PROPERTY(QString aString READ aString WRITE setAString)
+    Q_PROPERTY(TestEnum testEnum READ testEnum WRITE setTestEnum)
     Q_PROPERTY(int counter READ counter WRITE setCounter)
     Q_PROPERTY(QDateTime date READ date WRITE setDate)
     Q_PROPERTY(QSharedPointer<TestNameSpace::ChildObject> childObjectOneToOne READ childObjectOneToOne WRITE setChildObjectOneToOne)
@@ -40,6 +43,14 @@ class ParentObject : public QObject
                 "reverserelation=belongsToManyMany")
 
 public:
+    enum TestEnum {
+        Value1,
+        Value2,
+        InitialValue,
+        ExplicitValue = 123,
+        ValueAfterExplicitValue
+    };
+
     explicit ParentObject(QObject *parent = 0);
     ~ParentObject();
 
@@ -58,6 +69,9 @@ public:
 
     QDateTime date() const;
     void setDate(QDateTime arg);
+
+    TestEnum testEnum() const;
+    void setTestEnum(TestEnum arg);
 
 public slots:
     void setHasOne(QSharedPointer<ChildObject> arg);
@@ -80,6 +94,7 @@ public slots:
     void removeHasManyMany(QSharedPointer<TestNameSpace::ChildObject> arg);
 
 
+
 private:
     void setCounter(int arg);
 
@@ -93,6 +108,7 @@ private:
     QpHasMany<ChildObject> m_hasMany;
     QpHasMany<ChildObject> m_hasManyMany;
     QDateTime m_date;
+    TestEnum m_testEnum;
 };
 
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS

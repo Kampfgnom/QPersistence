@@ -15,6 +15,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include "sqlcondition.h"
 
 class QSqlQuery;
+class QpCache;
 class QpError;
 class QpSqlDataAccessObjectHelper;
 
@@ -51,6 +52,7 @@ public:
     QList<QSharedPointer<QObject>> updatedSince(const QDateTime &time);
 
     QpError lastError() const;
+    QpCache cache() const;
 
 Q_SIGNALS:
     void objectCreated(QSharedPointer<QObject>);

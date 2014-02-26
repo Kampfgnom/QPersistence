@@ -95,7 +95,7 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
     data->query.setTable(meta.tableName());
 
     foreach (QpMetaProperty metaProperty, meta.metaProperties()) {
-//        Q_ASSERT(metaProperty.isValid());
+        Q_ASSERT(metaProperty.isValid());
 
         if (!metaProperty.isStored())
             continue;
@@ -115,6 +115,19 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
                                               "SET NULL");
                 }
             }
+        }
+        else if(metaProperty.metaProperty().isEnumType()) {
+            QString columnName = metaProperty.columnName();
+            QMetaEnum metaEnum = metaProperty.metaProperty().enumerator();
+            int count = metaEnum.keyCount();
+            QStringList enumValues;
+            for(int i = 0; i < count; ++i) {
+                enumValues << QString("'%1'").arg(metaEnum.key(i));
+            }
+
+            QString columnType = QString("ENUM(%1)").arg(enumValues.join(", "));
+
+            data->query.addField(columnName, columnType);
         }
         else {
             QString columnName = metaProperty.columnName();
