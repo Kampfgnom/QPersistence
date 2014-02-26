@@ -353,6 +353,25 @@ void QpDatabaseSchema::cleanSchema()
                 qCritical() << Q_FUNC_INFO << "Could not re-open database file"<< file.fileName();
         }
     }
+    else if(data->database.driverName() == QLatin1String("QMYSQL")) {
+        QpSqlQuery query(data->database);
+        query.prepare(QString("DROP SCHEMA IF EXISTS %1").arg(data->database.databaseName()));
+
+        if (!query.exec()
+                || query.lastError().isValid()) {
+            setLastError(query);
+        }
+        query.clear();
+        query.prepare(QString("CREATE SCHEMA %1").arg(data->database.databaseName()));
+
+        if (!query.exec()
+                || query.lastError().isValid()) {
+            setLastError(query);
+        }
+
+        data->database.close();
+        data->database.open();
+    }
     else {
         foreach(QString table, data->database.tables(QSql::Tables)) {
             dropTable(table);
