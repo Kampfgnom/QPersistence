@@ -2,23 +2,23 @@
 #define DEFINES_H
 
 #define BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS \
-    _Pragma("clang diagnostic push") \
-    _Pragma("clang diagnostic ignored \"-Wc++98-compat-pedantic\"") \
-    _Pragma("clang diagnostic ignored \"-Wdisabled-macro-expansion\"") \
-    _Pragma("clang diagnostic ignored \"-Wsign-conversion\"") \
-    _Pragma("clang diagnostic ignored \"-Wpadded\"") \
-    _Pragma("clang diagnostic ignored \"-Wunreachable-code\"") \
-    _Pragma("clang diagnostic ignored \"-Wexit-time-destructors\"") \
-    _Pragma("clang diagnostic ignored \"-Wused-but-marked-unused\"") \
-    _Pragma("clang diagnostic ignored \"-Wshorten-64-to-32\"") \
-    _Pragma("clang diagnostic ignored \"-Wfloat-equal\"") \
-    _Pragma("clang diagnostic ignored \"-Wconversion\"") \
-    _Pragma("clang diagnostic ignored \"-Wswitch-enum\"") \
-    _Pragma("clang diagnostic ignored \"-Wweak-vtables\"") \
-    _Pragma("clang diagnostic ignored \"-Wdocumentation-unknown-command\"") \
-    _Pragma("clang diagnostic ignored \"-Wdocumentation\"")
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wc++98-compat-pedantic\"") \
+    _Pragma("GCC diagnostic ignored \"-Wdisabled-macro-expansion\"") \
+    _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"") \
+    _Pragma("GCC diagnostic ignored \"-Wpadded\"") \
+    _Pragma("GCC diagnostic ignored \"-Wunreachable-code\"") \
+    _Pragma("GCC diagnostic ignored \"-Wexit-time-destructors\"") \
+    _Pragma("GCC diagnostic ignored \"-Wused-but-marked-unused\"") \
+    _Pragma("GCC diagnostic ignored \"-Wshorten-64-to-32\"") \
+    _Pragma("GCC diagnostic ignored \"-Wfloat-equal\"") \
+    _Pragma("GCC diagnostic ignored \"-Wconversion\"") \
+    _Pragma("GCC diagnostic ignored \"-Wswitch-enum\"") \
+    _Pragma("GCC diagnostic ignored \"-Wweak-vtables\"") \
+    _Pragma("GCC diagnostic ignored \"-Wdocumentation-unknown-command\"") \
+    _Pragma("GCC diagnostic ignored \"-Wdocumentation\"")
 #define END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS \
-    _Pragma("clang diagnostic pop")
+    _Pragma("GCC diagnostic pop")
 
 #define QP_DEFINE_STATIC_LOCAL(type, name) \
     type *name(); \
@@ -32,7 +32,7 @@
     return &name; \
     }
 
-#define foreach(variable, container) \
+#define QP_FOREACH (variable, container) \
     _Pragma("clang diagnostic push") \
     _Pragma("clang diagnostic ignored \"-Wshadow\"") \
     Q_FOREACH(variable, container) \

@@ -7,14 +7,4 @@ QPERSISTENCE_VERSION         = 0.0.0
 QPERSISTENCE_INCLUDEPATH     = $$PWD/include
 QPERSISTENCE_LIBS            = -L$$QPERSISTENCE_PATH/src -l$$QPERSISTENCE_TARGET
 QPERSISTENCE_POST_TARGETDEPS = $$OUT_PWD/$$QPERSISTENCE_PATH/src/lib$${QPERSISTENCE_TARGET}.a
-QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Weverything -Wno-c++98-compat -Wno-padded -Wno-undefined-reinterpret-cast
-
-#DEFINES += CLANG_DIAGNOSTIC_BEGIN_IGNORE_WARNINGS=\
-#_Pragma("clang diagnostic push")\
-#_Pragma("clang diagnostic ignore \\\"-Wno-c++98-compat\\\"")\
-
-#                                        #-Wno-c++98-compat \
-#                                        #-Wno-c++98-compat-pedantic \
-#                                        #-Wno-disabled-macro-expansion \
-#                                        #-Wno-documentation-unknown-command \
-#                                        #-Wno-documentation
+QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Wall -Weverything -Wno-c++98-compat -Wno-padded -Wno-undefined-reinterpret-cast
