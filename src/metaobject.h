@@ -52,6 +52,8 @@ public:
     QMetaMethod removeObjectMethod(const QpMetaProperty &property);
     QMetaMethod addObjectMethod(const QpMetaProperty &property);
 
+    static QString removeNamespaces(const QString &classNameWithNamespaces);
+
 private:
     friend class QpDaoBase;
     static QpMetaObject registerMetaObject(const QMetaObject &metaObject);

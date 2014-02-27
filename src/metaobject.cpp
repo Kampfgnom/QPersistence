@@ -139,11 +139,7 @@ QString QpMetaObject::className() const
 
 QString QpMetaObject::classNameWithoutNamespace() const
 {
-    QString className = data->metaObject.className();
-    int namespaceIndex = className.lastIndexOf("::");
-    if(namespaceIndex > 0)
-        className = className.mid(namespaceIndex + 2);
-    return className;
+    return removeNamespaces(data->metaObject.className());
 }
 
 bool QpMetaObject::isValid() const
@@ -238,6 +234,15 @@ QMetaMethod QpMetaObject::addObjectMethod(const QpMetaProperty &property)
 
     Q_ASSERT(index > 0);
     return data->metaObject.method(index);
+}
+
+QString QpMetaObject::removeNamespaces(const QString &classNameWithNamespaces)
+{
+    QString className = classNameWithNamespaces;
+    int namespaceIndex = className.lastIndexOf("::");
+    if(namespaceIndex > 0)
+        className = className.mid(namespaceIndex + 2);
+    return className;
 }
 
 QMetaMethod QpMetaObject::removeObjectMethod(const QpMetaProperty &property)

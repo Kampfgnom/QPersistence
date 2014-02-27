@@ -52,7 +52,9 @@ QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
 {
     data->sqlDataAccessObjectHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
     data->metaObject = QpMetaObject::registerMetaObject(metaObject);
+    QString className = QpMetaObject::removeNamespaces(metaObject.className());
     DaoPerMetaObjectName()->insert(metaObject.className(), this);
+    DaoPerMetaObjectName()->insert(className, this);
 }
 
 QpDaoBase::~QpDaoBase()

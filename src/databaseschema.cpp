@@ -385,7 +385,9 @@ void QpDatabaseSchema::cleanSchema()
             setLastError(query);
         }
         query.clear();
-        query.prepare(QString("CREATE SCHEMA %1").arg(data->database.databaseName()));
+        query.prepare(QString("CREATE SCHEMA %1 CHARACTER SET %2")
+                      .arg(data->database.databaseName())
+                      .arg("utf8"));
 
         if (!query.exec()
                 || query.lastError().isValid()) {
