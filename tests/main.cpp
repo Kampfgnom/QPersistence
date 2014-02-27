@@ -13,6 +13,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include "tst_locktest.h"
 #include "tst_enumerationtest.h"
 #include "tst_flagstest.h"
+#include "tst_usermanagementtest.h"
 
 #include "parentobject.h"
 
@@ -27,6 +28,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
+//    RUNTEST(UserManagementTest);
     RUNTEST(LockTest);
     RUNTEST(FlagsTest);
     RUNTEST(EnumerationTest);

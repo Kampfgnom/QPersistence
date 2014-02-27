@@ -33,7 +33,8 @@ SOURCES +=  \
     tst_synchronizetest.cpp \
     tst_locktest.cpp \
     tst_enumerationtest.cpp \
-    tst_flagstest.cpp
+    tst_flagstest.cpp \
+    tst_usermanagementtest.cpp
 
 HEADERS += \
     tst_cachetest.h \
@@ -45,4 +46,5 @@ HEADERS += \
     tst_synchronizetest.h \
     tst_locktest.h \
     tst_enumerationtest.h \
-    tst_flagstest.h
+    tst_flagstest.h \
+    tst_usermanagementtest.h

@@ -9,3 +9,4 @@
 #include "../src/relation_hasmany.h"
 #include "../src/relation_hasone.h"
 #include "../src/sortfilterproxyobjectmodel.h"
+#include "../src/usermanagement.h"

@@ -35,7 +35,8 @@ HEADERS += \
     relation_belongstoone.h \
     relation_hasmany.h \
     relation_belongstomany.h \
-    defines.h
+    defines.h \
+    usermanagement.h
 
 SOURCES += \
         cache.cpp \
@@ -59,4 +60,5 @@ SOURCES += \
     relation_hasone.cpp \
     relation_belongstoone.cpp \
     relation_hasmany.cpp \
-    relation_belongstomany.cpp
+    relation_belongstomany.cpp \
+    usermanagement.cpp

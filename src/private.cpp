@@ -60,6 +60,7 @@ QSharedPointer<QObject> sharedFrom(const QObject *object)
 
 void setLastError(const QpError &error)
 {
+    qDebug() << error;
     QpError::setLastError(error);
 }
 
