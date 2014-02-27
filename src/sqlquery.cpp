@@ -38,7 +38,7 @@ public:
     QpSqlCondition whereCondition;
     QList<QPair<QString, QpSqlQuery::Order> > orderBy;
     QList<QStringList> foreignKeys;
-    QList<QStringList> uniqueKeys;
+    QHash<QString, QStringList> keys;
     QHash<int, int> propertyIndexes;
     int skip;
     bool canBulkExec;
@@ -149,7 +149,7 @@ void QpSqlQuery::clear()
     data->whereCondition = QpSqlCondition();
     data->orderBy.clear();
     data->foreignKeys.clear();
-    data->uniqueKeys.clear();
+    data->keys.clear();
     data->rawFields.clear();
     data->canBulkExec = false;
     data->ignore = false;
@@ -182,9 +182,9 @@ void QpSqlQuery::addPrimaryKey(const QString &name)
     addField(name, data->backend->primaryKeyType());
 }
 
-void QpSqlQuery::addUniqueKey(const QStringList &fields)
+void QpSqlQuery::addKey(const QString &keyType, const QStringList &fields)
 {
-    data->uniqueKeys.append(fields);
+    data->keys.insert(keyType, fields);
 }
 
 void QpSqlQuery::setOrIgnore(bool ignore)
@@ -251,8 +251,15 @@ void QpSqlQuery::prepareCreateTable()
     }
     query.append(fields.join(",\n\t"));
 
-    foreach(QStringList key, data->uniqueKeys) {
-        query.append(QString(",\n\tUNIQUE KEY (%1)").arg(key.join(", ")));
+    foreach(QString key, data->keys.keys()) {
+        QStringList value = data->keys.value(key);
+        QString name = value.join("_").prepend("_Qp_key_");
+        QString fields = value.join(", ");
+
+        query.append(QString(",\n\t%1 %2 (%3)")
+                     .arg(key)
+                     .arg(name)
+                     .arg(fields));
     }
 
     foreach (const QStringList foreignKey, data->foreignKeys) {

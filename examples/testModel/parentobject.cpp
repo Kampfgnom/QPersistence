@@ -116,6 +116,16 @@ void ParentObject::setTestOptions(TestOptions arg)
     m_testOptions = arg;
 }
 
+int ParentObject::indexed() const
+{
+    return m_index;
+}
+
+int ParentObject::customColumn() const
+{
+    return m_unique;
+}
+
 QSharedPointer<ChildObject> ParentObject::hasOne() const
 {
     return m_hasOne;
@@ -154,6 +164,16 @@ void ParentObject::addHasManyMany(QSharedPointer<ChildObject> arg)
 void ParentObject::removeHasManyMany(QSharedPointer<ChildObject> arg)
 {
     m_hasManyMany.remove(arg);
+}
+
+void ParentObject::setIndexed(int arg)
+{
+    m_index = arg;
+}
+
+void ParentObject::setCustomColumn(int arg)
+{
+    m_unique = arg;
 }
 
 void ParentObject::addHasMany(QSharedPointer<ChildObject> arg)

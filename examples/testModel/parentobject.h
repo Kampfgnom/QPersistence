@@ -21,6 +21,8 @@ class ParentObject : public QObject
     Q_PROPERTY(TestEnum testEnum READ testEnum WRITE setTestEnum)
     Q_PROPERTY(TestOptions testOptions READ testOptions WRITE setTestOptions)
     Q_PROPERTY(int counter READ counter WRITE setCounter)
+    Q_PROPERTY(int customColumn READ customColumn WRITE setCustomColumn)
+    Q_PROPERTY(int indexed READ indexed WRITE setIndexed)
     Q_PROPERTY(QDateTime date READ date WRITE setDate)
     Q_PROPERTY(QSharedPointer<TestNameSpace::ChildObject> childObjectOneToOne READ childObjectOneToOne WRITE setChildObjectOneToOne)
     Q_PROPERTY(QList<QSharedPointer<TestNameSpace::ChildObject> > childObjectsOneToMany READ childObjectsOneToMany WRITE setChildObjectsOneToMany)
@@ -44,6 +46,11 @@ class ParentObject : public QObject
     Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:hasManyMany",
                 "reverserelation=belongsToManyMany")
 
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:customColumn",
+                "columnDefinition=INTEGER NOT NULL DEFAULT 5;")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:indexed",
+                "columnDefinition=INTEGER NULL;"
+                "key=UNIQUE KEY")
 public:
     enum TestEnum {
         NoValue,
@@ -89,6 +96,10 @@ public:
     TestOptions testOptions() const;
     void setTestOptions(TestOptions arg);
 
+    int indexed() const;
+
+    int customColumn() const;
+
 public slots:
     void setHasOne(QSharedPointer<ChildObject> arg);
     void setChildObjectOneToOne(QSharedPointer<ChildObject> object);
@@ -110,6 +121,10 @@ public slots:
     void removeHasManyMany(QSharedPointer<TestNameSpace::ChildObject> arg);
 
 
+    void setIndexed(int arg);
+
+    void setCustomColumn(int arg);
+
 private:
     void setCounter(int arg);
 
@@ -125,6 +140,8 @@ private:
     QDateTime m_date;
     TestEnum m_testEnum;
     TestOptions m_testOptions;
+    int m_index;
+    int m_unique;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(ParentObject::TestOptions)

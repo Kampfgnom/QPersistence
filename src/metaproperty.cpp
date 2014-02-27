@@ -80,6 +80,23 @@ QString QpMetaProperty::shortName(const QString &name) const
     return result;
 }
 
+void QpMetaProperty::parseAttributes() const
+{
+    QString classInfoName = QString(QPERSISTENCE_PROPERTYMETADATA).append(":").append(name());
+    QString classInfoRawValue = data->metaObject.classInformation(classInfoName.toLatin1(), QString());
+
+    // First parse the attributes
+    QRegularExpression reg("([^=]+)=([^=]+)");
+    QStringList attributesList = classInfoRawValue.split(';');
+    foreach (const QString attribute, attributesList) {
+        QRegularExpressionMatch match = reg.match(attribute);
+        if (!match.hasMatch())
+            continue;
+
+        data->attributes.insert( match.captured(1), match.captured(2) );
+    }
+}
+
 QpMetaProperty::~QpMetaProperty()
 {
 }
@@ -128,6 +145,14 @@ bool QpMetaProperty::isValid() const
 QVariant::Type QpMetaProperty::type() const
 {
     return data->metaProperty.type();
+}
+
+QHash<QString, QString> QpMetaProperty::attributes() const
+{
+    if (data->attributes.isEmpty())
+        parseAttributes();
+
+    return data->attributes;
 }
 
 bool QpMetaProperty::isRelationProperty() const
@@ -237,21 +262,8 @@ QpMetaObject QpMetaProperty::reverseMetaObject() const
 
 QString QpMetaProperty::reverseRelationName() const
 {
-    if (data->attributes.isEmpty()) {
-        QString classInfoName = QString(QPERSISTENCE_PROPERTYMETADATA).append(":").append(name());
-        QString classInfoRawValue = data->metaObject.classInformation(classInfoName.toLatin1(), QString());
-
-        // First parse the attributes
-        QRegularExpression reg("(\\w+)=(\\w+)");
-        QStringList attributesList = classInfoRawValue.split(';');
-        foreach (const QString attribute, attributesList) {
-            QRegularExpressionMatch match = reg.match(attribute);
-            if (!match.hasMatch())
-                continue;
-
-            data->attributes.insert( match.captured(1), match.captured(2) );
-        }
-    }
+    if (data->attributes.isEmpty())
+        parseAttributes();
 
     return data->attributes.value(QPERSISTENCE_PROPERTYMETADATA_REVERSERELATION);
 }

@@ -141,10 +141,21 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
         }
         else {
             QString columnName = metaProperty.columnName();
-            QString columnType = variantTypeToSqlType(metaProperty.type());
+            QString columnType = metaProperty.attributes().value("columnDefinition");
+
+            if(columnType.isEmpty())
+                columnType = variantTypeToSqlType(metaProperty.type());
 
             data->query.addField(columnName, columnType);
         }
+    }
+
+    foreach (QpMetaProperty metaProperty, meta.metaProperties()) {
+        QString key = metaProperty.attributes().value("key");
+        if(key.isEmpty())
+            continue;
+
+        data->query.addKey(key, QStringList() << metaProperty.columnName());
     }
 
     // Add the primary key
@@ -203,7 +214,7 @@ void QpDatabaseSchema::createManyToManyRelationTables(const QMetaObject &metaObj
                                        foreignTable,
                                        "SET NULL");
         createTableQuery.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
-        createTableQuery.addUniqueKey(QStringList() << columnName << foreignColumnName);
+        createTableQuery.addKey("UNIQUE KEY", QStringList() << columnName << foreignColumnName);
         createTableQuery.prepareCreateTable();
         if ( !createTableQuery.exec()
              || createTableQuery.lastError().isValid()) {

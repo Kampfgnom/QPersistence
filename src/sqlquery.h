@@ -33,7 +33,7 @@ public:
     void clear();
     void setTable(const QString &table);
     void addPrimaryKey(const QString &name);
-    void addUniqueKey(const QStringList &fields);
+    void addKey(const QString &keyType, const QStringList &fields);
     void setOrIgnore(bool ignore);
     void addRawField(const QString &name, const QString &value);
     void addField(const QString &name, const QVariant &value = QVariant());
