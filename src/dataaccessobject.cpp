@@ -180,12 +180,19 @@ QSharedPointer<QObject> QpDaoBase::createObject()
     }
     QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
     Qp::Private::enableSharedFromThis(obj);
-    count();
-
-    ++data->count;
+    if(data->count < 0)
+        count();
+    else
+        ++data->count;
 
     emit objectCreated(obj);
     return obj;
+}
+
+Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2) Q_REQUIRED_RESULT;
+Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2)
+{
+    return (qAbs(p1 - p2) * 10000000000000000. <= qMin(qAbs(p1), qAbs(p2)));
 }
 
 Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
@@ -198,7 +205,7 @@ Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wused-but-marked-unused"
-    Q_ASSERT(qFuzzyCompare(databaseTime, objectTime));
+    Q_ASSERT(qpFuzzyCompare(databaseTime, objectTime));
 #pragma GCC diagnostic pop
 
     if (!data->sqlDataAccessObjectHelper->updateObject(data->metaObject, object.data())) {
@@ -216,18 +223,14 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
         setLastError(data->sqlDataAccessObjectHelper->lastError());
         return false;
     }
-    count();
+    if(data->count < 0)
+        count();
+    else
+        --data->count;
 
-    --data->count;
     data->cache.remove(Qp::primaryKey(object));
     emit objectRemoved(object);
     return true;
-}
-
-Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2) Q_REQUIRED_RESULT;
-Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2)
-{
-    return (qAbs(p1 - p2) * 10000000000000000. <= qMin(qAbs(p1), qAbs(p2)));
 }
 
 Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object)
