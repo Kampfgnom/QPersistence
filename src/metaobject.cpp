@@ -232,7 +232,10 @@ QMetaMethod QpMetaObject::addObjectMethod(const QpMetaProperty &property)
     QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
     int index = data->metaObject.indexOfMethod(normalized);
 
-    Q_ASSERT(index > 0);
+    Q_ASSERT_X(index > 0, Q_FUNC_INFO,
+               QString("No such method '%1::%2'")
+               .arg(data->metaObject.className())
+               .arg(signature).toLatin1());
     return data->metaObject.method(index);
 }
 
@@ -254,6 +257,9 @@ QMetaMethod QpMetaObject::removeObjectMethod(const QpMetaProperty &property)
     QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
     int index = data->metaObject.indexOfMethod(normalized);
 
-    Q_ASSERT(index > 0);
+    Q_ASSERT_X(index > 0, Q_FUNC_INFO,
+               QString("No such method '%1::%2'")
+               .arg(data->metaObject.className())
+               .arg(signature).toLatin1());
     return data->metaObject.method(index);
 }

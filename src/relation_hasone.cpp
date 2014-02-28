@@ -25,7 +25,11 @@ QpHasOneBase::QpHasOneBase(const QString &name, QObject *parent) :
     data(new QpHasOneData)
 {
     data->parent = parent;
-    QString n = name.mid(name.lastIndexOf("::") + 2);
+    int classNameEndIndex = name.lastIndexOf("::");
+    QString n = name;
+    if(classNameEndIndex >= 0)
+        n = name.mid(classNameEndIndex + 2);
+
     data->metaProperty = QpMetaObject::forObject(parent).metaProperty(n);
 }
 
