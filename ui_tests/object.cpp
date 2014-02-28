@@ -6,12 +6,12 @@ Object::Object(QObject *parent) :
 {
 }
 
-ulong Object::date() const
+int Object::date() const
 {
     return m_date;
 }
 
-void Object::setDate(const ulong &arg)
+void Object::setDate(const int &arg)
 {
     m_date = arg;
 }

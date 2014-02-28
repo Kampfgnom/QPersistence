@@ -9,20 +9,20 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 class Object : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(ulong date READ date  WRITE setDate)
+    Q_PROPERTY(int date READ date  WRITE setDate)
     Q_PROPERTY(QString string READ string  WRITE setString)
 
 public:
     explicit Object(QObject *parent = 0);
 
-    ulong date() const;
-    void setDate(const ulong &arg);
+    int date() const;
+    void setDate(const int &arg);
 
     QString string() const;
     void setString(const QString &arg);
 
 private:
-    ulong m_date;
+    int m_date;
     QString m_string;
 };
 

@@ -28,10 +28,13 @@ MainWindow::MainWindow(QWidget *parent) :
         Qp::setDatabase(db);
         Qp::setSqlDebugEnabled(false);
         Qp::registerClass<Object>();
+        Qp::adjustDatabaseSchema();
     }
     QpObjectListModel<Object> *model = new QpObjectListModel<Object>(this);
     model->setFetchCount(10000);
-    ui->treeView->setModel(model);
+
+    m_model = new QpSortFilterProxyObjectModel<Object>(model, this);
+    ui->treeView->setModel(m_model);
     ui->treeView->setColumnHidden(1, true);
 }
 
@@ -90,6 +93,14 @@ void MainWindow::on_actionCreate_objects_triggered()
 
     QpObjectListModel<Object> *model = new QpObjectListModel<Object>(this);
     model->setFetchCount(1000);
-    ui->treeView->setModel(model);
+
+    m_model = new QpSortFilterProxyObjectModel<Object>(model, this);
+    ui->treeView->setModel(m_model);
     ui->treeView->setColumnHidden(1, true);
+}
+
+void MainWindow::on_lineEdit_textChanged(const QString &arg1)
+{
+    m_model->setFilterFixedString(arg1);
+    m_model->setFilterKeyColumn(2);
 }
