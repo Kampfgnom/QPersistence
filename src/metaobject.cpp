@@ -88,6 +88,39 @@ QpMetaObject::QpMetaObject(const QMetaObject &metaObject) :
     data->metaObject = metaObject;
 }
 
+QMetaMethod QpMetaObject::method(QString signature, const QpMetaProperty &property) const
+{
+    QString propertyName = property.name();
+    propertyName[0] = propertyName.at(0).toTitleCase();
+    signature = signature.arg(propertyName).arg(property.reverseClassName());
+    QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
+    int index = data->metaObject.indexOfMethod(normalized);
+
+    if(index > 0)
+        return data->metaObject.method(index);
+
+    // Remove a possible trailing 's' to match 'many' relations
+    signature.remove(signature.length() - 1, 1);
+    normalized = QMetaObject::normalizedSignature(signature.toUtf8());
+    index = data->metaObject.indexOfMethod(normalized);
+
+    if(index > 0)
+        return data->metaObject.method(index);
+
+    // Remove all 's' to even better match 'many' relations
+
+    signature.remove('s');
+    normalized = QMetaObject::normalizedSignature(signature.toUtf8());
+    index = data->metaObject.indexOfMethod(normalized);
+
+    Q_ASSERT_X(index > 0, Q_FUNC_INFO,
+               QString("No such method '%1::%2'")
+               .arg(data->metaObject.className())
+               .arg(signature).toLatin1());
+
+    return data->metaObject.method(index);
+}
+
 void QpMetaObject::initProperties() const
 {
     int count = data->metaObject.propertyCount();
@@ -225,18 +258,12 @@ QString QpMetaObject::classInformation(const QString &informationName, bool asse
 
 QMetaMethod QpMetaObject::addObjectMethod(const QpMetaProperty &property)
 {
-    QString signature("add%1(QSharedPointer<%2>)");
-    QString propertyName = property.name();
-    propertyName[0] = propertyName.at(0).toTitleCase();
-    signature = signature.arg(propertyName).arg(property.reverseClassName());
-    QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
-    int index = data->metaObject.indexOfMethod(normalized);
+    return method("add%1(QSharedPointer<%2>)", property);
+}
 
-    Q_ASSERT_X(index > 0, Q_FUNC_INFO,
-               QString("No such method '%1::%2'")
-               .arg(data->metaObject.className())
-               .arg(signature).toLatin1());
-    return data->metaObject.method(index);
+QMetaMethod QpMetaObject::removeObjectMethod(const QpMetaProperty &property)
+{
+    return method("remove%1(QSharedPointer<%2>)", property);
 }
 
 QString QpMetaObject::removeNamespaces(const QString &classNameWithNamespaces)
@@ -246,20 +273,4 @@ QString QpMetaObject::removeNamespaces(const QString &classNameWithNamespaces)
     if(namespaceIndex > 0)
         className = className.mid(namespaceIndex + 2);
     return className;
-}
-
-QMetaMethod QpMetaObject::removeObjectMethod(const QpMetaProperty &property)
-{
-    QString signature("remove%1(QSharedPointer<%2>)");
-    QString propertyName = property.name();
-    propertyName[0] = propertyName.at(0).toTitleCase();
-    signature = signature.arg(propertyName).arg(property.reverseClassName());
-    QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
-    int index = data->metaObject.indexOfMethod(normalized);
-
-    Q_ASSERT_X(index > 0, Q_FUNC_INFO,
-               QString("No such method '%1::%2'")
-               .arg(data->metaObject.className())
-               .arg(signature).toLatin1());
-    return data->metaObject.method(index);
 }
