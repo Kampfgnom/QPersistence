@@ -4,6 +4,7 @@
 #include "sqlcondition.h"
 #include "sqlbackend.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QBuffer>
 #include <QByteArray>
 #include <QDebug>
@@ -13,43 +14,45 @@
 #include <QSharedData>
 #include <QStringList>
 #include <QSqlDriver>
-#define COMMA ,
+#include <QSqlRecord>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlQueryPrivate : public QSharedData {
-public:
-    QpSqlQueryPrivate() :
-        QSharedData(),
-        count(-1),
-        skip(-1),
-        canBulkExec(false),
-        ignore(false),
-        forUpdate(false)
-    {}
+                                     public:
+                                     QpSqlQueryPrivate() :
+                                     QSharedData(),
+                                     count(-1),
+                                     skip(-1),
+                                     canBulkExec(false),
+                                     ignore(false),
+                                     forUpdate(false)
+{}
 
-    QSqlDatabase database;
-    QpSqlBackend *backend;
-    QString table;
-    QHash<QString, QVariant> fields;
-    // inserted directly into query instead of using bindValue
-    QHash<QString, QString> rawFields;
-    int count;
-    int skip;
-    QpSqlCondition whereCondition;
-    QList<QPair<QString, QpSqlQuery::Order> > orderBy;
-    QList<QStringList> foreignKeys;
-    QList<QStringList> uniqueKeys;
-    bool canBulkExec;
-    bool ignore;
-    bool forUpdate;
+                                     int count;
+QSqlDatabase database;
+QpSqlBackend *backend;
+QString table;
+QHash<QString, QVariant> fields;
+// inserted directly into query instead of using bindValue
+QHash<QString, QString> rawFields;
+QpSqlCondition whereCondition;
+QList<QPair<QString, QpSqlQuery::Order> > orderBy;
+QList<QStringList> foreignKeys;
+QHash<QString, QStringList> keys;
+QHash<int, int> propertyIndexes;
+int skip;
+bool canBulkExec;
+bool ignore;
+bool forUpdate;
 
-    static bool debugEnabled;
-    static QList<QpSqlQuery> bulkQueries;
-    static bool bulkExec;
+static bool debugEnabled;
+static bool bulkExec;
 };
 
 bool QpSqlQueryPrivate::bulkExec = false;
 bool QpSqlQueryPrivate::debugEnabled = false;
-QList<QpSqlQuery> QpSqlQueryPrivate::bulkQueries;
+
+QP_DEFINE_STATIC_LOCAL(QList<QpSqlQuery>, BulkQueries)
 
 QpSqlQuery::QpSqlQuery() :
     QSqlQuery(),
@@ -92,7 +95,7 @@ bool QpSqlQuery::exec(const QString &queryString)
     if (query.isEmpty()) {
         if (QpSqlQueryPrivate::bulkExec
                 && data->canBulkExec) {
-            QpSqlQueryPrivate::bulkQueries.append(*this);
+            BulkQueries()->append(*this);
         }
         else {
             ok = QSqlQuery::exec();
@@ -115,8 +118,10 @@ bool QpSqlQuery::exec(const QString &queryString)
             index = query.indexOf('?', index + value.length());
             ++i;
         }
-        query.append(";");
-        query.append(QString("\n%1 rows affected.").arg(this->numRowsAffected()));
+        if(size() >= 0)
+            query += QString("\n%1 rows returned.").arg(size());
+        if(numRowsAffected() >= 0)
+            query += QString("\n%1 rows affected.").arg(numRowsAffected());
         qDebug() << qPrintable(query);
     }
 
@@ -144,11 +149,12 @@ void QpSqlQuery::clear()
     data->whereCondition = QpSqlCondition();
     data->orderBy.clear();
     data->foreignKeys.clear();
-    data->uniqueKeys.clear();
+    data->keys.clear();
     data->rawFields.clear();
     data->canBulkExec = false;
     data->ignore = false;
     data->forUpdate = false;
+    data->propertyIndexes.clear();
 }
 
 bool QpSqlQuery::isDebugEnabled()
@@ -176,9 +182,9 @@ void QpSqlQuery::addPrimaryKey(const QString &name)
     addField(name, data->backend->primaryKeyType());
 }
 
-void QpSqlQuery::addUniqueKey(const QStringList &fields)
+void QpSqlQuery::addKey(const QString &keyType, const QStringList &fields)
 {
-    data->uniqueKeys.append(fields);
+    data->keys.insert(keyType, fields);
 }
 
 void QpSqlQuery::setOrIgnore(bool ignore)
@@ -245,10 +251,18 @@ void QpSqlQuery::prepareCreateTable()
     }
     query.append(fields.join(",\n\t"));
 
-    foreach(QStringList key, data->uniqueKeys) {
-        query.append(QString(",\n\t%2 (%1)")
-                     .arg(key.join(", "))
-                     .arg(data->backend->uniqueKeyType()));
+    foreach(QString key, data->keys.keys()) {
+        QStringList value = data->keys.value(key);
+
+        query.append(QString(",\n\t%1 ")
+                     .arg(key));
+#ifndef QP_FOR_SQLITE
+        QString name = value.join("_").prepend("_Qp_key_");
+        query.append(name);
+#endif
+        QString fields = value.join(", ");
+        query.append(QString(" (%1)")
+                     .arg(fields));
     }
 
     foreach (const QStringList foreignKey, data->foreignKeys) {
@@ -312,7 +326,8 @@ void QpSqlQuery::prepareSelect()
     if (!data->orderBy.isEmpty()) {
         query.append("\n\tORDER BY ");
         QStringList orderClauses;
-        foreach (QPair<QString COMMA QpSqlQuery::Order> order, data->orderBy) {
+        typedef QPair<QString, QpSqlQuery::Order> OrderPair;
+        foreach (OrderPair order, data->orderBy) {
             QString orderClause = order.first.prepend("\n\t\t");
             if (order.second == QpSqlQuery::Descending)
                 orderClause.append(" DESC");
@@ -447,6 +462,27 @@ void QpSqlQuery::prepareDelete()
     data->canBulkExec = true;
 }
 
+QMetaProperty QpSqlQuery::propertyForIndex(const QSqlRecord &record, const QMetaObject *metaObject, int index) const
+{
+    int propertyIndex = data->propertyIndexes.value(index, -123);
+    if(propertyIndex > 0)
+        return metaObject->property(propertyIndex);
+    if(propertyIndex != -123)
+        return QMetaProperty();
+
+    QString fieldName = record.fieldName(index);
+    propertyIndex = metaObject->indexOfProperty(fieldName.toLatin1());
+    if(propertyIndex <= 0)
+        propertyIndex = metaObject->indexOfProperty(fieldName.left(fieldName.length() - 2).toLatin1()); // removes the "+0" from enum and flag fields
+
+    data->propertyIndexes.insert(index, propertyIndex);
+
+    if(propertyIndex <= 0)
+        return QMetaProperty();
+
+    return metaObject->property(propertyIndex);
+}
+
 void QpSqlQuery::addBindValue(const QVariant &val)
 {
     QSqlQuery::addBindValue(variantToSqlStorableVariant(val));
@@ -496,14 +532,11 @@ void QpSqlQuery::bulkExec()
 {
     Qp::database().transaction();
     QpSqlQueryPrivate::bulkExec = false;
-    foreach (QpSqlQuery query, QpSqlQueryPrivate::bulkQueries) {
+    foreach (QpSqlQuery query, *BulkQueries()) {
         query.exec();
     }
     Qp::database().commit();
 
-    QpSqlQueryPrivate::bulkQueries.clear();
+    BulkQueries()->clear();
     QpSqlQueryPrivate::bulkExec = false;
 }
-
-
-#undef COMMA

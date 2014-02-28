@@ -1,9 +1,9 @@
 #ifndef TST_MANYTOMANYRELATIONSTEST_H
 #define TST_MANYTOMANYRELATIONSTEST_H
 
-#include "database.h"
+#include "tests_common.h"
 
-class ManyToManyRelationsTest : public RelationTestBase
+class ManyToManyRelationsTest : public QObject
 {
     Q_OBJECT
 public:
@@ -11,13 +11,11 @@ public:
 
 private Q_SLOTS:
     void initTestCase();
-    void cleanupTestCase();
 
+    void testManyToManyRelation();
     void testInitialDatabaseFKsEmpty();
-
     void testDatabaseFKInsertFromParent();
     void testDatabaseFKInsertFromChild();
-
     void testDatabaseFKChangeFromParent();
     void testDatabaseFKChangeFromChild();
 
@@ -28,20 +26,21 @@ private Q_SLOTS:
 
 private:
     struct Tree {
-        QList<QSharedPointer<ParentObject>> parents;
-        QList<QSharedPointer<ChildObject>> children;
+        QList<QSharedPointer<TestNameSpace::ParentObject>> parents;
+        QList<QSharedPointer<TestNameSpace::ChildObject>> children;
     };
 
     QpMetaProperty m_parentToChildRelation;
     QpMetaProperty m_childToParentRelation;
 
-    QVariantList childFKs(QSharedPointer<ParentObject> parent);
-    QVariantList parentFKs(QSharedPointer<ChildObject> child);
+    QVariantList childFKs(QSharedPointer<TestNameSpace::ParentObject> parent);
+    QVariantList parentFKs(QSharedPointer<TestNameSpace::ChildObject> child);
 
-    void testParentFks(QSharedPointer<ChildObject> child);
-    void testChildFks(QSharedPointer<ParentObject> parent);
+    void testParentFks(QSharedPointer<TestNameSpace::ChildObject> child);
+    void testChildFks(QSharedPointer<TestNameSpace::ParentObject> parent);
 
     void testTree(Tree tree);
+
 #ifndef QP_NO_TIMESTAMPS
     void testUpdateTimes(QDateTime previousTime, QDateTime newTime, Tree changed, Tree unchanged);
 #endif

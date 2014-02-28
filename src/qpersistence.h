@@ -1,8 +1,11 @@
 #ifndef QPERSISTENCE_H
 #define QPERSISTENCE_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QDateTime>
 #include <QtSql/QSqlDatabase>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "dataaccessobject.h"
 
@@ -41,6 +44,7 @@ bool createCleanSchema();
 QpError lastError();
 #ifndef QP_NO_LOCKS
 void enableLocks();
+void addAdditionalLockInformationField(const QString &field, QVariant::Type type = QVariant::UserType);
 #endif
 #ifndef QP_NO_TIMESTAMPS
 QDateTime databaseTime();
@@ -71,7 +75,7 @@ template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object);
 template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object);
 #endif
 #ifndef QP_NO_LOCKS
-template<class T> QpLock tryLock(QSharedPointer<T> object);
+template<class T> QpLock tryLock(QSharedPointer<T> object, QHash<QString,QVariant> additionalInformation = QHash<QString,QVariant>());
 template<class T> QpLock unlock(QSharedPointer<T> object);
 template<class T> QpLock isLocked(QSharedPointer<T> object);
 #endif

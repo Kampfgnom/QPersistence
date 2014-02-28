@@ -8,8 +8,10 @@
 #include "sqlbackend.h"
 #include "sqlquery.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QDebug>
 #include <QSqlError>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 namespace Qp {
 
@@ -22,14 +24,14 @@ void setDatabase(const QSqlDatabase &database)
 
     QSqlDatabase::cloneDatabase(database, "Qp");
 
-    if(database.driverName() == QLatin1String("QSQLITE")) {
-        QpSqlQuery query(database);
-        query.prepare("PRAGMA foreign_keys = 1;");
-        if (!query.exec()
-                || query.lastError().isValid()) {
-            qCritical() << "The PRAGMA foreign_keys could not be set to 1:" << query.lastError();
-        }
+#ifdef QP_FOR_SQLITE
+    QpSqlQuery query(database);
+    query.prepare("PRAGMA foreign_keys = 1;");
+    if (!query.exec()
+            || query.lastError().isValid()) {
+        qCritical() << "The PRAGMA foreign_keys could not be set to 1:" << query.lastError();
     }
+#endif
 }
 
 QSqlDatabase database()
@@ -131,7 +133,18 @@ void enableLocks()
 {
     QpLock::enableLocks();
 }
+
+void addAdditionalLockInformationField(const QString &field, QVariant::Type type)
+{
+    QpLock::addAdditionalInformationField(field, type);
+}
 #endif
+
+QDateTime dateFromDouble(double value)
+{
+    QString string = QString("%1").arg(value, 17, 'f', 3);
+    return QDateTime::fromString(string, "yyyyMMddHHmmss.zzz");
+}
 
 QDateTime databaseTime()
 {
@@ -142,7 +155,7 @@ QDateTime databaseTime()
         return QDateTime();
     }
 
-    return query.value(0).toDateTime();
+    return dateFromDouble(query.value(0).toDouble());
 }
 
 }

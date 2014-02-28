@@ -1,8 +1,11 @@
 #ifndef QPERSISTENCE_RELATIONRESOLVER_H
 #define QPERSISTENCE_RELATIONRESOLVER_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QObject>
 #include <QtCore/QSharedDataPointer>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpMetaProperty;
 

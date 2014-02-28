@@ -2,8 +2,8 @@
 
 QpObjectListModelBase::QpObjectListModelBase(QObject *parent) :
     QAbstractListModel(parent),
-    m_objectsFromDao(true),
-    m_fetchCount(std::numeric_limits<int>::max())
+    m_fetchCount(std::numeric_limits<int>::max()),
+    m_objectsFromDao(true)
 {
 }
 

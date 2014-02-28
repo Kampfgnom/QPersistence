@@ -4,10 +4,12 @@
 #include "metaproperty.h"
 #include "qpersistence.h"
 
-#include <QDebug>
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QHash>
 #include <QMetaClassInfo>
+#include <QSharedData>
 #include <QString>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpMetaObjectPrivate : public QSharedData
 {
@@ -25,34 +27,43 @@ public:
     mutable QHash<QString, QpMetaProperty> metaPropertiesByName;
 
     static QHash<QString, QpMetaObject> metaObjectForName;
-
-    // also use list, so that register order is preserved
-    static QList<QpMetaObject> metaObjects;
 };
 
-QHash<QString, QpMetaObject> QpMetaObjectPrivate::metaObjectForName;
-QList<QpMetaObject> QpMetaObjectPrivate::metaObjects;
+typedef QHash<QString, QpMetaObject> HashStringToMetaObject;
+QP_DEFINE_STATIC_LOCAL(HashStringToMetaObject, MetaObjectsForName)
+QP_DEFINE_STATIC_LOCAL(QList<QpMetaObject>, MetaObjects)
 
 QpMetaObject QpMetaObject::registerMetaObject(const QMetaObject &metaObject)
 {
     QString className(metaObject.className());
-    auto it = QpMetaObjectPrivate::metaObjectForName.find(className);
+    auto it = MetaObjectsForName()->find(className);
 
-    if (it != QpMetaObjectPrivate::metaObjectForName.end()) {
+    if (it != MetaObjectsForName()->end()) {
         return it.value();
     }
 
     QpMetaObject result = QpMetaObject(metaObject);
-    QpMetaObjectPrivate::metaObjectForName.insert(className, result);
-    QpMetaObjectPrivate::metaObjects.append(result);
+    MetaObjectsForName()->insert(result.classNameWithoutNamespace(), result);
+    MetaObjectsForName()->insert(className, result);
+    MetaObjects()->append(result);
 
     return result;
 }
 
+QpMetaObject QpMetaObject::forObject(const QObject *object)
+{
+    return forClassName(object->metaObject()->className());
+}
+
+QpMetaObject QpMetaObject::forObject(QSharedPointer<QObject> object)
+{
+    return forObject(object.data());
+}
+
 QpMetaObject QpMetaObject::forClassName(const QString &className)
 {
-    auto it = QpMetaObjectPrivate::metaObjectForName.find(className);
-    Q_ASSERT_X(it != QpMetaObjectPrivate::metaObjectForName.end(),
+    auto it = MetaObjectsForName()->find(className);
+    Q_ASSERT_X(it != MetaObjectsForName()->end(),
                Q_FUNC_INFO,
                QString("No such metaobject for class name '%1'!\nHave you forgotten to register the class?")
                .arg(className)
@@ -62,7 +73,7 @@ QpMetaObject QpMetaObject::forClassName(const QString &className)
 
 QList<QpMetaObject> QpMetaObject::registeredMetaObjects()
 {
-    return QpMetaObjectPrivate::metaObjects;
+    return *MetaObjects();
 }
 
 QpMetaObject::QpMetaObject() :
@@ -126,6 +137,11 @@ QString QpMetaObject::className() const
     return data->metaObject.className();
 }
 
+QString QpMetaObject::classNameWithoutNamespace() const
+{
+    return removeNamespaces(data->metaObject.className());
+}
+
 bool QpMetaObject::isValid() const
 {
     return data->valid;
@@ -150,7 +166,7 @@ QpMetaProperty QpMetaObject::metaProperty(const QString &name) const
 
 QString QpMetaObject::tableName() const
 {
-    return QString(data->metaObject.className()).toLower();
+    return classNameWithoutNamespace().toLower();
 }
 
 QList<QpMetaProperty> QpMetaObject::metaProperties() const
@@ -207,4 +223,37 @@ QString QpMetaObject::classInformation(const QString &informationName, bool asse
     return value;
 }
 
+QMetaMethod QpMetaObject::addObjectMethod(const QpMetaProperty &property)
+{
+    QString signature("add%1(QSharedPointer<%2>)");
+    QString propertyName = property.name();
+    propertyName[0] = propertyName.at(0).toTitleCase();
+    signature = signature.arg(propertyName).arg(property.reverseClassName());
+    QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
+    int index = data->metaObject.indexOfMethod(normalized);
 
+    Q_ASSERT(index > 0);
+    return data->metaObject.method(index);
+}
+
+QString QpMetaObject::removeNamespaces(const QString &classNameWithNamespaces)
+{
+    QString className = classNameWithNamespaces;
+    int namespaceIndex = className.lastIndexOf("::");
+    if(namespaceIndex > 0)
+        className = className.mid(namespaceIndex + 2);
+    return className;
+}
+
+QMetaMethod QpMetaObject::removeObjectMethod(const QpMetaProperty &property)
+{
+    QString signature("remove%1(QSharedPointer<%2>)");
+    QString propertyName = property.name();
+    propertyName[0] = propertyName.at(0).toTitleCase();
+    signature = signature.arg(propertyName).arg(property.reverseClassName());
+    QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
+    int index = data->metaObject.indexOfMethod(normalized);
+
+    Q_ASSERT(index > 0);
+    return data->metaObject.method(index);
+}

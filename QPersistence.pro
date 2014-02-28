@@ -6,7 +6,8 @@ CONFIG += ordered
 SUBDIRS = \
     src \
     tests \
-    testDatabaseChanger
+    testDatabaseChanger \
+    ui_tests
 
 OTHER_FILES += \
     README.md \

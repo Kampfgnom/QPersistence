@@ -1,8 +1,11 @@
 #ifndef QPERSISTENCE_METAPROPERTY_H
 #define QPERSISTENCE_METAPROPERTY_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QMetaProperty>
 #include <QtCore/QSharedDataPointer>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 struct QMetaObject;
 class QpMetaObject;
@@ -37,6 +40,8 @@ public:
     bool isValid() const;
     QVariant::Type type() const;
 
+    QHash<QString, QString> attributes() const;
+
     // Relations
     bool isRelationProperty() const;
     bool isToOneRelationProperty() const;
@@ -67,6 +72,7 @@ private:
     QString generateColumnName() const;
 
     QString shortName(const QString &name) const;
+    void parseAttributes() const;
 
     QExplicitlySharedDataPointer<QpMetaPropertyPrivate> data;
 };

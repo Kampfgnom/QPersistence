@@ -8,6 +8,7 @@
 #include "sqlbackend.h"
 #include "sqlquery.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QDebug>
 #include <QFile>
 #include <QMetaProperty>
@@ -17,16 +18,17 @@
 #include <QSqlRecord>
 #include <QStringList>
 #include <QSqlDriver>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-const QString QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
-const QString QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
+const char* QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
+const char* QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
 #ifndef QP_NO_TIMESTAMPS
-const QString QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
-const QString QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME("_Qp_updateTime");
+const char* QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
+const char* QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME("_Qp_updateTime");
 #endif
 #ifndef QP_NO_LOCKS
-const QString QpDatabaseSchema::TABLENAME_LOCKS("_Qp_locks");
-const QString QpDatabaseSchema::COLUMN_LOCK("_Qp_lock");
+const char* QpDatabaseSchema::TABLENAME_LOCKS("_Qp_locks");
+const char* QpDatabaseSchema::COLUMN_LOCK("_Qp_lock");
 #endif
 
 class QpDatabaseSchemaPrivate : public QSharedData
@@ -118,34 +120,60 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
                 }
             }
         }
-        else {
+        else if(metaProperty.metaProperty().isEnumType()) {
             QString columnName = metaProperty.columnName();
-            QString columnType = variantTypeToSqlType(metaProperty.type());
+            QString columnType = variantTypeToSqlType(QVariant::Int);
+
+            if(data->database.driverName() == QLatin1String("QMYSQL")) {
+                QMetaEnum metaEnum = metaProperty.metaProperty().enumerator();
+                int count = metaEnum.keyCount();
+                Q_ASSERT(metaEnum.value(0) == 0);
+
+                QStringList enumValues;
+                for(int i = 1; i < count; ++i) { // Start at 1 because first value corresponds to MySQL empty string
+                    enumValues << QString("'%1'").arg(metaEnum.key(i));
+                }
+
+                columnType = "ENUM(%1)";
+                if(metaProperty.metaProperty().isFlagType())
+                    columnType = "SET(%1)";
+
+                columnType = columnType.arg(enumValues.join(", "));
+            }
 
             data->query.addField(columnName, columnType);
         }
+        else {
+            QString columnName = metaProperty.columnName();
+            QString columnType = metaProperty.attributes().value("columnDefinition");
+
+            if(columnType.isEmpty())
+                columnType = variantTypeToSqlType(metaProperty.type());
+
+            data->query.addField(columnName, columnType);
+        }
+    }
+
+    foreach (QpMetaProperty metaProperty, meta.metaProperties()) {
+        QString key = metaProperty.attributes().value("key");
+        if(key.isEmpty())
+            continue;
+
+        data->query.addKey(key, QStringList() << metaProperty.columnName());
     }
 
     // Add the primary key
     data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
 
 #ifndef QP_NO_TIMESTAMPS
-    if(QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature)) {
-        // Add timestamp columns
-        data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
-        data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
-    }
+    // Add timestamp columns
+    data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::Double));
+    data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::Double));
 #endif
 
+
 #ifndef QP_NO_LOCKS
-    if(QpLock::isLocksEnabled()) {
-        QString columnType = variantTypeToSqlType(QVariant::Int);
-        data->query.addField(QpDatabaseSchema::COLUMN_LOCK, columnType);
-        //        data->query.addForeignKey(QpDatabaseSchema::COLUMN_LOCK,
-        //                                  QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-        //                                  QpDatabaseSchema::TABLENAME_LOCKS,
-        //                                  QpDatabaseSchema::ONDELETE_CASCADE);
-    }
+    data->query.addField(QpDatabaseSchema::COLUMN_LOCK, variantTypeToSqlType(QVariant::Int));
 #endif
 
     data->query.prepareCreateTable();
@@ -163,7 +191,6 @@ void QpDatabaseSchema::createManyToManyRelationTables(const QMetaObject &metaObj
     QString columnType = variantTypeToSqlType(QVariant::Int);
 
     foreach (QpMetaProperty property, meta.relationProperties()) {
-        Q_ASSERT(property.isValid());
         if (property.cardinality() != QpMetaProperty::ManyToManyCardinality)
             continue;
 
@@ -188,7 +215,8 @@ void QpDatabaseSchema::createManyToManyRelationTables(const QMetaObject &metaObj
                                        foreignTable,
                                        "SET NULL");
         createTableQuery.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
-        createTableQuery.addUniqueKey(QStringList() << columnName << foreignColumnName);
+        createTableQuery.addKey(QpSqlBackend::forDatabase(data->database)->uniqueKeyType(),
+                                QStringList() << columnName << foreignColumnName);
         createTableQuery.prepareCreateTable();
         if ( !createTableQuery.exec()
              || createTableQuery.lastError().isValid()) {
@@ -246,11 +274,11 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
 
 #ifndef QP_NO_TIMESTAMPS
         // Add timestamp columns
-        if(!hasCreationTimeColumn && QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature))
-            data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::DateTime));
+        if(!hasCreationTimeColumn)
+            data->query.addField(COLUMN_NAME_CREATION_TIME, variantTypeToSqlType(QVariant::Double));
 
-        if(!hasUpdateTimeColumn && QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature))
-            data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::DateTime));
+        if(!hasUpdateTimeColumn)
+            data->query.addField(COLUMN_NAME_UPDATE_TIME, variantTypeToSqlType(QVariant::Double));
 #endif
 
 #ifndef QP_NO_LOCKS
@@ -267,7 +295,6 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
         }
     }
 #endif
-
 
     return true;
 }
@@ -363,20 +390,39 @@ bool QpDatabaseSchema::dropColumns(const QString &table, const QStringList &colu
 
 void QpDatabaseSchema::cleanSchema()
 {
-    if(data->database.driverName() == QLatin1String("QSQLITE")) {
-        QFile file(data->database.databaseName());
-        if (file.exists()) {
-            if (!file.remove())
-                qCritical() << Q_FUNC_INFO << "Could not remove database file"<< file.fileName();
-            if (!data->database.open())
-                qCritical() << Q_FUNC_INFO << "Could not re-open database file"<< file.fileName();
-        }
+#ifdef QP_FOR_SQLITE
+    QFile file(data->database.databaseName());
+    if (file.exists()) {
+        if (!file.remove())
+            qCritical() << Q_FUNC_INFO << "Could not remove database file"<< file.fileName();
+        if (!data->database.open())
+            qCritical() << Q_FUNC_INFO << "Could not re-open database file"<< file.fileName();
     }
-    else {
-        foreach(QString table, data->database.tables(QSql::Tables)) {
-            dropTable(table);
-        }
+#elif defined QP_FOR_MYSQL
+    QpSqlQuery query(data->database);
+    query.prepare(QString("DROP SCHEMA IF EXISTS %1").arg(data->database.databaseName()));
+
+    if (!query.exec()
+            || query.lastError().isValid()) {
+        setLastError(query);
     }
+    query.clear();
+    query.prepare(QString("CREATE SCHEMA %1 CHARACTER SET %2")
+                  .arg(data->database.databaseName())
+                  .arg("utf8"));
+
+    if (!query.exec()
+            || query.lastError().isValid()) {
+        setLastError(query);
+    }
+
+    data->database.close();
+    data->database.open();
+#else
+    foreach(QString table, data->database.tables(QSql::Tables)) {
+        dropTable(table);
+    }
+#endif
 }
 
 void QpDatabaseSchema::createCleanSchema()
@@ -415,17 +461,34 @@ void QpDatabaseSchema::createLocksTable()
     if (!QpLock::isLocksEnabled())
         return;
 
-    if (existsTable(QpDatabaseSchema::TABLENAME_LOCKS))
-        return;
+    if (!existsTable(QpDatabaseSchema::TABLENAME_LOCKS)) {
 
-    data->query.clear();
-    data->query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
-    data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
-    data->query.prepareCreateTable();
+        data->query.clear();
+        data->query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
+        data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
 
-    if ( !data->query.exec()
-         || data->query.lastError().isValid()) {
-        setLastError(data->query);
+        foreach(QString field, QpLock::additionalInformationFields().keys()) {
+            QString type = variantTypeToSqlType(QpLock::additionalInformationFields().value(field));
+            data->query.addField(field, type);
+        }
+
+        data->query.prepareCreateTable();
+
+        if ( !data->query.exec()
+             || data->query.lastError().isValid()) {
+            setLastError(data->query);
+        }
+    }
+    else {
+        QSqlRecord record = data->database.record(QpDatabaseSchema::TABLENAME_LOCKS);
+
+        foreach(QString field, QpLock::additionalInformationFields().keys()) {
+            if (record.indexOf(field) != -1)
+                continue;
+
+            QString type = variantTypeToSqlType(QpLock::additionalInformationFields().value(field));
+            addColumn(QpDatabaseSchema::TABLENAME_LOCKS, field, type);
+        }
     }
 }
 #endif
@@ -437,6 +500,10 @@ QpError QpDatabaseSchema::lastError() const
 
 bool QpDatabaseSchema::renameColumn(const QString &tableName, const QString &oldColumnName, const QString &newColumnName)
 {
+#ifndef QP_FOR_SQLITE
+    Q_ASSERT_X(false, Q_FUNC_INFO, "Renaming columns is currently only supported on QP_FOR_SQLITE databases.");
+#endif
+
     data->database.close();
     data->database.open();
 
@@ -564,7 +631,7 @@ QString QpDatabaseSchema::metaPropertyToColumnDefinition(const QpMetaProperty &m
             // The relation need a whole table
             break;
 
-        default:
+        case QpMetaProperty::UnknownCardinality:
             // This is BAD
             Q_ASSERT_X(false, Q_FUNC_INFO,
                        QString("The relation %1 has no cardinality. This is an internal error and should never happen.")

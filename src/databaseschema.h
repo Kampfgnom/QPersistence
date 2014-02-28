@@ -1,10 +1,13 @@
 #ifndef QPERSISTENCE_DATABASESCHEMA_H
 #define QPERSISTENCE_DATABASESCHEMA_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QObject>
 #include <QtCore/QVariant>
 #include <QtCore/QSharedDataPointer>
 #include <QtSql/QSqlDatabase>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QSqlQuery;
 class QpError;
@@ -16,16 +19,16 @@ class QpDatabaseSchema : public QObject
 {
     Q_OBJECT
 public:
-    static const QString COLUMN_NAME_PRIMARY_KEY;
-    static const QString ONDELETE_CASCADE;
+    static const char* COLUMN_NAME_PRIMARY_KEY;
+    static const char* ONDELETE_CASCADE;
 #ifndef QP_NO_TIMESTAMPS
-    static const QString COLUMN_NAME_CREATION_TIME;
-    static const QString COLUMN_NAME_UPDATE_TIME;
+    static const char* COLUMN_NAME_CREATION_TIME;
+    static const char* COLUMN_NAME_UPDATE_TIME;
 #endif
 #ifndef QP_NO_LOCKS
-    static const QString TABLENAME_LOCKS;
-    static const QString COLUMN_LOCK;
-    static const QString COLUMN_LOCKTIME;
+    static const char* TABLENAME_LOCKS;
+    static const char* COLUMN_LOCK;
+    static const char* COLUMN_LOCKTIME;
 #endif
 
     explicit QpDatabaseSchema(const QSqlDatabase &database = QSqlDatabase::database(), QObject *parent = 0);
@@ -42,15 +45,10 @@ public:
     void addColumn(const QString &table, const QString &column, const QString &type);
     bool dropColumns(const QString &table, const QStringList &columns);
 
-    template<class O> bool existsTable() { return existsTable(&O::staticMetaObject); }
-    template<class O> void createTable() { createTable(&O::staticMetaObject); }
-    template<class O> void createTableIfNotExists() { createTableIfNotExists(&O::staticMetaObject); }
-    template<class O> void dropTable() { dropTable(&O::staticMetaObject); }
-    template<class O> void addMissingColumns() { addMissingColumns(&O::staticMetaObject); }
-
     void cleanSchema();
     void createCleanSchema();
     void adjustSchema();
+
 #ifndef QP_NO_LOCKS
     void createLocksTable();
 #endif

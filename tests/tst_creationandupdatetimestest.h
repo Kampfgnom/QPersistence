@@ -1,8 +1,7 @@
 #ifndef TST_CREATIONANDUPDATETIMESTEST_H
 #define TST_CREATIONANDUPDATETIMESTEST_H
 
-#include <QObject>
-#include <QtTest>
+#include "tests_common.h"
 
 class CreationAndUpdateTimesTest : public QObject
 {
@@ -12,7 +11,6 @@ public:
 
 #ifndef QP_NO_TIMESTAMPS
 private Q_SLOTS:
-    void initTestCase();
     void cleanupTestCase();
 
     void testCreationTime();

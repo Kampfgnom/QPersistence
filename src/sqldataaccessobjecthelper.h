@@ -1,9 +1,12 @@
 #ifndef QPERSISTENCE_SQLDATAACCESSOBJECTHELPER_H
 #define QPERSISTENCE_SQLDATAACCESSOBJECTHELPER_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QObject>
 #include <QtCore/QSharedDataPointer>
 #include <QtSql/QSqlDatabase>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QSqlQuery;
 class QpError;
@@ -28,11 +31,13 @@ public:
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);
+
 #ifndef QP_NO_TIMESTAMPS
-    QDateTime readUpdateTime(const QpMetaObject &metaObject, QObject *object);
-    QDateTime readCreationTime(const QpMetaObject &metaObject, QObject *object);
+    double readUpdateTime(const QpMetaObject &metaObject, QObject *object);
+    double readCreationTime(const QpMetaObject &metaObject, QObject *object);
 #endif
-    void readQueryIntoObject(const QSqlQuery &query,
+
+    void readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record,
                              QObject *object);
 
     QpError lastError() const;
@@ -51,6 +56,9 @@ private:
     void fillValuesIntoQuery(const QpMetaObject &metaObject,
                              const QObject *object,
                              QpSqlQuery &query);
+
+    void selectFields(const QpMetaObject &metaObject,
+                      QpSqlQuery &query);
 
     bool adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object);
 

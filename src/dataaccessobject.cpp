@@ -10,7 +10,10 @@
 #include "sqldataaccessobjecthelper.h"
 #include "sqlquery.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
+#include <QSqlRecord>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpDaoBaseData : public QSharedData
 {
@@ -21,27 +24,25 @@ public:
     {
     }
 
+    mutable int count;
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper;
     QpMetaObject metaObject;
     mutable QpError lastError;
     mutable QpCache cache;
-    mutable int count;
-    QDateTime lastSync;
-
-    static QHash<QString, QpDaoBase *> daoPerMetaObjectName;
 };
 
-QHash<QString, QpDaoBase *> QpDaoBaseData::daoPerMetaObjectName;
+typedef QHash<QString, QpDaoBase *> HashStringToDao;
+QP_DEFINE_STATIC_LOCAL(HashStringToDao, DaoPerMetaObjectName)
 
 QpDaoBase *QpDaoBase::forClass(const QMetaObject &metaObject)
 {
-    Q_ASSERT(QpDaoBaseData::daoPerMetaObjectName.contains(metaObject.className()));
-    return QpDaoBaseData::daoPerMetaObjectName.value(metaObject.className());
+    Q_ASSERT(DaoPerMetaObjectName()->contains(metaObject.className()));
+    return DaoPerMetaObjectName()->value(metaObject.className());
 }
 
 QList<QpDaoBase *> QpDaoBase::dataAccessObjects()
 {
-    return QpDaoBaseData::daoPerMetaObjectName.values();
+    return DaoPerMetaObjectName()->values();
 }
 
 QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
@@ -51,7 +52,9 @@ QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
 {
     data->sqlDataAccessObjectHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
     data->metaObject = QpMetaObject::registerMetaObject(metaObject);
-    QpDaoBaseData::daoPerMetaObjectName.insert(metaObject.className(), this);
+    QString className = QpMetaObject::removeNamespaces(metaObject.className());
+    DaoPerMetaObjectName()->insert(metaObject.className(), this);
+    DaoPerMetaObjectName()->insert(className, this);
 }
 
 QpDaoBase::~QpDaoBase()
@@ -61,6 +64,11 @@ QpDaoBase::~QpDaoBase()
 QpError QpDaoBase::lastError() const
 {
     return data->lastError;
+}
+
+QpCache QpDaoBase::cache() const
+{
+    return data->cache;
 }
 
 void QpDaoBase::setLastError(const QpError &error) const
@@ -104,11 +112,6 @@ QList<int> QpDaoBase::allKeys(int skip, int count) const
 
 QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, const QpSqlCondition &condition) const
 {
-    int myCount = this->count();
-
-    if (count <= 0 && myCount != 0)
-        count = myCount;
-
     QpSqlQuery query = data->sqlDataAccessObjectHelper->readAllObjects(data->metaObject, skip, count, condition);
 
     if (data->sqlDataAccessObjectHelper->lastError().isValid()) {
@@ -118,8 +121,10 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, c
 
     QList<QSharedPointer<QObject> > result;
     result.reserve(count);
+    QSqlRecord record = query.record();
+    int index = record.indexOf(QLatin1String(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
     while(query.next()) {
-        int key = query.value(QLatin1String("_Qp_ID")).toInt();
+        int key = query.value(index).toInt();
 
         QSharedPointer<QObject> currentObject;
         if (data->cache.contains(key)) {
@@ -129,7 +134,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, c
         if(!currentObject) {
             QObject *object = createInstance();
             currentObject = data->cache.insert(key, object);
-            data->sqlDataAccessObjectHelper->readQueryIntoObject(query, object);
+            data->sqlDataAccessObjectHelper->readQueryIntoObject(query, record, object);
             Qp::Private::enableSharedFromThis(currentObject);
         }
 
@@ -177,26 +182,31 @@ QSharedPointer<QObject> QpDaoBase::createObject()
     }
     QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
     Qp::Private::enableSharedFromThis(obj);
-    count();
-
-    ++data->count;
+    if(data->count < 0)
+        count();
+    else
+        ++data->count;
 
     emit objectCreated(obj);
     return obj;
 }
 
+Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2) Q_REQUIRED_RESULT;
+Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2)
+{
+    return (qAbs(p1 - p2) * 10000000000000000. <= qMin(qAbs(p1), qAbs(p2)));
+}
+
 Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 {
 #ifndef QP_NO_TIMESTAMPS
-    if(QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature)) {
-        QDateTime databaseTime = Qp::updateTimeInDatabase(object);
-        QDateTime objectTime = Qp::updateTimeInObject(object);
+    double databaseTime = Qp::Private::updateTimeInDatabase(object.data());
+    double objectTime = Qp::Private::updateTimeInObject(object.data());
 
-        if(databaseTime > objectTime)
-            return Qp::UpdateConflict;
+    if(databaseTime > objectTime)
+        return Qp::UpdateConflict;
 
-        Q_ASSERT(databaseTime == objectTime);
-    }
+    Q_ASSERT(qpFuzzyCompare(databaseTime, objectTime));
 #endif
 
     if (!data->sqlDataAccessObjectHelper->updateObject(data->metaObject, object.data())) {
@@ -214,9 +224,11 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
         setLastError(data->sqlDataAccessObjectHelper->lastError());
         return false;
     }
-    count();
+    if(data->count < 0)
+        count();
+    else
+        --data->count;
 
-    --data->count;
     data->cache.remove(Qp::primaryKey(object));
     emit objectRemoved(object);
     return true;
@@ -227,13 +239,11 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
     QObject *obj = object.data();
 
 #ifndef QP_NO_TIMESTAMPS
-    if(QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature)) {
-        QDateTime localTime = Qp::Private::updateTimeInObject(obj);
-        QDateTime remoteTime = Qp::Private::updateTimeInDatabase(obj);
+    double localTime = Qp::Private::updateTimeInObject(obj);
+    double remoteTime = Qp::Private::updateTimeInDatabase(obj);
 
-        if(localTime == remoteTime)
-            return Qp::Unchanged;
-    }
+    if(qpFuzzyCompare(localTime, remoteTime))
+        return Qp::Unchanged;
 #endif
 
     int id = Qp::primaryKey(object);
@@ -245,7 +255,7 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
         return Qp::Error;
     }
 
-    foreach(QpMetaProperty relation, QpMetaObject::forClassName(object->metaObject()->className()).relationProperties()) {
+    foreach(QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
         QpRelationResolver::readRelationFromDatabase(relation, obj);
     }
 
@@ -255,25 +265,23 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
 #ifndef QP_NO_TIMESTAMPS
 QList<QSharedPointer<QObject> > QpDaoBase::createdSince(const QDateTime &time)
 {
-    Q_ASSERT(QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature));
     return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME,
                                                 QpSqlCondition::GreaterThan,
-                                                time));
+                                                time.toString("yyyyMMddHHmmss.zzz").toDouble()));
 }
 
 QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(const QDateTime &time)
 {
-    Q_ASSERT(QpSqlBackend::hasFeature(QpSqlBackend::TimestampsFeature));
     return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME,
                                                 QpSqlCondition::GreaterThan,
-                                                time));
+                                                time.toString("yyyyMMddHHmmss.zzz").toDouble()));
 }
 #endif
 
 uint qHash(const QVariant &var)
 {
     if (!var.isValid() || var.isNull())
-        return -1;
+        return 0;
 
     switch (var.type())
     {
@@ -304,19 +312,50 @@ uint qHash(const QVariant &var)
     case QVariant::Locale:
     case QVariant::RegExp:
         return qHash( var.toString() );
-    case QVariant::Map:
-    case QVariant::List:
     case QVariant::BitArray:
+    case QVariant::Bitmap:
+    case QVariant::Brush:
+    case QVariant::Color:
+    case QVariant::Cursor:
+    case QVariant::EasingCurve:
+    case QVariant::Font:
+    case QVariant::Hash:
+    case QVariant::Icon:
+    case QVariant::Image:
+    case QVariant::Invalid:
+    case QVariant::KeySequence:
+    case QVariant::LastCoreType:
+    case QVariant::LastType:
+    case QVariant::Line:
+    case QVariant::LineF:
+    case QVariant::List:
+    case QVariant::Matrix4x4:
+    case QVariant::Matrix:
+    case QVariant::ModelIndex:
+    case QVariant::Palette:
+    case QVariant::Pen:
+    case QVariant::Pixmap:
+    case QVariant::Point:
+    case QVariant::PointF:
+    case QVariant::Polygon:
+    case QVariant::PolygonF:
+    case QVariant::Quaternion:
+    case QVariant::Rect:
+    case QVariant::RectF:
+    case QVariant::Region:
+    case QVariant::RegularExpression:
     case QVariant::Size:
     case QVariant::SizeF:
-    case QVariant::Rect:
-    case QVariant::LineF:
-    case QVariant::Line:
-    case QVariant::RectF:
-    case QVariant::Point:
+    case QVariant::SizePolicy:
+    case QVariant::TextFormat:
+    case QVariant::TextLength:
+    case QVariant::Transform:
     case QVariant::UserType:
-    case QVariant::Invalid:
-    default:
+    case QVariant::Uuid:
+    case QVariant::Vector2D:
+    case QVariant::Vector3D:
+    case QVariant::Vector4D:
+    case QVariant::Map:
         Q_ASSERT(false);
     }
 

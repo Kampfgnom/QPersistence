@@ -1,16 +1,21 @@
 #ifndef QPERSISTENCE_DATAACCESSOBJECT_H
 #define QPERSISTENCE_DATAACCESSOBJECT_H
 
+#include "defines.h"
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QObject>
 #include <QtCore/QSharedDataPointer>
 #include <QtCore/QSharedPointer>
 #include <QtSql/QSqlDatabase>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+
 
 #include "conversion.h"
 #include "metaobject.h"
 #include "sqlcondition.h"
 
 class QSqlQuery;
+class QpCache;
 class QpError;
 class QpSqlDataAccessObjectHelper;
 
@@ -50,6 +55,7 @@ public:
 #endif
 
     QpError lastError() const;
+    QpCache cache() const;
 
 Q_SIGNALS:
     void objectCreated(QSharedPointer<QObject>);

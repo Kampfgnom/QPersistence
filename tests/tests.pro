@@ -31,7 +31,10 @@ SOURCES +=  \
     tst_manytomanyrelationstest.cpp \
     tst_synchronizetest.cpp \
     tst_locktest.cpp \
-    database.cpp
+    tst_enumerationtest.cpp \
+    tst_flagstest.cpp \
+    tst_usermanagementtest.cpp \
+    tests_common.cpp
 
 HEADERS += \
     tst_cachetest.h \
@@ -41,4 +44,7 @@ HEADERS += \
     tst_manytomanyrelationstest.h \
     tst_synchronizetest.h \
     tst_locktest.h \
-    database.h
+    tst_enumerationtest.h \
+    tst_flagstest.h \
+    tst_usermanagementtest.h \
+    tests_common.h

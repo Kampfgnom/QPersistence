@@ -3,14 +3,15 @@
 #include "metaobject.h"
 #include "qpersistence.h"
 
-#include <QDebug>
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QMetaClassInfo>
 #include <QRegularExpression>
 #include <QStringList>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-static const QRegularExpression TOMANYRELATIONREGEXP("QList\\<(QSharedPointer|QWeakPointer)\\<(\\w+)\\> \\>");
-static const QRegularExpression MAPPINGRELATIONREGEXP("QMap\\<(.+),(.+)\\>");
-static const QRegularExpression SETTYPEREGEXP("QSet<(.+)\\>");
+static const char* TOMANYRELATIONREGEXP("QList\\<(QSharedPointer|QWeakPointer)\\<(.+)\\> \\>");
+static const char* MAPPINGRELATIONREGEXP("QMap\\<(.+),(.+)\\>");
+static const char* SETTYPEREGEXP("QSet<(.+)\\>");
 
 class QpMetaPropertyPrivate : public QSharedData
 {
@@ -20,11 +21,11 @@ public:
         cardinality(QpMetaProperty::UnknownCardinality)
     {}
 
+    QpMetaProperty::Cardinality cardinality;
     QString typeName;
     QMetaProperty metaProperty;
     QpMetaObject metaObject;
     mutable QHash<QString, QString> attributes;
-    QpMetaProperty::Cardinality cardinality;
     mutable QString columnName;
 };
 
@@ -36,9 +37,9 @@ QpMetaProperty::QpMetaProperty() :
 QpMetaProperty::QpMetaProperty(const QMetaProperty &property, const QpMetaObject &metaObject) :
     data(new QpMetaPropertyPrivate)
 {
-    data->metaProperty = property;
     data->metaObject = metaObject;
     data->typeName = property.typeName();
+    data->metaProperty = property;
 
     Q_ASSERT(isValid());
 }
@@ -77,6 +78,23 @@ QString QpMetaProperty::shortName(const QString &name) const
         result = result.left(56);
 
     return result;
+}
+
+void QpMetaProperty::parseAttributes() const
+{
+    QString classInfoName = QString(QPERSISTENCE_PROPERTYMETADATA).append(":").append(name());
+    QString classInfoRawValue = data->metaObject.classInformation(classInfoName.toLatin1(), QString());
+
+    // First parse the attributes
+    QRegularExpression reg("([^=]+)=([^=]+)");
+    QStringList attributesList = classInfoRawValue.split(';');
+    foreach (const QString attribute, attributesList) {
+        QRegularExpressionMatch match = reg.match(attribute);
+        if (!match.hasMatch())
+            continue;
+
+        data->attributes.insert( match.captured(1), match.captured(2) );
+    }
 }
 
 QpMetaProperty::~QpMetaProperty()
@@ -129,6 +147,14 @@ QVariant::Type QpMetaProperty::type() const
     return data->metaProperty.type();
 }
 
+QHash<QString, QString> QpMetaProperty::attributes() const
+{
+    if (data->attributes.isEmpty())
+        parseAttributes();
+
+    return data->attributes;
+}
+
 bool QpMetaProperty::isRelationProperty() const
 {
     return isToOneRelationProperty() || isToManyRelationProperty();
@@ -136,15 +162,24 @@ bool QpMetaProperty::isRelationProperty() const
 
 bool QpMetaProperty::isToOneRelationProperty() const
 {
-    QString type(typeName());
-    Q_ASSERT(!type.isEmpty());
-    return type.startsWith("QSharedPointer<")
-            || type.startsWith("QWeakPointer<");
+    if(data->cardinality == UnknownCardinality) {
+        QString type(typeName());
+        Q_ASSERT(!type.isEmpty());
+        return type.startsWith("QSharedPointer<")
+                || type.startsWith("QWeakPointer<");
+    }
+
+    return data->cardinality == OneToOneCardinality
+            || data->cardinality == ManyToOneCardinality;
 }
 
 bool QpMetaProperty::isToManyRelationProperty() const
 {
-    return TOMANYRELATIONREGEXP.match(typeName()).hasMatch();
+    if(data->cardinality == UnknownCardinality)
+        return QRegularExpression(TOMANYRELATIONREGEXP).match(typeName()).hasMatch();
+
+    return data->cardinality == OneToManyCardinality
+            || data->cardinality == ManyToManyCardinality;
 }
 
 bool QpMetaProperty::hasTableForeignKey() const
@@ -162,7 +197,7 @@ bool QpMetaProperty::hasTableForeignKey() const
     case QpMetaProperty::ManyToManyCardinality:
         return false;
 
-    default:
+    case UnknownCardinality:
         // This is BAD and should have asserted in cardinality()
         Q_ASSERT(false);
     }
@@ -213,7 +248,7 @@ QString QpMetaProperty::reverseClassName() const
         return name.left(l - 1).right(l - 16);
     }
 
-    QRegularExpressionMatch match = TOMANYRELATIONREGEXP.match(name);
+    QRegularExpressionMatch match = QRegularExpression(TOMANYRELATIONREGEXP).match(name);
     if (!match.hasMatch())
         return QString();
 
@@ -227,21 +262,8 @@ QpMetaObject QpMetaProperty::reverseMetaObject() const
 
 QString QpMetaProperty::reverseRelationName() const
 {
-    if (data->attributes.isEmpty()) {
-        QString classInfoName = QString(QPERSISTENCE_PROPERTYMETADATA).append(":").append(name());
-        QString classInfoRawValue = data->metaObject.classInformation(classInfoName.toLatin1(), QString());
-
-        // First parse the attributes
-        QRegularExpression reg("(\\w+)=(\\w+)");
-        QStringList attributesList = classInfoRawValue.split(';');
-        foreach (const QString attribute, attributesList) {
-            QRegularExpressionMatch match = reg.match(attribute);
-            if (!match.hasMatch())
-                continue;
-
-            data->attributes.insert( match.captured(1), match.captured(2) );
-        }
-    }
+    if (data->attributes.isEmpty())
+        parseAttributes();
 
     return data->attributes.value(QPERSISTENCE_PROPERTYMETADATA_REVERSERELATION);
 }
@@ -291,7 +313,7 @@ QString QpMetaProperty::tableName() const
                 .arg(s2);
         break;
 
-    default:
+    case UnknownCardinality:
         // This is BAD and should have asserted in cardinality()
         Q_ASSERT(false);
     }
@@ -306,7 +328,7 @@ bool QpMetaProperty::isMappingProperty() const
 
 QString QpMetaProperty::mappingFromTypeName() const
 {
-    QRegularExpressionMatch match = MAPPINGRELATIONREGEXP.match(typeName());
+    QRegularExpressionMatch match = QRegularExpression(MAPPINGRELATIONREGEXP).match(typeName());
     if (!match.hasMatch())
         return QString();
 
@@ -315,7 +337,7 @@ QString QpMetaProperty::mappingFromTypeName() const
 
 QString QpMetaProperty::mappingToTypeName() const
 {
-    QRegularExpressionMatch match = MAPPINGRELATIONREGEXP.match(typeName());
+    QRegularExpressionMatch match = QRegularExpression(MAPPINGRELATIONREGEXP).match(typeName());
     if (!match.hasMatch())
         return QString();
 
@@ -329,7 +351,7 @@ bool QpMetaProperty::isSetProperty() const
 
 QString QpMetaProperty::setType() const
 {
-    QRegularExpressionMatch match = SETTYPEREGEXP.match(typeName());
+    QRegularExpressionMatch match = QRegularExpression(SETTYPEREGEXP).match(typeName());
     if (!match.hasMatch())
         return QString();
 
@@ -342,9 +364,9 @@ bool QpMetaProperty::write(QObject *obj, const QVariant &value) const
         return false;
 
     QVariant::Type t = data->metaProperty.type();
-    if (value.canConvert(t)) {
+    if (value.canConvert(static_cast<int>(t))) {
         QVariant v(value);
-        v.convert(t);
+        v.convert(static_cast<int>(t));
         return data->metaProperty.write( obj, v );
     }
 

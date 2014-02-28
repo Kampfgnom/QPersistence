@@ -9,18 +9,19 @@ namespace Qp {
 
 namespace Private {
 
-const QString QPERSISTENCE_SHARED_POINTER_PROPERTY("_Qp_sharedpointer");
-
+QObject *GlobalGuard();
 void enableSharedFromThis(QSharedPointer<QObject> object);
+QSharedPointer<QObject> sharedFrom(const QObject *object);
 
 void setLastError(const QpError &error);
 
 int primaryKey(QObject *object);
 void setPrimaryKey(QObject *object, int key);
+
 #ifndef QP_NO_TIMESTAMPS
-QDateTime creationTimeInDatabase(QObject *object);
-QDateTime updateTimeInDatabase(QObject *object);
-QDateTime updateTimeInObject(QObject *object);
+double creationTimeInDatabase(QObject *object);
+double updateTimeInDatabase(QObject *object);
+double updateTimeInObject(QObject *object);
 #endif
 
 template<class T> QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bool *ok = 0);
@@ -37,7 +38,7 @@ QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bo
     QList<QSharedPointer<T> > result;
     result.reserve(list.size());
     if (ok) *ok = true;
-    Q_FOREACH(QWeakPointer<T> s, list) {
+    foreach(QWeakPointer<T> s, list) {
         QSharedPointer<T> p = s.toStrongRef();
         if (ok && !p) *ok = false;
         result.append(p);
@@ -49,7 +50,7 @@ template<class T>
 QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list)
 {
     QList<QWeakPointer<T> > result;
-    Q_FOREACH(QSharedPointer<T> s, list) result.append(s.toWeakRef());
+    foreach(QSharedPointer<T> s, list) result.append(s.toWeakRef());
     return result;
 }
 

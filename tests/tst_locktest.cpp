@@ -1,9 +1,5 @@
 #include "tst_locktest.h"
 
-#include <QSqlError>
-#include <QTimer>
-#include "database.h"
-
 LockTest::LockTest(QObject *parent) :
     QObject(parent)
 {
@@ -23,35 +19,30 @@ void LockTest::cleanup(QProcess *process)
     m_currentProcess = nullptr;
 }
 
-void LockTest::initTestCase()
-{
-    RelationTestBase::initDatabase();
-}
-
 void LockTest::testLockAndUnlockLocally()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
 
     QpLock lock = Qp::tryLock(parent);
-    QCOMPARE(qSharedPointerCast<ParentObject>(lock.object()), parent);
+    QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(lock.object()), parent);
     QCOMPARE(lock.status(), QpLock::LockedLocally);
 
     QpLock lockStatus = Qp::isLocked(parent);
-    QCOMPARE(qSharedPointerCast<ParentObject>(lockStatus.object()), parent);
+    QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(lockStatus.object()), parent);
     QCOMPARE(lockStatus.status(), QpLock::LockedLocally);
 
     QpLock unlock = Qp::unlock(parent);
-    QCOMPARE(qSharedPointerCast<ParentObject>(unlock.object()), parent);
+    QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(unlock.object()), parent);
     QCOMPARE(unlock.status(), QpLock::Unlocked);
 
     QpLock unlock2 = Qp::unlock(parent);
-    QCOMPARE(qSharedPointerCast<ParentObject>(unlock2.object()), parent);
+    QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(unlock2.object()), parent);
     QCOMPARE(unlock2.status(), QpLock::Unlocked);
 }
 
 void LockTest::testLockAndUnlockRemotely()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockAndUnlock));
 
     QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
@@ -61,7 +52,7 @@ void LockTest::testLockAndUnlockRemotely()
 
 void LockTest::testLockRemotelyAndUnlockLocally()
 {
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockAndUnlock));
 
     QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
@@ -69,12 +60,34 @@ void LockTest::testLockRemotelyAndUnlockLocally()
     QCOMPARE(Qp::isLocked(parent).status(), QpLock::Unlocked);
 }
 
+void LockTest::testLockInformationLocal()
+{
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
+    QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockAndUnlock));
+
+    QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
+    QpLock lock = Qp::isLocked(parent);
+    foreach(QString field, additionalLockInfo().keys()) {
+        QCOMPARE(lock.additionalInformation(field), additionalLockInfo().value(field));
+    }
+}
+
+void LockTest::testLockInformationRemote()
+{
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
+
+    QHash<QString, QVariant> i = additionalLockInfo();
+    QpLock lock = Qp::tryLock(parent, i);
+    foreach(QString field, i.keys()) {
+        QCOMPARE(lock.additionalInformation(field), i.value(field));
+    }
+}
 
 void LockTest::testSynchronizedCounter()
 {
     QFAIL("needs mysql server 5.6!");
 
-    QSharedPointer<ParentObject> parent = Qp::create<ParentObject>();
+    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockedCounting));
 
     // Wait for the remote process to have started
@@ -92,6 +105,8 @@ void LockTest::testSynchronizedCounter()
     Qp::synchronize(parent);
     QCOMPARE(parent->counter(), 200);
 }
+
+
 
 void LockTest::startProcess()
 {

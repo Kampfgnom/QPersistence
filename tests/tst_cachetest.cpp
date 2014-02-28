@@ -6,14 +6,6 @@ CacheTest::CacheTest()
 {
 }
 
-void CacheTest::initTestCase()
-{
-}
-
-void CacheTest::cleanupTestCase()
-{
-}
-
 void CacheTest::testBasics()
 {
     QpCache cache;

@@ -1,26 +1,23 @@
 #ifndef ONETOONERELATIONTEST_H
 #define ONETOONERELATIONTEST_H
 
-#include "database.h"
+#include "tests_common.h"
 
-class OneToOneRelationTest : public RelationTestBase
+class OneToOneRelationTest : public QObject
 {
     Q_OBJECT
 public:
     explicit OneToOneRelationTest(QObject *parent = 0);
 
-private Q_SLOTS:
+private slots:
     void initTestCase();
-    void cleanupTestCase();
 
+    void testOneToOneRelation();
     void testInitialDatabaseFKEmpty();
-
     void testDatabaseFKInsertFromParent();
     void testDatabaseFKInsertFromChild();
-
     void testDatabaseFKChangeFromParent();
     void testDatabaseFKChangeFromChild();
-
     void testDatabaseFKClearFromParent();
     void testDatabaseFKClearFromChild();
 
@@ -32,8 +29,8 @@ private:
     QpMetaProperty m_parentToChildRelation;
     QpMetaProperty m_childToParentRelation;
 
-    QVariant childFK(QSharedPointer<ParentObject> parent);
-    QVariant parentFK(QSharedPointer<ChildObject> child);
+    QVariant childFK(QSharedPointer<TestNameSpace::ParentObject> parent);
+    QVariant parentFK(QSharedPointer<TestNameSpace::ChildObject> child);
 };
 
 #endif // ONETOONERELATIONTEST_H

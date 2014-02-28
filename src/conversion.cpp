@@ -4,53 +4,55 @@ namespace Qp {
 
 namespace Private {
 
-QHash<int, ConverterBase *> convertersByUserType;
-QHash<QString, ConverterBase *> convertersByClassName;
+typedef QHash<int, ConverterBase *> HashIntToToConverter;
+typedef QHash<QString, ConverterBase *> HashStringToConverter;
+QP_DEFINE_STATIC_LOCAL(HashIntToToConverter, ConvertersByUserType)
+QP_DEFINE_STATIC_LOCAL(HashStringToConverter, ConvertersByClassName)
 
 bool canConvertToSqlStorableVariant(const QVariant &variant)
 {
-    return Private::convertersByUserType.contains(variant.userType());
+    return Private::ConvertersByUserType()->contains(variant.userType());
 }
 
 QString convertToSqlStorableVariant(const QVariant &variant)
 {
-    if (!Private::convertersByUserType.contains(variant.userType()))
+    if (!Private::ConvertersByUserType()->contains(variant.userType()))
         return variant.toString();
 
-    return Private::convertersByUserType.value(variant.userType())->convertToSqlStorableValue(variant);
+    return Private::ConvertersByUserType()->value(variant.userType())->convertToSqlStorableValue(variant);
 }
 
 bool canConvertFromSqlStoredVariant(QMetaType::Type type)
 {
-    return Private::convertersByUserType.contains(type);
+    return Private::ConvertersByUserType()->contains(type);
 }
 
 QVariant convertFromSqlStoredVariant(const QString &variant, QMetaType::Type type)
 {
-    if (!Private::convertersByUserType.contains(type))
+    if (!Private::ConvertersByUserType()->contains(type))
         return variant;
 
-    return Private::convertersByUserType.value(type)->convertFromSqlStorableValue(variant);
+    return Private::ConvertersByUserType()->value(type)->convertFromSqlStorableValue(variant);
 }
 
 void registerConverter(int variantType, ConverterBase *converter)
 {
-    convertersByUserType.insert(variantType, converter);
-    convertersByClassName.insert(converter->className(), converter);
+    ConvertersByUserType()->insert(variantType, converter);
+    ConvertersByClassName()->insert(converter->className(), converter);
 }
 
 QSharedPointer<QObject> objectCast(const QVariant &variant)
 {
-    Q_ASSERT(convertersByUserType.contains(variant.userType()));
+    Q_ASSERT(ConvertersByUserType()->contains(variant.userType()));
 
-    return convertersByUserType.value(variant.userType())->convertObject(variant);
+    return ConvertersByUserType()->value(variant.userType())->convertObject(variant);
 }
 
 QList<QSharedPointer<QObject> > objectListCast(const QVariant &variant)
 {
-    Q_ASSERT(convertersByUserType.contains(variant.userType()));
+    Q_ASSERT(ConvertersByUserType()->contains(variant.userType()));
 
-    return convertersByUserType.value(variant.userType())->convertList(variant);
+    return ConvertersByUserType()->value(variant.userType())->convertList(variant);
 }
 
 QVariant variantCast(QSharedPointer<QObject> object, const QString &classN)
@@ -60,15 +62,23 @@ QVariant variantCast(QSharedPointer<QObject> object, const QString &classN)
         Q_ASSERT(object);
         className = QLatin1String(object->metaObject()->className());
     }
-    Q_ASSERT(convertersByClassName.contains(className));
-    return convertersByClassName.value(className)->convertVariant(object);
+    Q_ASSERT(ConvertersByClassName()->contains(className));
+    return ConvertersByClassName()->value(className)->convertVariant(object);
 }
 
 QVariant variantListCast(QList<QSharedPointer<QObject> > objects, const QString &className)
 {
-    Q_ASSERT(convertersByClassName.contains(className));
-    return convertersByClassName.value(className)->convertVariantList(objects);
+    Q_ASSERT(ConvertersByClassName()->contains(className));
+    return ConvertersByClassName()->value(className)->convertVariantList(objects);
 }
+
+QList<QSharedPointer<QObject> > ConverterBase::convertList(const QVariant &variant) const { Q_UNUSED(variant) return QList<QSharedPointer<QObject> >(); }
+QSharedPointer<QObject> ConverterBase::convertObject(const QVariant &variant) const { Q_UNUSED(variant) return QSharedPointer<QObject>(); }
+QVariant ConverterBase::convertVariant(QSharedPointer<QObject> object) const { Q_UNUSED(object) return QVariant(); }
+QVariant ConverterBase::convertVariantList(QList<QSharedPointer<QObject> > objects) const { Q_UNUSED(objects) return QVariant(); }
+QString ConverterBase::className() const { return QString(); }
+QString ConverterBase::convertToSqlStorableValue(const QVariant &variant) const { Q_UNUSED(variant) return QString(); }
+QVariant ConverterBase::convertFromSqlStorableValue(const QString &value) const { Q_UNUSED(value) return QVariant(); }
 
 }
 

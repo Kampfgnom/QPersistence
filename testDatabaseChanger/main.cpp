@@ -3,13 +3,17 @@
 #include "parentobject.h"
 #include "../src/sqlquery.h"
 #include "../src/sqlcondition.h"
-#include <QtTest>
 #include "../tests/tst_synchronizetest.h"
+#include "../tests/tst_locktest.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QtTest>
 #include <QGuiApplication>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #ifndef QP_NO_LOCKS
-void lockedCounter(QSharedPointer<ParentObject> parent) {
+void lockedCounter(QSharedPointer<TestNameSpace::ParentObject> parent);
+void lockedCounter(QSharedPointer<TestNameSpace::ParentObject> parent) {
 
     for(int i = 0; i < 100; ++i) {
         QTRY_COMPARE(Qp::tryLock(parent).status(), QpLock::LockedLocally);
@@ -42,34 +46,39 @@ int main(int argc, char *argv[])
         db.setUserName("niklas");
         db.setPassword("niklas");
 
+        foreach(QString field, LockTest::additionalLockInfo().keys()) {
+            Qp::addAdditionalLockInformationField(field);
+        }
+
+        Qp::enableLocks();
         Qp::setDatabase(db);
         Qp::setSqlDebugEnabled(false);
-        Qp::registerClass<ParentObject>();
-        Qp::registerClass<ChildObject>();
+        Qp::registerClass<TestNameSpace::ParentObject>();
+        Qp::registerClass<TestNameSpace::ChildObject>();
     }
 
     QTest::qSleep(1000);
 
-    QSharedPointer<ParentObject> parent;
+    QSharedPointer<TestNameSpace::ParentObject> parent;
     if(id > 0)
-        parent = Qp::read<ParentObject>(id);
+        parent = Qp::read<TestNameSpace::ParentObject>(id);
 
     SynchronizeTest::ChangerMode mode = static_cast<SynchronizeTest::ChangerMode>(a.arguments().at(2).toInt());
 
     if(mode == SynchronizeTest::CreateAndUpdate) {
         qDebug() << "creating objects";
         for(int i = 0; i < id; ++i) {
-            Qp::create<ParentObject>();
+            Qp::create<TestNameSpace::ParentObject>();
         }
         QTest::qSleep(2000);
         qDebug() << "creating more objects";
         for(int i = 0; i < id; ++i) {
-            Qp::create<ParentObject>();
+            Qp::create<TestNameSpace::ParentObject>();
         }
 
         QTest::qSleep(1000);
         qDebug() << "updating objects";
-        foreach(QSharedPointer<ParentObject> o, Qp::readAll<ParentObject>()) {
+        foreach(QSharedPointer<TestNameSpace::ParentObject> o, Qp::readAll<TestNameSpace::ParentObject>()) {
             o->setAString("test");
             Qp::update(o);
         }
@@ -79,7 +88,9 @@ int main(int argc, char *argv[])
     }
     else if(mode == SynchronizeTest::LockAndUnlock) {
         QTest::qSleep(1000);
-        Qp::tryLock(parent);
+        QHash<QString, QVariant> i = LockTest::additionalLockInfo();
+        Qp::tryLock(parent, i);
+
         QTest::qSleep(1000);
         Qp::unlock(parent);
     }
@@ -87,7 +98,6 @@ int main(int argc, char *argv[])
         parent->increaseCounter();
         Qp::update(parent);
     }
-#ifndef SQLITE
     else if(mode == SynchronizeTest::Counter) {
         for(int i = 0; i < SynchronizeTest::childInts().size(); ++i) {
             parent->increaseCounter();
@@ -97,7 +107,7 @@ int main(int argc, char *argv[])
     }
     else if(mode == SynchronizeTest::OneToOne) {
         for(int i = 0; i < SynchronizeTest::childInts().size(); ++i) {
-            QSharedPointer<ChildObject> oneToOneChild = Qp::create<ChildObject>();
+            QSharedPointer<TestNameSpace::ChildObject> oneToOneChild = Qp::create<TestNameSpace::ChildObject>();
             oneToOneChild->setSomeInt(SynchronizeTest::childInts().at(i));
             Qp::update(oneToOneChild);
 
@@ -107,17 +117,17 @@ int main(int argc, char *argv[])
             QTest::qSleep(1000);
         }
 
-        parent->setChildObjectOneToOne(QSharedPointer<ChildObject>());
+        parent->setChildObjectOneToOne(QSharedPointer<TestNameSpace::ChildObject>());
         Qp::update(parent);
     }
     else if(mode == SynchronizeTest::OneToMany) {
         for(int i = 0; i < SynchronizeTest::childInts().size(); ++i) {
             for(int indexOneToMany = 0; indexOneToMany < SynchronizeTest::childInts().size(); ++indexOneToMany) {
-                QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+                QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
                 child->setSomeInt(SynchronizeTest::childInts().at(indexOneToMany));
                 Qp::update(child);
 
-                parent->addChildObjectOneToMany(child);
+                parent->addChildObjectsOneToMany(child);
             }
             Qp::update(parent);
 
@@ -127,18 +137,17 @@ int main(int argc, char *argv[])
     else if(mode == SynchronizeTest::ManyToMany) {
         for(int i = 0; i < SynchronizeTest::childInts().size(); ++i) {
             for(int indexOneToMany = 0; indexOneToMany < SynchronizeTest::childInts().size(); ++indexOneToMany) {
-                QSharedPointer<ChildObject> child = Qp::create<ChildObject>();
+                QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
                 child->setSomeInt(SynchronizeTest::childInts().at(indexOneToMany));
                 Qp::update(child);
 
-                parent->addChildObjectManyToMany(child);
+                parent->addChildObjectsManyToMany(child);
             }
             Qp::update(parent);
 
             QTest::qSleep(1000);
         }
     }
-#endif
 #endif
 
     return 0;
