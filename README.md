@@ -8,7 +8,7 @@ The library is currently only meant for internal usage. Some day it might be goo
 Getting started
 ===============
 
-QPersistence stores QObjects in QSqlDatabases. You have to establish the connection to the database register your model classes and make shure, that the database schema matches your model. QPersistence assists you with creating your schema with two methods:
+QPersistence stores QObjects in QSqlDatabases. You have to establish the connection to the database register your model classes and make sure, that the database schema matches your model. QPersistence assists you with creating your schema with two methods:
 
 ```` C++
 QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
