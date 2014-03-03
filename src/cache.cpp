@@ -13,20 +13,16 @@ public:
     QHash<int, QWeakPointer<QObject> > weakCacheById;
     mutable QLinkedList<QSharedPointer<QObject> > strongCache;
 
-    // is always in sync with strong cache. will be used to keep track of indizes,
-    // because indexOf(QObject*) is much faster than indexOf(QSharedPointer)
-    mutable QLinkedList<QObject *> pointerCache;
-
     void adjustQueue(QSharedPointer<QObject> accessedObject) const;
 };
 
 void QpCacheData::adjustQueue(QSharedPointer<QObject> accessedObject) const
 {
-    if (pointerCache.removeOne(accessedObject.data())) {
-        Q_ASSERT(strongCache.removeOne(accessedObject));
-    }
     strongCache.append(accessedObject);
-    pointerCache.append(accessedObject.data());
+
+    if (strongCacheSize < strongCache.size()) {
+        strongCache.takeFirst();
+    }
 }
 
 QpCache::QpCache() :
@@ -71,11 +67,9 @@ QSharedPointer<QObject> QpCache::insert(int id, QObject *object)
     data->weakCacheById.insert(id, weak);
 
     data->strongCache.append(p);
-    data->pointerCache.append(p.data());
 
     if (data->strongCacheSize < data->strongCache.size()) {
         data->strongCache.takeFirst();
-        data->pointerCache.takeFirst();
     }
 
     return p;
@@ -95,9 +89,7 @@ void QpCache::remove(int id)
 {
     QSharedPointer<QObject> p = data->weakCacheById.take(id).toStrongRef();
     if (p) {
-        if (data->pointerCache.removeOne(p.data())) {
-            Q_ASSERT(data->strongCache.removeOne(p));
-        }
+        Q_ASSERT(data->strongCache.removeOne(p));
     }
 }
 
@@ -110,7 +102,6 @@ void QpCache::setMaximumCacheSize(int size)
 {
     while (size < data->strongCache.size()) {
         data->strongCache.takeFirst();
-        data->pointerCache.takeFirst();
     }
 
     data->strongCacheSize = size;

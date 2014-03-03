@@ -6,10 +6,11 @@
 #include "../src/defines.h"
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QMainWindow>
+#include <QFutureWatcher>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 namespace Ui {
-class MainWindow;
+    class MainWindow;
 }
 
 class Object;
@@ -24,6 +25,7 @@ public:
 
     void createObjects();
 
+    void modelCreationFinished();
 private slots:
     void on_actionCreate_clean_schema_triggered();
 
@@ -33,8 +35,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-
-    QpSortFilterProxyObjectModel<Object> *m_model;
 };
 
 #endif // MAINWINDOW_H

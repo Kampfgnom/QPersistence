@@ -5,7 +5,7 @@ include($$QPERSISTENCE_PATH/QPersistence.pri)
 TARGET          = qpersistence_ui_tests
 VERSION         = 0.0.0
 TEMPLATE        = app
-QT              += sql testlib widgets gui
+QT              += sql testlib widgets gui concurrent
 CONFIG          += c++11 console
 CONFIG          -= app_bundle
 QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS

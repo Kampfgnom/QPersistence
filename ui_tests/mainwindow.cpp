@@ -9,6 +9,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QMessageBox>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QtConcurrent>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -30,11 +31,12 @@ MainWindow::MainWindow(QWidget *parent) :
         Qp::registerClass<Object>();
         Qp::adjustDatabaseSchema();
     }
+
     QpObjectListModel<Object> *model = new QpObjectListModel<Object>(this);
     model->setFetchCount(10000);
 
-    m_model = new QpSortFilterProxyObjectModel<Object>(model, this);
-    ui->treeView->setModel(m_model);
+    QpSortFilterProxyObjectModel<Object> *sortFilterModel = new QpSortFilterProxyObjectModel<Object>(model, this);
+    ui->treeView->setModel(sortFilterModel);
     ui->treeView->setColumnHidden(1, true);
 }
 
@@ -58,9 +60,8 @@ void MainWindow::on_actionCreate_objects_triggered()
     msg.setText("Creating objects. This may take a while...");
     msg.show();
 
-    QAbstractItemModel * m = ui->treeView->model();
-    ui->treeView->setModel(0);
-    delete m;
+
+    // TODO recreate model
 
     QSqlQuery query(Qp::database());
     query.prepare("INSERT INTO  `niklas`.`object` ("
@@ -91,16 +92,12 @@ void MainWindow::on_actionCreate_objects_triggered()
         }
     }
 
-    QpObjectListModel<Object> *model = new QpObjectListModel<Object>(this);
-    model->setFetchCount(1000);
-
-    m_model = new QpSortFilterProxyObjectModel<Object>(model, this);
-    ui->treeView->setModel(m_model);
-    ui->treeView->setColumnHidden(1, true);
+    // TODO recreate model
 }
 
 void MainWindow::on_lineEdit_textChanged(const QString &arg1)
 {
-    m_model->setFilterFixedString(arg1);
-    m_model->setFilterKeyColumn(2);
+    QpSortFilterProxyObjectModel<Object> *sortFilterModel = static_cast<QpSortFilterProxyObjectModel<Object>*>(ui->treeView->model());
+    sortFilterModel->setFilterFixedString(arg1);
+    sortFilterModel->setFilterKeyColumn(2);
 }

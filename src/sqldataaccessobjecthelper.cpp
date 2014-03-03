@@ -255,7 +255,7 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
 #endif
 }
 
-void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record, QObject *object)
+void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record, QObject *object, int primaryKeyRecordIndex, int updateTimeRecordIndex)
 {
     int fieldCount = record.count();
     for (int i = 0; i < fieldCount; ++i) {
@@ -284,9 +284,16 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query, c
         property.write(object, value);
     }
 
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, query.value(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
+    if(primaryKeyRecordIndex < 0)
+        primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, query.value(primaryKeyRecordIndex));
+
 #ifndef QP_NO_TIMESTAMPS
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, query.value(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME));
+    if(updateTimeRecordIndex < 0)
+        updateTimeRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
+
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, query.value(updateTimeRecordIndex));
 #endif
 }
 
