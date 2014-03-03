@@ -85,7 +85,7 @@ void SynchronizeTest::testSynchronizeOneToOneRelation()
         QCOMPARE(result, Qp::Updated);
 
         QSharedPointer<TestNameSpace::ChildObject> child = parent->childObjectOneToOne();
-        QTRY_VERIFY(lastUpdateTime == Qp::updateTimeInDatabase(child));
+        QTRY_COMPARE(lastUpdateTime, Qp::updateTimeInDatabase(child));
 
         Qp::synchronize(child);
         QCOMPARE(child->someInt(), childInts().at(i));
@@ -144,7 +144,7 @@ void SynchronizeTest::testSynchronizeManyToManyRelation()
         QList<QSharedPointer<TestNameSpace::ChildObject> > children = parent->childObjectsManyToMany();
         for(int i2 = 0; i2 < childInts().size(); ++i2) {
             QSharedPointer<TestNameSpace::ChildObject> child = children.at(i2 + childInts().size() * i);
-            QTRY_VERIFY(lastUpdateTime == Qp::updateTimeInDatabase(child));
+            QTRY_VERIFY(lastUpdateTime <= Qp::updateTimeInDatabase(child));
 
             Qp::synchronize(child);
             QCOMPARE(child->someInt(), childInts().at(i2));
@@ -192,7 +192,7 @@ void SynchronizeTest::testCreatedSince()
     QDateTime now = Qp::databaseTime();
     qDebug() << "Searching for new objects since " << now;
 
-    QTest::qSleep(1000);
+    QTest::qSleep(1010);
     QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(count, CreateAndUpdate));
 
     QList<QSharedPointer<TestNameSpace::ParentObject>> result;
@@ -209,9 +209,10 @@ void SynchronizeTest::testCreatedSince()
 void SynchronizeTest::testUpdatedSince()
 {
     int count = 20;
+    QTest::qSleep(1010);
     QDateTime now = Qp::databaseTime();
 
-    QTest::qSleep(1000);
+    QTest::qSleep(1010);
     QScopedPointer<QProcess, SynchronizeTest> process(startChangerProcess(count, CreateAndUpdate));
 
     QList<QSharedPointer<TestNameSpace::ParentObject>> result;

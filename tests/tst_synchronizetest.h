@@ -38,6 +38,7 @@ public:
 
     static void cleanup(QProcess *process);
 
+    void testSynchronizeCounter();
 
 private slots:
     void testCreatedSince();
@@ -45,7 +46,6 @@ private slots:
 
     void testUpdateTimeChangesFromOtherProcess();
     void testUnchangedSynchronizeResult();
-    void testSynchronizeCounter();
     void testSynchronizeOneToOneRelation();
     void testSynchronizeOneToManyRelation();
     void testSynchronizeManyToManyRelation();

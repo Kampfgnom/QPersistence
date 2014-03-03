@@ -365,7 +365,7 @@ void OneToManyRelationTest::testUpdateTimesFromParent()
     }
 
     qDebug() << "Sleeping 1 second...";
-    QTest::qSleep(1000);
+    QTest::qSleep(1010);
     Qp::update(parent);
 
     // verify only parent time is changed, when no relation changes
@@ -376,7 +376,7 @@ void OneToManyRelationTest::testUpdateTimesFromParent()
     }
 
     qDebug() << "Sleeping 1 second...";
-    QTest::qSleep(1000);
+    QTest::qSleep(1010);
 
     // change one child's parent
     QSharedPointer<TestNameSpace::ParentObject> parent2 = Qp::create<TestNameSpace::ParentObject>();
@@ -423,7 +423,7 @@ void OneToManyRelationTest::testUpdateTimesFromChild()
     }
 
     qDebug() << "Sleeping 1 second...";
-    QTest::qSleep(1000);
+    QTest::qSleep(1010);
     Qp::update(parent->childObjectsOneToMany().first());
 
     // verify child updatetime changes
@@ -454,7 +454,7 @@ void OneToManyRelationTest::testUpdateTimesFromChild()
 
 
     qDebug() << "Sleeping 1 second...";
-    QTest::qSleep(1000);
+    QTest::qSleep(1010);
 
     // change one child's parent
     QSharedPointer<TestNameSpace::ChildObject> changedChild = parent->childObjectsOneToMany().first();

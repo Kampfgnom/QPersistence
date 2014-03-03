@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
         Qp::registerClass<TestNameSpace::ChildObject>();
     }
 
-    QTest::qSleep(1000);
+    QTest::qSleep(1010);
 
     QSharedPointer<TestNameSpace::ParentObject> parent;
     if(id > 0)
@@ -66,19 +66,20 @@ int main(int argc, char *argv[])
     SynchronizeTest::ChangerMode mode = static_cast<SynchronizeTest::ChangerMode>(a.arguments().at(2).toInt());
 
     if(mode == SynchronizeTest::CreateAndUpdate) {
+        QList<QSharedPointer<TestNameSpace::ParentObject>> list;
         qDebug() << "creating objects";
         for(int i = 0; i < id; ++i) {
-            Qp::create<TestNameSpace::ParentObject>();
+            list << Qp::create<TestNameSpace::ParentObject>();
         }
         QTest::qSleep(2000);
         qDebug() << "creating more objects";
         for(int i = 0; i < id; ++i) {
-            Qp::create<TestNameSpace::ParentObject>();
+            list << Qp::create<TestNameSpace::ParentObject>();
         }
 
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
         qDebug() << "updating objects";
-        foreach(QSharedPointer<TestNameSpace::ParentObject> o, Qp::readAll<TestNameSpace::ParentObject>()) {
+        foreach(QSharedPointer<TestNameSpace::ParentObject> o, list) {
             o->setAString("test");
             Qp::update(o);
         }
@@ -87,11 +88,11 @@ int main(int argc, char *argv[])
         lockedCounter(parent);
     }
     else if(mode == SynchronizeTest::LockAndUnlock) {
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
         QHash<QString, QVariant> i = LockTest::additionalLockInfo();
         Qp::tryLock(parent, i);
 
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
         Qp::unlock(parent);
     }
     else if(mode == SynchronizeTest::ChangeOnce) {
@@ -102,7 +103,7 @@ int main(int argc, char *argv[])
         for(int i = 0; i < SynchronizeTest::childInts().size(); ++i) {
             parent->increaseCounter();
             Qp::update(parent);
-            QTest::qSleep(1000);
+            QTest::qSleep(1010);
         }
     }
     else if(mode == SynchronizeTest::OneToOne) {
@@ -114,7 +115,7 @@ int main(int argc, char *argv[])
             parent->setChildObjectOneToOne(oneToOneChild);
             Qp::update(parent);
 
-            QTest::qSleep(1000);
+            QTest::qSleep(1010);
         }
 
         parent->setChildObjectOneToOne(QSharedPointer<TestNameSpace::ChildObject>());
@@ -131,7 +132,7 @@ int main(int argc, char *argv[])
             }
             Qp::update(parent);
 
-            QTest::qSleep(1000);
+            QTest::qSleep(1010);
         }
     }
     else if(mode == SynchronizeTest::ManyToMany) {
@@ -145,7 +146,7 @@ int main(int argc, char *argv[])
             }
             Qp::update(parent);
 
-            QTest::qSleep(1000);
+            QTest::qSleep(1010);
         }
     }
 #endif

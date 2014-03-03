@@ -37,7 +37,7 @@ void CreationAndUpdateTimesTest::testUpdateTime()
     QDateTime creationTime = Qp::creationTimeInDatabase(parent);
 
     qDebug() << "Sleeping 1 second...";
-    QTest::qSleep(1000);
+    QTest::qSleep(1010);
     Qp::update(parent);
 
     QSqlQuery query("SELECT NOW()");
@@ -51,7 +51,7 @@ void CreationAndUpdateTimesTest::testUpdateTime()
     QCOMPARE(creationTime, creationTimeAfterUpdate);
     QVERIFY(updateTime != creationTime);
     QCOMPARE(updateTime, databaseTime);
-    QCOMPARE(updateTime, creationTime.addSecs(1));
+    QVERIFY(updateTime >= creationTime.addSecs(1));
 }
 
 void CreationAndUpdateTimesTest::VERIFY_QP_ERROR()

@@ -201,16 +201,20 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
 
     {
         qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
         Qp::update(parent);
         QDateTime updateTimeParentAfterParentUpdate = Qp::updateTimeInDatabase(parent);
         QDateTime updateTimeChildAfterParentUpdate = Qp::updateTimeInDatabase(child);
 
-        QCOMPARE(updateTimeParentAfterParentUpdate, updateTimeParent.addSecs(1));
+        QVERIFY2(updateTimeParentAfterParentUpdate >= updateTimeParent.addSecs(1),
+                 QString("%1 >= %2")
+                 .arg(updateTimeParentAfterParentUpdate.toString())
+                 .arg(updateTimeParent.addSecs(1).toString())
+                 .toLatin1());
         QCOMPARE(updateTimeChildAfterParentUpdate, updateTimeChild);
 
         qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
         Qp::update(child);
         QDateTime updateTimeParentAfterChildUpdate = Qp::updateTimeInDatabase(parent);
         QDateTime updateTimeChildAfterChildUpdate = Qp::updateTimeInDatabase(child);
@@ -221,7 +225,7 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
 
     {
         qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
         parent->setChildObjectOneToOne(child2);
         Qp::update(parent);
 
@@ -235,7 +239,7 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
 
     {
         qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
         Qp::synchronize(child);
         parent->setChildObjectOneToOne(child);
         QCOMPARE(Qp::update(child), Qp::UpdateSuccess);
@@ -248,7 +252,7 @@ void OneToOneRelationTest::testDatabaseUpdateTimes()
         QCOMPARE(updateTimeParentAfterUpdate, updateTimeChildAfterUpdate);
 
         qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
         Qp::synchronize(child3);
         parent->setChildObjectOneToOne(child3);
         QCOMPARE(Qp::update(child3), Qp::UpdateSuccess);

@@ -7,7 +7,7 @@
 
 namespace TestNameSpace {
 
-int ParentObject::NEXT_INDEX(0);
+int ParentObject::NEXT_INDEX(-1);
 
 ParentObject::ParentObject(QObject *parent) :
     QObject(parent),
@@ -20,9 +20,14 @@ ParentObject::ParentObject(QObject *parent) :
     m_hasManyMany(QpRelation(&ParentObject::hasManyMany)),
     m_testEnum(InitialValue),
     m_testOptions(InitialOption),
-    m_index(NEXT_INDEX++),
+    m_indexed(0),
     m_customColumn(-1)
 {
+    if(NEXT_INDEX == -1)
+        qsrand(time(0));
+
+    NEXT_INDEX = qrand();
+    m_indexed = NEXT_INDEX;
 }
 
 ParentObject::~ParentObject()
@@ -122,7 +127,7 @@ void ParentObject::setTestOptions(TestOptions arg)
 
 int ParentObject::indexed() const
 {
-    return m_index;
+    return m_indexed;
 }
 
 int ParentObject::customColumn() const
@@ -172,7 +177,7 @@ void ParentObject::removeHasManyMany(QSharedPointer<ChildObject> arg)
 
 void ParentObject::setIndexed(int arg)
 {
-    m_index = arg;
+    m_indexed = arg;
 }
 
 void ParentObject::setCustomColumn(int arg)

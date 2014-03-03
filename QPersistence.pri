@@ -14,6 +14,6 @@ QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Wall -Wall \
                                         -Wno-pragmas  \
                                         -Wno-unknown-warning-option
 
-DEFINES += QP_FOR_SQLITE
-#DEFINES += QP_FOR_MYSQL
+#DEFINES += QP_FOR_SQLITE
+DEFINES += QP_FOR_MYSQL
 

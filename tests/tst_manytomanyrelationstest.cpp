@@ -261,7 +261,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
         QDateTime previousTime = Qp::updateTimeInDatabase(addedChild);
 
         qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
 
         addedToParent->addChildObjectsManyToMany(addedChild);
         Qp::update(addedToParent);
@@ -283,7 +283,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
         QDateTime previousTime = Qp::updateTimeInDatabase(removedChild);
 
         qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
 
         removedFromParent->removeChildObjectsManyToMany(removedChild);
         Qp::update(removedFromParent);
@@ -306,7 +306,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromParent()
         QDateTime previousTime = Qp::updateTimeInDatabase(changedChild);
 
         qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
 
         addedToParent->addChildObjectsManyToMany(changedChild);
         Qp::update(addedToParent);
@@ -333,7 +333,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         QDateTime previousTime = Qp::updateTimeInDatabase(addedChild);
 
         qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
 
         addedToParent->addChildObjectsManyToMany(addedChild);
         Qp::update(addedChild);
@@ -355,7 +355,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         QDateTime previousTime = Qp::updateTimeInDatabase(removedChild);
 
         qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
 
         removedFromParent->removeChildObjectsManyToMany(removedChild);
         Qp::update(removedChild);
@@ -378,7 +378,7 @@ void ManyToManyRelationsTest::testUpdateTimesFromChild()
         QDateTime previousTime = Qp::updateTimeInDatabase(changedChild);
 
         qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1000);
+        QTest::qSleep(1010);
 
         addedToParent->addChildObjectsManyToMany(changedChild);
         Qp::update(changedChild);

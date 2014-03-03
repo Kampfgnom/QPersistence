@@ -147,7 +147,7 @@ private:
     QDateTime m_date;
     TestEnum m_testEnum;
     TestOptions m_testOptions;
-    int m_index;
+    int m_indexed;
     int m_customColumn;
 
     static int NEXT_INDEX;
