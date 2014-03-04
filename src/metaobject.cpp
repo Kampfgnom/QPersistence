@@ -107,6 +107,14 @@ QMetaMethod QpMetaObject::method(QString signature, const QpMetaProperty &proper
     if(index > 0)
         return data->metaObject.method(index);
 
+    // Remove a possible trailing 's' to match 'many' relations
+    signature.remove(signature.indexOf('(') - 1, 1);
+    normalized = QMetaObject::normalizedSignature(signature.toUtf8());
+    index = data->metaObject.indexOfMethod(normalized);
+
+    if(index > 0)
+        return data->metaObject.method(index);
+
     // Remove all 's' to even better match 'many' relations
 
     signature.remove('s');
