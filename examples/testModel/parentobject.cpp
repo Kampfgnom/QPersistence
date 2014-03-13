@@ -24,7 +24,7 @@ ParentObject::ParentObject(QObject *parent) :
     m_customColumn(-1)
 {
     if(NEXT_INDEX == -1)
-        qsrand(time(0));
+        qsrand(static_cast<uint>(time(0)));
 
     NEXT_INDEX = qrand();
     m_indexed = NEXT_INDEX;

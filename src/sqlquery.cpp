@@ -260,9 +260,9 @@ void QpSqlQuery::prepareCreateTable()
         QString name = value.join("_").prepend("_Qp_key_");
         query.append(name);
 #endif
-        QString fields = value.join(", ");
+        QString keyFields = value.join(", ");
         query.append(QString(" (%1)")
-                     .arg(fields));
+                     .arg(keyFields));
     }
 
     foreach (const QStringList foreignKey, data->foreignKeys) {
