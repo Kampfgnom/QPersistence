@@ -36,6 +36,9 @@ QpHasManyBase::~QpHasManyBase()
 
 QList<QSharedPointer<QObject> > QpHasManyBase::objects() const
 {
+    if(Qp::Private::primaryKey(data->parent) == 0)
+        return QList<QSharedPointer<QObject> >();
+
     if(data->resolved)
         return data->objects;
 

@@ -39,6 +39,9 @@ QpBelongsToOneBase::~QpBelongsToOneBase()
 
 QSharedPointer<QObject> QpBelongsToOneBase::object() const
 {
+    if(Qp::Private::primaryKey(data->parent) == 0)
+        return QSharedPointer<QObject>();
+
     QSharedPointer<QObject> object = data->object.toStrongRef();
     if(object)
         return object;
