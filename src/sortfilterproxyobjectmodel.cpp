@@ -12,6 +12,10 @@ int QpSortFilterProxyObjectModelBase::sortRoleCount() const
 
 QString QpSortFilterProxyObjectModelBase::sortRoleTitle(int sortRole) const
 {
+    if(sortRole >= Qt::UserRole + 1
+       && sortRole > sortRoleCount())
+        sortRole -= Qt::UserRole + 1;
+
     return sortRoles().at(sortRole);
 }
 
