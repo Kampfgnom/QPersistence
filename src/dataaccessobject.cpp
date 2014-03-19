@@ -94,8 +94,8 @@ QpMetaObject QpDaoBase::qpMetaObject() const
 
 int QpDaoBase::count() const
 {
-    if (data->count < 0)
-        data->count = data->sqlDataAccessObjectHelper->count(data->metaObject);;
+//    if (data->count < 0)
+        data->count = data->sqlDataAccessObjectHelper->count(data->metaObject);
 
     return data->count;
 }
