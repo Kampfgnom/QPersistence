@@ -17,6 +17,12 @@ public:
     int sortRoleCount() const;
     QString sortRoleTitle(int sortRole) const;
     virtual QStringList sortRoles() const;
+
+    bool includeDeletedObjects() const;
+    void setIncludeDeletedObjects(bool includeDeletedObjects);
+
+private:
+    bool m_includeDeletedObjects;
 };
 
 template<class T>
@@ -85,10 +91,15 @@ bool QpSortFilterProxyObjectModel<T>::lessThan(QSharedPointer<T> left, QSharedPo
 template<class T>
 bool QpSortFilterProxyObjectModel<T>::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
 {
+    QSharedPointer<T> o = sourceModel()->objectByIndex(sourceModel()->index(source_row, 0, source_parent));
+
+    if(!includeDeletedObjects()
+       && Qp::isDeleted(o))
+        return false;
+
     if(filterRole() < Qt::UserRole)
         return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
 
-    QSharedPointer<T> o = sourceModel()->objectByIndex(sourceModel()->index(source_row, 0, source_parent));
     return filterAcceptsObject(o);
 }
 

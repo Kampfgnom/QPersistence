@@ -27,6 +27,16 @@ void setPrimaryKey(QObject *object, int key)
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,key);
 }
 
+bool isDeleted(QObject *object)
+{
+    return object->property(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG).toBool();
+}
+
+void markAsDeleted(QObject *object)
+{
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG,true);
+}
+
 #ifndef QP_NO_TIMESTAMPS
 double creationTimeInDatabase(QObject *object)
 {

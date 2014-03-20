@@ -153,6 +153,19 @@ int primaryKey(QSharedPointer<T> object)
     return Qp::Private::primaryKey(object.data());
 }
 
+template<class T>
+bool isDeleted(QSharedPointer<T> object)
+{
+    return Qp::Private::isDeleted(object.data());
+}
+
+template<class T>
+bool markAsDeleted(QSharedPointer<T> object)
+{
+    Qp::Private::markAsDeleted(object.data());
+    return update(object);
+}
+
 #ifndef QP_NO_TIMESTAMPS
 QDateTime dateFromDouble(double value);
 

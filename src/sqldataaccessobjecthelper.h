@@ -38,7 +38,7 @@ public:
 #endif
 
     void readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record,
-                             QObject *object, int primaryKeyRecordIndex = -1, int updateTimeRecordIndex = -1);
+                             QObject *object, int primaryKeyRecordIndex = -1, int updateTimeRecordIndex = -1, int deletedFlagRecordIndex = -1);
 
     QpError lastError() const;
 

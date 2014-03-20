@@ -196,6 +196,8 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
                                            Qp::Private::primaryKey(object)));
     fillValuesIntoQuery(metaObject, object, query);
 
+    query.addField(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG, Qp::Private::isDeleted(object));
+
 #ifndef QP_NO_TIMESTAMPS
     query.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->database)->nowTimestamp());
 #endif
@@ -250,12 +252,19 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
     }
 
     query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG);
+
 #ifndef QP_NO_TIMESTAMPS
     query.addField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
 #endif
 }
 
-void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record, QObject *object, int primaryKeyRecordIndex, int updateTimeRecordIndex)
+void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
+                                                      const QSqlRecord record,
+                                                      QObject *object,
+                                                      int primaryKeyRecordIndex,
+                                                      int updateTimeRecordIndex,
+                                                      int deletedFlagRecordIndex)
 {
     int fieldCount = record.count();
     for (int i = 0; i < fieldCount; ++i) {
@@ -288,6 +297,11 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query, c
         primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
 
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, query.value(primaryKeyRecordIndex));
+
+    if(deletedFlagRecordIndex < 0)
+        deletedFlagRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG);
+
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG, query.value(deletedFlagRecordIndex));
 
 #ifndef QP_NO_TIMESTAMPS
     if(updateTimeRecordIndex < 0)

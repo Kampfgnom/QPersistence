@@ -1,7 +1,8 @@
 #include "sortfilterproxyobjectmodel.h"
 
 QpSortFilterProxyObjectModelBase::QpSortFilterProxyObjectModelBase(QObject *parent) :
-    QSortFilterProxyModel(parent)
+    QSortFilterProxyModel(parent),
+    m_includeDeletedObjects(false)
 {
 }
 
@@ -23,3 +24,14 @@ QStringList QpSortFilterProxyObjectModelBase::sortRoles() const
 {
     return QStringList();
 }
+
+bool QpSortFilterProxyObjectModelBase::includeDeletedObjects() const
+{
+    return m_includeDeletedObjects;
+}
+
+void QpSortFilterProxyObjectModelBase::setIncludeDeletedObjects(bool includeDeletedObjects)
+{
+    m_includeDeletedObjects = includeDeletedObjects;
+}
+

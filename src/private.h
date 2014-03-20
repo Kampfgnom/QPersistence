@@ -18,6 +18,9 @@ void setLastError(const QpError &error);
 int primaryKey(QObject *object);
 void setPrimaryKey(QObject *object, int key);
 
+bool isDeleted(QObject *object);
+void markAsDeleted(QObject *object);
+
 #ifndef QP_NO_TIMESTAMPS
 double creationTimeInDatabase(QObject *object);
 double updateTimeInDatabase(QObject *object);
