@@ -17,18 +17,18 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpDaoBaseData : public QSharedData
 {
-public:
-    QpDaoBaseData() :
-        QSharedData(),
-        count(-1)
-    {
-    }
+    public:
+        QpDaoBaseData() :
+            QSharedData(),
+            count(-1)
+        {
+        }
 
-    mutable int count;
-    QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper;
-    QpMetaObject metaObject;
-    mutable QpError lastError;
-    mutable QpCache cache;
+        mutable int count;
+        QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper;
+        QpMetaObject metaObject;
+        mutable QpError lastError;
+        mutable QpCache cache;
 };
 
 typedef QHash<QString, QpDaoBase *> HashStringToDao;
@@ -94,8 +94,8 @@ QpMetaObject QpDaoBase::qpMetaObject() const
 
 int QpDaoBase::count() const
 {
-//    if (data->count < 0)
-        data->count = data->sqlDataAccessObjectHelper->count(data->metaObject);
+    //    if (data->count < 0)
+    data->count = data->sqlDataAccessObjectHelper->count(data->metaObject);
 
     return data->count;
 }
@@ -240,8 +240,18 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
     return true;
 }
 
-Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object)
+Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object, int timeout)
 {
+    if(timeout > 0) {
+        int lastUpdate = m_lastSyncForObject.value(object);
+        int currentTime = QTime::currentTime().msecsSinceStartOfDay();
+
+        if(lastUpdate > 0 && currentTime - lastUpdate < timeout)
+            return Qp::LastSyncNewEnough;
+
+        m_lastSyncForObject.insert(object, currentTime);
+    }
+
     QObject *obj = object.data();
 
 #ifndef QP_NO_TIMESTAMPS
@@ -291,78 +301,78 @@ uint qHash(const QVariant &var)
 
     switch (var.type())
     {
-    case QVariant::Int:
-        return qHash( var.toInt() );
-    case QVariant::UInt:
-        return qHash( var.toUInt() );
-    case QVariant::Bool:
-        return qHash( var.toUInt() );
-    case QVariant::Double:
-        return qHash( var.toUInt() );
-    case QVariant::LongLong:
-        return qHash( var.toLongLong() );
-    case QVariant::ULongLong:
-        return qHash( var.toULongLong() );
-    case QVariant::String:
-        return qHash( var.toString() );
-    case QVariant::Char:
-        return qHash( var.toChar() );
-    case QVariant::StringList:
-        return qHash( var.toString() );
-    case QVariant::ByteArray:
-        return qHash( var.toByteArray() );
-    case QVariant::Date:
-    case QVariant::Time:
-    case QVariant::DateTime:
-    case QVariant::Url:
-    case QVariant::Locale:
-    case QVariant::RegExp:
-        return qHash( var.toString() );
-    case QVariant::BitArray:
-    case QVariant::Bitmap:
-    case QVariant::Brush:
-    case QVariant::Color:
-    case QVariant::Cursor:
-    case QVariant::EasingCurve:
-    case QVariant::Font:
-    case QVariant::Hash:
-    case QVariant::Icon:
-    case QVariant::Image:
-    case QVariant::Invalid:
-    case QVariant::KeySequence:
-    case QVariant::LastCoreType:
-    case QVariant::LastType:
-    case QVariant::Line:
-    case QVariant::LineF:
-    case QVariant::List:
-    case QVariant::Matrix4x4:
-    case QVariant::Matrix:
-    case QVariant::ModelIndex:
-    case QVariant::Palette:
-    case QVariant::Pen:
-    case QVariant::Pixmap:
-    case QVariant::Point:
-    case QVariant::PointF:
-    case QVariant::Polygon:
-    case QVariant::PolygonF:
-    case QVariant::Quaternion:
-    case QVariant::Rect:
-    case QVariant::RectF:
-    case QVariant::Region:
-    case QVariant::RegularExpression:
-    case QVariant::Size:
-    case QVariant::SizeF:
-    case QVariant::SizePolicy:
-    case QVariant::TextFormat:
-    case QVariant::TextLength:
-    case QVariant::Transform:
-    case QVariant::UserType:
-    case QVariant::Uuid:
-    case QVariant::Vector2D:
-    case QVariant::Vector3D:
-    case QVariant::Vector4D:
-    case QVariant::Map:
-        Q_ASSERT(false);
+        case QVariant::Int:
+            return qHash( var.toInt() );
+        case QVariant::UInt:
+            return qHash( var.toUInt() );
+        case QVariant::Bool:
+            return qHash( var.toUInt() );
+        case QVariant::Double:
+            return qHash( var.toUInt() );
+        case QVariant::LongLong:
+            return qHash( var.toLongLong() );
+        case QVariant::ULongLong:
+            return qHash( var.toULongLong() );
+        case QVariant::String:
+            return qHash( var.toString() );
+        case QVariant::Char:
+            return qHash( var.toChar() );
+        case QVariant::StringList:
+            return qHash( var.toString() );
+        case QVariant::ByteArray:
+            return qHash( var.toByteArray() );
+        case QVariant::Date:
+        case QVariant::Time:
+        case QVariant::DateTime:
+        case QVariant::Url:
+        case QVariant::Locale:
+        case QVariant::RegExp:
+            return qHash( var.toString() );
+        case QVariant::BitArray:
+        case QVariant::Bitmap:
+        case QVariant::Brush:
+        case QVariant::Color:
+        case QVariant::Cursor:
+        case QVariant::EasingCurve:
+        case QVariant::Font:
+        case QVariant::Hash:
+        case QVariant::Icon:
+        case QVariant::Image:
+        case QVariant::Invalid:
+        case QVariant::KeySequence:
+        case QVariant::LastCoreType:
+        case QVariant::LastType:
+        case QVariant::Line:
+        case QVariant::LineF:
+        case QVariant::List:
+        case QVariant::Matrix4x4:
+        case QVariant::Matrix:
+        case QVariant::ModelIndex:
+        case QVariant::Palette:
+        case QVariant::Pen:
+        case QVariant::Pixmap:
+        case QVariant::Point:
+        case QVariant::PointF:
+        case QVariant::Polygon:
+        case QVariant::PolygonF:
+        case QVariant::Quaternion:
+        case QVariant::Rect:
+        case QVariant::RectF:
+        case QVariant::Region:
+        case QVariant::RegularExpression:
+        case QVariant::Size:
+        case QVariant::SizeF:
+        case QVariant::SizePolicy:
+        case QVariant::TextFormat:
+        case QVariant::TextLength:
+        case QVariant::Transform:
+        case QVariant::UserType:
+        case QVariant::Uuid:
+        case QVariant::Vector2D:
+        case QVariant::Vector3D:
+        case QVariant::Vector4D:
+        case QVariant::Map:
+            Q_ASSERT(false);
     }
 
     // could not generate a hash for the given variant

@@ -47,7 +47,7 @@ public:
     QSharedPointer<QObject> createObject();
     Qp::UpdateResult updateObject(QSharedPointer<QObject> object);
     bool removeObject(QSharedPointer<QObject> object);
-    Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object);
+    Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, int timeout = -1);
 
 #ifndef QP_NO_TIMESTAMPS
     QList<QSharedPointer<QObject>> createdSince(const QDateTime &time);
@@ -67,6 +67,8 @@ protected:
                        QObject *parent = 0);
 
     virtual QObject *createInstance() const = 0;
+
+    mutable QHash<QSharedPointer<QObject>, int> m_lastSyncForObject;
 
 private:
     QSharedDataPointer<QpDaoBaseData> data;
