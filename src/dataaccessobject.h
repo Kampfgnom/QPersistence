@@ -40,7 +40,7 @@ public:
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
     QpMetaObject qpMetaObject() const;
 
-    int count() const;
+    int count(bool fromDatabase = false) const;
     QList<int> allKeys(int skip = -1, int count = -1) const;
     QList<QSharedPointer<QObject> > readAllObjects(int skip = -1, int count = -1, const QpSqlCondition &condition = QpSqlCondition()) const;
     QSharedPointer<QObject> readObject(int id) const;

@@ -45,6 +45,8 @@ public:
     QList<QSharedPointer<T> > objects() const;
     void setObjects(const QList<QSharedPointer<T> > &objects);
 
+    bool fetchCreatedObjects();
+
     bool canFetchMore(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     void fetchMore(const QModelIndex &parent = QModelIndex()) Q_DECL_OVERRIDE;
     QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const Q_DECL_OVERRIDE;
@@ -145,6 +147,20 @@ void QpObjectListModel<T>::setObjects(const QList<QSharedPointer<T> > &objects)
     m_objectsFromDao = false;
     disconnect(Qp::dataAccessObject<T>(),&QpDaoBase::objectCreated,this,0);
     endResetModel();
+}
+
+template<class T>
+bool QpObjectListModel<T>::fetchCreatedObjects()
+{
+    if(!m_objectsFromDao)
+        return false;
+
+    QpDao<T> *dao = Qp::dataAccessObject<T>();
+    if(dao->count(true) <= m_objects.size())
+        return false;
+
+    fetchMore();
+    return true;
 }
 
 template<class T>

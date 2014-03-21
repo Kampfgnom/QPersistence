@@ -54,6 +54,12 @@ double updateTimeInObject(QObject *object)
 {
     return object->property(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME).toDouble();
 }
+
+double creationTimeInObject(QObject *object)
+{
+    return object->property(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME).toDouble();
+}
+
 #endif
 
 typedef QHash<const QObject *, QWeakPointer<QObject>> WeakPointerHash;

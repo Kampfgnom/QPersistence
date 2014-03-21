@@ -85,7 +85,7 @@ bool QpSortFilterProxyObjectModel<T>::lessThan(const QModelIndex &left, const QM
 template<class T>
 bool QpSortFilterProxyObjectModel<T>::lessThan(QSharedPointer<T> left, QSharedPointer<T> right) const
 {
-    return left < right;
+    return Qp::primaryKey(left) < Qp::primaryKey(right);
 }
 
 template<class T>

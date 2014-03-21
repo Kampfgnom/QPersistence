@@ -92,10 +92,10 @@ QpMetaObject QpDaoBase::qpMetaObject() const
     return data->metaObject;
 }
 
-int QpDaoBase::count() const
+int QpDaoBase::count(bool fromDatabase) const
 {
-    //    if (data->count < 0)
-    data->count = data->sqlDataAccessObjectHelper->count(data->metaObject);
+    if(fromDatabase || data->count < 0)
+        data->count = data->sqlDataAccessObjectHelper->count(data->metaObject);
 
     return data->count;
 }
@@ -240,13 +240,13 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
     return true;
 }
 
-Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object, int timeout)
+Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object, int updateInterval)
 {
-    if(timeout > 0) {
+    if(updateInterval > 0) {
         int lastUpdate = m_lastSyncForObject.value(object);
         int currentTime = QTime::currentTime().msecsSinceStartOfDay();
 
-        if(lastUpdate > 0 && currentTime - lastUpdate < timeout)
+        if(lastUpdate > 0 && currentTime - lastUpdate < updateInterval)
             return Qp::LastSyncNewEnough;
 
         m_lastSyncForObject.insert(object, currentTime);

@@ -116,9 +116,9 @@ UpdateResult update(QSharedPointer<T> object)
 }
 
 template<class T>
-SynchronizeResult synchronize(QSharedPointer<T> object, int timeout)
+SynchronizeResult synchronize(QSharedPointer<T> object, int updateInterval)
 {
-    return QpDaoBase::forClass(*object->metaObject())->synchronizeObject(object, timeout);
+    return QpDaoBase::forClass(*object->metaObject())->synchronizeObject(object, updateInterval);
 }
 
 template<class T>
