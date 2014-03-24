@@ -162,8 +162,7 @@ bool isDeleted(QSharedPointer<T> object)
 template<class T>
 bool markAsDeleted(QSharedPointer<T> object)
 {
-    Qp::Private::markAsDeleted(object.data());
-    return update(object);
+    return QpDaoBase::forClass(*object->metaObject())->markAsDeleted(object);
 }
 
 #ifndef QP_NO_TIMESTAMPS

@@ -29,7 +29,9 @@ enum SynchronizeResult : short {
     Error,
     Unchanged,
     Updated,
-    LastSyncNewEnough
+    LastSyncNewEnough,
+    Removed,
+    Deleted
 };
 
 enum UpdateResult : short {

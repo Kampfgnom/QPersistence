@@ -53,7 +53,6 @@ template<class T>
 QpObjectListModel<T> *QpSortFilterProxyObjectModel<T>::sourceModel() const
 {
     return static_cast<QpObjectListModel<T> *>(QSortFilterProxyModel::sourceModel());
-
 }
 
 template<class T>
@@ -68,7 +67,6 @@ QModelIndex QpSortFilterProxyObjectModel<T>::index(int row, int column, const QM
 {
     return QSortFilterProxyModel::index(row, column, parent);
 }
-
 
 template<class T>
 bool QpSortFilterProxyObjectModel<T>::lessThan(const QModelIndex &left, const QModelIndex &right) const

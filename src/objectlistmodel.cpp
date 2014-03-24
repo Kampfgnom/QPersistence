@@ -27,6 +27,3 @@ void QpObjectListModelBase::setFetchCount(int fetchCount)
 {
     m_fetchCount = fetchCount;
 }
-
-
-

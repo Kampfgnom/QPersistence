@@ -240,6 +240,16 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
     return true;
 }
 
+bool QpDaoBase::markAsDeleted(QSharedPointer<QObject> object)
+{
+    Qp::Private::markAsDeleted(object.data());
+    Qp::UpdateResult result = updateObject(object);
+    if(result == Qp::UpdateSuccess)
+        emit objectMarkedAsDeleted(object);
+
+    return result;
+}
+
 Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object, int updateInterval)
 {
     if(updateInterval > 0) {
@@ -265,16 +275,32 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
     int id = Qp::primaryKey(object);
     if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, obj)) {
         QpError error = data->sqlDataAccessObjectHelper->lastError();
-        if(error.isValid())
+        if(error.isValid()) {
             setLastError(error);
+            return Qp::Error;
+        }
 
-        return Qp::Error;
+        if(data->count < 0)
+            count();
+        else
+            --data->count;
+
+        data->cache.remove(Qp::primaryKey(object));
+        emit objectRemoved(object);
+
+        return Qp::Removed;
     }
 
     foreach(QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
         QpRelationResolver::readRelationFromDatabase(relation, obj);
     }
 
+    if(Qp::Private::isDeleted(object.data())) {
+        emit objectMarkedAsDeleted(object);
+        return Qp::Deleted;
+    }
+
+    emit objectUpdated(object);
     return Qp::Updated;
 }
 
