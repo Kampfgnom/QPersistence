@@ -27,6 +27,16 @@ void setPrimaryKey(QObject *object, int key)
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,key);
 }
 
+bool isDeleted(QObject *object)
+{
+    return object->property(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG).toBool();
+}
+
+void markAsDeleted(QObject *object)
+{
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG,true);
+}
+
 #ifndef QP_NO_TIMESTAMPS
 double creationTimeInDatabase(QObject *object)
 {
@@ -44,6 +54,12 @@ double updateTimeInObject(QObject *object)
 {
     return object->property(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME).toDouble();
 }
+
+double creationTimeInObject(QObject *object)
+{
+    return object->property(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME).toDouble();
+}
+
 #endif
 
 typedef QHash<const QObject *, QWeakPointer<QObject>> WeakPointerHash;

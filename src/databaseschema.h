@@ -19,6 +19,7 @@ class QpDatabaseSchema : public QObject
 {
     Q_OBJECT
 public:
+    static const char* COLUMN_NAME_DELETEDFLAG;
     static const char* COLUMN_NAME_PRIMARY_KEY;
     static const char* ONDELETE_CASCADE;
 #ifndef QP_NO_TIMESTAMPS

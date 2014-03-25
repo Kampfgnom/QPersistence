@@ -33,11 +33,11 @@ void LockTest::testLockAndUnlockLocally()
 
     QpLock unlock = Qp::unlock(parent);
     QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(unlock.object()), parent);
-    QCOMPARE(unlock.status(), QpLock::Unlocked);
+    QCOMPARE(unlock.status(), QpLock::UnlockedLocalLock);
 
     QpLock unlock2 = Qp::unlock(parent);
     QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(unlock2.object()), parent);
-    QCOMPARE(unlock2.status(), QpLock::Unlocked);
+    QCOMPARE(unlock2.status(), QpLock::NotLocked);
 }
 
 void LockTest::testLockAndUnlockRemotely()
@@ -47,7 +47,7 @@ void LockTest::testLockAndUnlockRemotely()
 
     QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
     QCOMPARE(Qp::tryLock(parent).status(), QpLock::LockedRemotely);
-    QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::Unlocked);
+    QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::NotLocked);
 }
 
 void LockTest::testLockRemotelyAndUnlockLocally()
@@ -56,8 +56,8 @@ void LockTest::testLockRemotelyAndUnlockLocally()
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockAndUnlock));
 
     QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
-    QCOMPARE(Qp::unlock(parent).status(), QpLock::Unlocked);
-    QCOMPARE(Qp::isLocked(parent).status(), QpLock::Unlocked);
+    QCOMPARE(Qp::unlock(parent).status(), QpLock::UnlockedRemoteLock);
+    QCOMPARE(Qp::isLocked(parent).status(), QpLock::NotLocked);
 }
 
 void LockTest::testLockInformationLocal()

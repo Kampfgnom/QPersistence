@@ -28,7 +28,10 @@ enum CommitResult {
 enum SynchronizeResult : short {
     Error,
     Unchanged,
-    Updated
+    Updated,
+    LastSyncNewEnough,
+    Removed,
+    Deleted
 };
 
 enum UpdateResult : short {
@@ -66,7 +69,9 @@ template<class T> int count();
 template<class T> QSharedPointer<T> create();
 template<class T> UpdateResult update(QSharedPointer<T> object);
 template<class T> bool remove(QSharedPointer<T> object);
-template<class T> SynchronizeResult synchronize(QSharedPointer<T> object);
+template<class T> bool markAsDeleted(QSharedPointer<T> object);
+template<class T> bool isDeleted(QSharedPointer<T> object);
+template<class T> SynchronizeResult synchronize(QSharedPointer<T> object, int timeout = -1);
 #ifndef QP_NO_TIMESTAMPS
 template<class T> QList<QSharedPointer<T>> createdSince(const QDateTime &time);
 template<class T> QList<QSharedPointer<T>> updatedSince(const QDateTime &time);

@@ -116,9 +116,9 @@ UpdateResult update(QSharedPointer<T> object)
 }
 
 template<class T>
-SynchronizeResult synchronize(QSharedPointer<T> object)
+SynchronizeResult synchronize(QSharedPointer<T> object, int updateInterval)
 {
-    return QpDaoBase::forClass(*object->metaObject())->synchronizeObject(object);
+    return QpDaoBase::forClass(*object->metaObject())->synchronizeObject(object, updateInterval);
 }
 
 template<class T>
@@ -151,6 +151,18 @@ template<class T>
 int primaryKey(QSharedPointer<T> object)
 {
     return Qp::Private::primaryKey(object.data());
+}
+
+template<class T>
+bool isDeleted(QSharedPointer<T> object)
+{
+    return Qp::Private::isDeleted(object.data());
+}
+
+template<class T>
+bool markAsDeleted(QSharedPointer<T> object)
+{
+    return QpDaoBase::forClass(*object->metaObject())->markAsDeleted(object);
 }
 
 #ifndef QP_NO_TIMESTAMPS

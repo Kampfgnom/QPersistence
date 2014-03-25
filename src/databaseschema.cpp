@@ -20,6 +20,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlDriver>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
+const char* QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG("_Qp_deleted");
 const char* QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
 const char* QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
 #ifndef QP_NO_TIMESTAMPS
@@ -164,6 +165,7 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
 
     // Add the primary key
     data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
+    data->query.addField(COLUMN_NAME_DELETEDFLAG, "BOOLEAN DEFAULT false");
 
 #ifndef QP_NO_TIMESTAMPS
     // Add timestamp columns

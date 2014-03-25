@@ -39,6 +39,9 @@ QpHasOneBase::~QpHasOneBase()
 
 QSharedPointer<QObject> QpHasOneBase::object() const
 {
+    if(Qp::Private::primaryKey(data->parent) == 0)
+        return QSharedPointer<QObject>();
+
     if(data->resolved)
         return data->object;
 

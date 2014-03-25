@@ -40,6 +40,9 @@ QpBelongsToManyBase::~QpBelongsToManyBase()
 
 QList<QSharedPointer<QObject> > QpBelongsToManyBase::objects() const
 {
+    if(Qp::Private::primaryKey(data->parent) == 0)
+        return QList<QSharedPointer<QObject>>();
+
     if(data->resolved) {
         bool ok = false;
         QList<QSharedPointer<QObject> > objs = Qp::Private::makeListStrong(data->objects, &ok);

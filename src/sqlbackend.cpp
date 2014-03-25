@@ -167,6 +167,7 @@ QString QpMySqlBackend::variantTypeToSqlType(QVariant::Type type) const
     case QVariant::Int:
         return QLatin1String("INTEGER");
     case QVariant::Bool:
+        return QLatin1String("BOOLEAN");
     case QVariant::ULongLong:
         return QLatin1String("BIGINT");
     case QVariant::String:

@@ -27,9 +27,12 @@ public:
 #ifndef QP_NO_LOCKS
     enum Status {
         UnkownStatus,
-        Unlocked,
+        UnlockedLocalLock,
+        UnlockedRemoteLock,
+        UnlockedRemotely,
         LockedRemotely,
         LockedLocally,
+        NotLocked,
         DatabaseError
     };
 

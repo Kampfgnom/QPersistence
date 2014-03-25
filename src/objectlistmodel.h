@@ -26,6 +26,7 @@ protected slots:
     virtual void objectInserted(QSharedPointer<QObject>) = 0;
     virtual void objectUpdated(QSharedPointer<QObject>) = 0;
     virtual void objectRemoved(QSharedPointer<QObject>) = 0;
+    virtual void objectMarkedAsDeleted(QSharedPointer<QObject>) = 0;
 
 protected:
     int m_fetchCount;
@@ -45,6 +46,8 @@ public:
     QList<QSharedPointer<T> > objects() const;
     void setObjects(const QList<QSharedPointer<T> > &objects);
 
+    bool fetchCreatedObjects();
+
     bool canFetchMore(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     void fetchMore(const QModelIndex &parent = QModelIndex()) Q_DECL_OVERRIDE;
     QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const Q_DECL_OVERRIDE;
@@ -57,6 +60,7 @@ protected:
     void objectInserted(QSharedPointer<QObject>) Q_DECL_OVERRIDE;
     void objectUpdated(QSharedPointer<QObject>) Q_DECL_OVERRIDE;
     void objectRemoved(QSharedPointer<QObject>) Q_DECL_OVERRIDE;
+    void objectMarkedAsDeleted(QSharedPointer<QObject>);
 
 private:
     mutable QHash<QSharedPointer<T>, int> m_rows;
@@ -75,6 +79,8 @@ QpObjectListModel<T>::QpObjectListModel(QObject *parent) :
             this, &QpObjectListModel<T>::objectRemoved);
     connect(dao, &QpDaoBase::objectUpdated,
             this, &QpObjectListModel<T>::objectUpdated);
+    connect(dao, &QpDaoBase::objectMarkedAsDeleted,
+            this, &QpObjectListModel<T>::objectMarkedAsDeleted);
 }
 
 template<class T>
@@ -148,6 +154,20 @@ void QpObjectListModel<T>::setObjects(const QList<QSharedPointer<T> > &objects)
 }
 
 template<class T>
+bool QpObjectListModel<T>::fetchCreatedObjects()
+{
+    if(!m_objectsFromDao)
+        return false;
+
+    QpDao<T> *dao = Qp::dataAccessObject<T>();
+    if(dao->count(true) <= m_objects.size())
+        return false;
+
+    fetchMore();
+    return true;
+}
+
+template<class T>
 int QpObjectListModel<T>::rowCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
@@ -206,6 +226,13 @@ void QpObjectListModel<T>::objectRemoved(QSharedPointer<QObject> object)
 
     if (row >= 0)
         endRemoveRows();
+}
+
+template<class T>
+void QpObjectListModel<T>::objectMarkedAsDeleted(QSharedPointer<QObject> object)
+{
+    qDebug() << Q_FUNC_INFO;
+    objectUpdated(object);
 }
 
 template<class T>
