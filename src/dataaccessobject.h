@@ -42,17 +42,20 @@ public:
 
     int count(bool fromDatabase = false) const;
     QList<int> allKeys(int skip = -1, int count = -1) const;
-    QList<QSharedPointer<QObject> > readAllObjects(int skip = -1, int count = -1, const QpSqlCondition &condition = QpSqlCondition()) const;
+    QList<QSharedPointer<QObject> > readAllObjects(int skip = -1, int count = -1, const QpSqlCondition &condition = QpSqlCondition(), bool onlyUncached = false) const;
     QSharedPointer<QObject> readObject(int id) const;
     QSharedPointer<QObject> createObject();
     Qp::UpdateResult updateObject(QSharedPointer<QObject> object);
     bool removeObject(QSharedPointer<QObject> object);
     bool markAsDeleted(QSharedPointer<QObject> object);
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, int timeout = -1);
+    bool synchronizeAllObjects();
 
 #ifndef QP_NO_TIMESTAMPS
     QList<QSharedPointer<QObject>> createdSince(const QDateTime &time);
+    QList<QSharedPointer<QObject> > createdSince(double time);
     QList<QSharedPointer<QObject>> updatedSince(const QDateTime &time);
+    QList<QSharedPointer<QObject> > updatedSince(double time);
 #endif
 
     QpError lastError() const;
@@ -77,6 +80,8 @@ private:
 
     void setLastError(const QpError &error) const;
     void resetLastError() const;
+
+    Qp::SynchronizeResult sync(QSharedPointer<QObject> object);
 
     Q_DISABLE_COPY(QpDaoBase)
 };

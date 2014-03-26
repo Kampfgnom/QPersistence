@@ -74,6 +74,11 @@ bool QpSortFilterProxyObjectModel<T>::lessThan(const QModelIndex &left, const QM
     if(sortRole() <= Qt::UserRole)
         return QSortFilterProxyModel::lessThan(left, right);
 
+    if(!left.isValid())
+        return true;
+    if(!right.isValid())
+        return false;
+
     QSharedPointer<T> o1 = sourceModel()->objectByIndex(left);
     QSharedPointer<T> o2 = sourceModel()->objectByIndex(right);
 

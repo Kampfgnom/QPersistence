@@ -148,14 +148,7 @@ QDateTime dateFromDouble(double value)
 
 QDateTime databaseTime()
 {
-    QpSqlQuery query(Qp::database());
-    if(!query.exec(QString("SELECT %1").arg(QpSqlBackend::forDatabase(Qp::database())->nowTimestamp()))
-            || !query.first()) {
-        Qp::Private::setLastError(QpError(query.lastError()));
-        return QDateTime();
-    }
-
-    return dateFromDouble(query.value(0).toDouble());
+    return dateFromDouble(Private::databaseTime());
 }
 
 }

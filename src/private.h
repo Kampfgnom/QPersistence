@@ -26,6 +26,7 @@ double creationTimeInDatabase(QObject *object);
 double updateTimeInDatabase(QObject *object);
 double updateTimeInObject(QObject *object);
 double creationTimeInObject(QObject *object);
+double databaseTime();
 #endif
 
 template<class T> QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bool *ok = 0);

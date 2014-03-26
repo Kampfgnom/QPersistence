@@ -46,7 +46,7 @@ public:
     QList<QSharedPointer<T> > objects() const;
     void setObjects(const QList<QSharedPointer<T> > &objects);
 
-    bool fetchCreatedObjects();
+//    bool fetchCreatedObjects();
 
     bool canFetchMore(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     void fetchMore(const QModelIndex &parent = QModelIndex()) Q_DECL_OVERRIDE;
@@ -154,20 +154,6 @@ void QpObjectListModel<T>::setObjects(const QList<QSharedPointer<T> > &objects)
 }
 
 template<class T>
-bool QpObjectListModel<T>::fetchCreatedObjects()
-{
-    if(!m_objectsFromDao)
-        return false;
-
-    QpDao<T> *dao = Qp::dataAccessObject<T>();
-    if(dao->count(true) <= m_objects.size())
-        return false;
-
-    fetchMore();
-    return true;
-}
-
-template<class T>
 int QpObjectListModel<T>::rowCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
@@ -189,7 +175,17 @@ template<class T>
 void QpObjectListModel<T>::objectInserted(QSharedPointer<QObject> object)
 {
     QSharedPointer<T> t = qSharedPointerCast<T>(object);
-    int row = rowOf(t);
+
+    int row = -1;
+
+    if(!m_objects.contains(t)) {
+        row = m_objects.size();
+        m_objects.append(t);
+    }
+    else {
+        row = rowOf(t);
+    }
+
     while (row < 0 && canFetchMore()) {
         fetchMore();
         row = rowOf(t);
@@ -231,7 +227,6 @@ void QpObjectListModel<T>::objectRemoved(QSharedPointer<QObject> object)
 template<class T>
 void QpObjectListModel<T>::objectMarkedAsDeleted(QSharedPointer<QObject> object)
 {
-    qDebug() << Q_FUNC_INFO;
     objectUpdated(object);
 }
 
