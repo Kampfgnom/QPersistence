@@ -33,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     QpObjectListModel<Object> *model = new QpObjectListModel<Object>(this);
-    model->setFetchCount(10000);
+//    model->setFetchCount(10000);
 
     QpSortFilterProxyObjectModel<Object> *sortFilterModel = new QpSortFilterProxyObjectModel<Object>(model, this);
     ui->treeView->setModel(sortFilterModel);

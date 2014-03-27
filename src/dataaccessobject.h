@@ -40,15 +40,15 @@ public:
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
     QpMetaObject qpMetaObject() const;
 
-    int count(bool fromDatabase = false) const;
+    int count() const;
     QList<int> allKeys(int skip = -1, int count = -1) const;
-    QList<QSharedPointer<QObject> > readAllObjects(int skip = -1, int count = -1, const QpSqlCondition &condition = QpSqlCondition(), bool onlyUncached = false) const;
+    QList<QSharedPointer<QObject> > readAllObjects(int skip = -1, int count = -1, const QpSqlCondition &condition = QpSqlCondition()) const;
     QSharedPointer<QObject> readObject(int id) const;
     QSharedPointer<QObject> createObject();
     Qp::UpdateResult updateObject(QSharedPointer<QObject> object);
     bool removeObject(QSharedPointer<QObject> object);
     bool markAsDeleted(QSharedPointer<QObject> object);
-    Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, int timeout = -1);
+    Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object);
     bool synchronizeAllObjects();
 
 #ifndef QP_NO_TIMESTAMPS
@@ -72,8 +72,6 @@ protected:
                        QObject *parent = 0);
 
     virtual QObject *createInstance() const = 0;
-
-    mutable QHash<QSharedPointer<QObject>, int> m_lastSyncForObject;
 
 private:
     QSharedDataPointer<QpDaoBaseData> data;
