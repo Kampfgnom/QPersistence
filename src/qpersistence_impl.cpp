@@ -165,6 +165,12 @@ bool markAsDeleted(QSharedPointer<T> object)
     return QpDaoBase::forClass(*object->metaObject())->markAsDeleted(object);
 }
 
+template<class T>
+bool undelete(QSharedPointer<T> object)
+{
+    return QpDaoBase::forClass(*object->metaObject())->undelete(object);
+}
+
 #ifndef QP_NO_TIMESTAMPS
 QDateTime dateFromDouble(double value);
 

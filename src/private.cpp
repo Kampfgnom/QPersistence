@@ -40,6 +40,11 @@ void markAsDeleted(QObject *object)
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG,true);
 }
 
+void undelete(QObject *object)
+{
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG,false);
+}
+
 #ifndef QP_NO_TIMESTAMPS
 double creationTimeInDatabase(QObject *object)
 {

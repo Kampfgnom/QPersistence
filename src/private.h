@@ -20,6 +20,7 @@ void setPrimaryKey(QObject *object, int key);
 
 bool isDeleted(QObject *object);
 void markAsDeleted(QObject *object);
+void undelete(QObject *object);
 
 #ifndef QP_NO_TIMESTAMPS
 double creationTimeInDatabase(QObject *object);

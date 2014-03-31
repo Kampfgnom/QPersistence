@@ -48,6 +48,7 @@ public:
     Qp::UpdateResult updateObject(QSharedPointer<QObject> object);
     bool removeObject(QSharedPointer<QObject> object);
     bool markAsDeleted(QSharedPointer<QObject> object);
+    bool undelete(QSharedPointer<QObject> object);
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object);
     bool synchronizeAllObjects();
 
@@ -64,6 +65,7 @@ public:
 Q_SIGNALS:
     void objectCreated(QSharedPointer<QObject>);
     void objectMarkedAsDeleted(QSharedPointer<QObject>);
+    void objectUndeleted(QSharedPointer<QObject>);
     void objectUpdated(QSharedPointer<QObject>);
     void objectRemoved(QSharedPointer<QObject>);
 

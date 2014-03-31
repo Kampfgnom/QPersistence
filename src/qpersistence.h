@@ -70,6 +70,7 @@ template<class T> QSharedPointer<T> create();
 template<class T> UpdateResult update(QSharedPointer<T> object);
 template<class T> bool remove(QSharedPointer<T> object);
 template<class T> bool markAsDeleted(QSharedPointer<T> object);
+template<class T> bool undelete(QSharedPointer<T> object);
 template<class T> bool isDeleted(QSharedPointer<T> object);
 template<class T> SynchronizeResult synchronize(QSharedPointer<T> object);
 #ifndef QP_NO_TIMESTAMPS

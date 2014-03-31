@@ -270,6 +270,18 @@ bool QpDaoBase::markAsDeleted(QSharedPointer<QObject> object)
     return true;
 }
 
+bool QpDaoBase::undelete(QSharedPointer<QObject> object)
+{
+    Qp::Private::undelete(object.data());
+    Qp::UpdateResult result = updateObject(object);
+    if(result != Qp::UpdateSuccess)
+        return false;
+
+    emit objectUndeleted(object);
+    return true;
+}
+
+
 Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object)
 {
 #ifndef QP_NO_TIMESTAMPS
