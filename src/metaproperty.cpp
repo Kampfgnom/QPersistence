@@ -50,7 +50,14 @@ QString QpMetaProperty::generateColumnName() const
         return QString(name());
 
     if (cardinality() == QpMetaProperty::ManyToManyCardinality) {
-        return QString(data->metaObject.tableName()).prepend("_Qp_FK_");;
+        QString relationName;
+
+        if(reverseClassName() == data->metaObject.className())
+            relationName = name();
+        else
+            relationName = data->metaObject.tableName();
+
+        return relationName.prepend("_Qp_FK_");;
     }
     else if (isToManyRelationProperty()
              || (isToOneRelationProperty()
