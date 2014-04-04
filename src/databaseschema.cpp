@@ -18,6 +18,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlRecord>
 #include <QStringList>
 #include <QSqlDriver>
+#include <QtCore/qmath.h>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 const char* QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG("_Qp_deleted");
@@ -128,15 +129,25 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
             if(data->database.driverName() == QLatin1String("QMYSQL")) {
                 QMetaEnum metaEnum = metaProperty.metaProperty().enumerator();
                 int count = metaEnum.keyCount();
-                Q_ASSERT(metaEnum.value(0) == 0);
+                int i = 0;
+
+                bool isFlag = metaProperty.metaProperty().isFlagType();
+
+                 // Start at 1 because first value corresponds to MySQL empty string
+                if(metaEnum.value(0) == 0)
+                    i = 1;
 
                 QStringList enumValues;
-                for(int i = 1; i < count; ++i) { // Start at 1 because first value corresponds to MySQL empty string
+                for(; i < count; ++i) {
+
+                    if(isFlag && metaEnum.value(i) != qPow(2, i - 1))
+                        break;
+
                     enumValues << QString("'%1'").arg(metaEnum.key(i));
                 }
 
                 columnType = "ENUM(%1)";
-                if(metaProperty.metaProperty().isFlagType())
+                if(isFlag)
                     columnType = "SET(%1)";
 
                 columnType = columnType.arg(enumValues.join(", "));
