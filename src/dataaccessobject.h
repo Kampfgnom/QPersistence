@@ -40,7 +40,7 @@ public:
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
     QpMetaObject qpMetaObject() const;
 
-    int count(bool fromDatabase = false) const;
+    int count() const;
     QList<int> allKeys(int skip = -1, int count = -1) const;
     QList<QSharedPointer<QObject> > readAllObjects(int skip = -1, int count = -1, const QpSqlCondition &condition = QpSqlCondition()) const;
     QSharedPointer<QObject> readObject(int id) const;
@@ -48,11 +48,15 @@ public:
     Qp::UpdateResult updateObject(QSharedPointer<QObject> object);
     bool removeObject(QSharedPointer<QObject> object);
     bool markAsDeleted(QSharedPointer<QObject> object);
-    Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, int timeout = -1);
+    bool undelete(QSharedPointer<QObject> object);
+    Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object);
+    bool synchronizeAllObjects();
 
 #ifndef QP_NO_TIMESTAMPS
     QList<QSharedPointer<QObject>> createdSince(const QDateTime &time);
+    QList<QSharedPointer<QObject> > createdSince(double time);
     QList<QSharedPointer<QObject>> updatedSince(const QDateTime &time);
+    QList<QSharedPointer<QObject> > updatedSince(double time);
 #endif
 
     QpError lastError() const;
@@ -61,6 +65,7 @@ public:
 Q_SIGNALS:
     void objectCreated(QSharedPointer<QObject>);
     void objectMarkedAsDeleted(QSharedPointer<QObject>);
+    void objectUndeleted(QSharedPointer<QObject>);
     void objectUpdated(QSharedPointer<QObject>);
     void objectRemoved(QSharedPointer<QObject>);
 
@@ -70,13 +75,13 @@ protected:
 
     virtual QObject *createInstance() const = 0;
 
-    mutable QHash<QSharedPointer<QObject>, int> m_lastSyncForObject;
-
 private:
     QSharedDataPointer<QpDaoBaseData> data;
 
     void setLastError(const QpError &error) const;
     void resetLastError() const;
+
+    Qp::SynchronizeResult sync(QSharedPointer<QObject> object);
 
     Q_DISABLE_COPY(QpDaoBase)
 };

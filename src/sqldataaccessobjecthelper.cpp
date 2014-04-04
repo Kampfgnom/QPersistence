@@ -301,7 +301,8 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
     if(deletedFlagRecordIndex < 0)
         deletedFlagRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG);
 
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG, query.value(deletedFlagRecordIndex));
+    bool deleted = query.value(deletedFlagRecordIndex).toBool();
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG, deleted);
 
 #ifndef QP_NO_TIMESTAMPS
     if(updateTimeRecordIndex < 0)

@@ -20,12 +20,14 @@ void setPrimaryKey(QObject *object, int key);
 
 bool isDeleted(QObject *object);
 void markAsDeleted(QObject *object);
+void undelete(QObject *object);
 
 #ifndef QP_NO_TIMESTAMPS
 double creationTimeInDatabase(QObject *object);
 double updateTimeInDatabase(QObject *object);
 double updateTimeInObject(QObject *object);
 double creationTimeInObject(QObject *object);
+double databaseTime();
 #endif
 
 template<class T> QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bool *ok = 0);

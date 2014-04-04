@@ -4,11 +4,14 @@
 #include "error.h"
 #include "metaproperty.h"
 #include "qpersistence.h"
+#include "sqlbackend.h"
 #include "sqldataaccessobjecthelper.h"
+#include "sqlquery.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QDateTime>
 #include <QSharedPointer>
+#include <QSqlError>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 namespace Qp {
@@ -37,6 +40,11 @@ void markAsDeleted(QObject *object)
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG,true);
 }
 
+void undelete(QObject *object)
+{
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG,false);
+}
+
 #ifndef QP_NO_TIMESTAMPS
 double creationTimeInDatabase(QObject *object)
 {
@@ -58,6 +66,18 @@ double updateTimeInObject(QObject *object)
 double creationTimeInObject(QObject *object)
 {
     return object->property(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME).toDouble();
+}
+
+double databaseTime()
+{
+    QpSqlQuery query(Qp::database());
+    if(!query.exec(QString("SELECT %1").arg(QpSqlBackend::forDatabase(Qp::database())->nowTimestamp()))
+            || !query.first()) {
+        Qp::Private::setLastError(QpError(query.lastError()));
+        return -1.0;
+    }
+
+    return query.value(0).toDouble();
 }
 
 #endif

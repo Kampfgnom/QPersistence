@@ -89,7 +89,7 @@ void QpCache::remove(int id)
 {
     QSharedPointer<QObject> p = data->weakCacheById.take(id).toStrongRef();
     if (p) {
-        Q_ASSERT(data->strongCache.removeOne(p));
+        data->strongCache.removeOne(p);
     }
 }
 

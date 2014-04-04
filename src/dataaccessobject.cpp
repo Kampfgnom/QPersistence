@@ -20,15 +20,15 @@ class QpDaoBaseData : public QSharedData
     public:
         QpDaoBaseData() :
             QSharedData(),
-            count(-1)
+            lastSync(0.0)
         {
         }
 
-        mutable int count;
         QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper;
         QpMetaObject metaObject;
         mutable QpError lastError;
         mutable QpCache cache;
+        double lastSync;
 };
 
 typedef QHash<QString, QpDaoBase *> HashStringToDao;
@@ -82,6 +82,36 @@ void QpDaoBase::resetLastError() const
     setLastError(QpError());
 }
 
+Qp::SynchronizeResult QpDaoBase::sync(QSharedPointer<QObject> object)
+{
+    QObject *obj = object.data();
+    int id = Qp::primaryKey(object);
+    if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, obj)) {
+        QpError error = data->sqlDataAccessObjectHelper->lastError();
+        if(error.isValid()) {
+            setLastError(error);
+            return Qp::Error;
+        }
+
+        data->cache.remove(Qp::primaryKey(object));
+        emit objectRemoved(object);
+
+        return Qp::Removed;
+    }
+
+    foreach(QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
+        QpRelationResolver::readRelationFromDatabase(relation, obj);
+    }
+
+    if(Qp::Private::isDeleted(object.data())) {
+        emit objectMarkedAsDeleted(object);
+        return Qp::Deleted;
+    }
+
+    emit objectUpdated(object);
+    return Qp::Updated;
+}
+
 QpSqlDataAccessObjectHelper *QpDaoBase::sqlDataAccessObjectHelper() const
 {
     return data->sqlDataAccessObjectHelper;
@@ -92,12 +122,9 @@ QpMetaObject QpDaoBase::qpMetaObject() const
     return data->metaObject;
 }
 
-int QpDaoBase::count(bool fromDatabase) const
+int QpDaoBase::count() const
 {
-    if(fromDatabase || data->count < 0)
-        data->count = data->sqlDataAccessObjectHelper->count(data->metaObject);
-
-    return data->count;
+    return data->sqlDataAccessObjectHelper->count(data->metaObject);
 }
 
 QList<int> QpDaoBase::allKeys(int skip, int count) const
@@ -188,10 +215,6 @@ QSharedPointer<QObject> QpDaoBase::createObject()
     }
     QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
     Qp::Private::enableSharedFromThis(obj);
-    if(data->count < 0)
-        count();
-    else
-        ++data->count;
 
     emit objectCreated(obj);
     return obj;
@@ -230,10 +253,6 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
         setLastError(data->sqlDataAccessObjectHelper->lastError());
         return false;
     }
-    if(data->count < 0)
-        count();
-    else
-        --data->count;
 
     data->cache.remove(Qp::primaryKey(object));
     emit objectRemoved(object);
@@ -244,27 +263,29 @@ bool QpDaoBase::markAsDeleted(QSharedPointer<QObject> object)
 {
     Qp::Private::markAsDeleted(object.data());
     Qp::UpdateResult result = updateObject(object);
-    if(result == Qp::UpdateSuccess)
-        emit objectMarkedAsDeleted(object);
+    if(result != Qp::UpdateSuccess)
+        return false;
 
-    return result;
+    emit objectMarkedAsDeleted(object);
+    return true;
 }
 
-Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object, int updateInterval)
+bool QpDaoBase::undelete(QSharedPointer<QObject> object)
 {
-    if(updateInterval > 0) {
-        int lastUpdate = m_lastSyncForObject.value(object);
-        int currentTime = QTime::currentTime().msecsSinceStartOfDay();
+    Qp::Private::undelete(object.data());
+    Qp::UpdateResult result = updateObject(object);
+    if(result != Qp::UpdateSuccess)
+        return false;
 
-        if(lastUpdate > 0 && currentTime - lastUpdate < updateInterval)
-            return Qp::LastSyncNewEnough;
+    emit objectUndeleted(object);
+    return true;
+}
 
-        m_lastSyncForObject.insert(object, currentTime);
-    }
 
-    QObject *obj = object.data();
-
+Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object)
+{
 #ifndef QP_NO_TIMESTAMPS
+    QObject *obj = object.data();
     double localTime = Qp::Private::updateTimeInObject(obj);
     double remoteTime = Qp::Private::updateTimeInDatabase(obj);
 
@@ -272,51 +293,57 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
         return Qp::Unchanged;
 #endif
 
-    int id = Qp::primaryKey(object);
-    if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, obj)) {
-        QpError error = data->sqlDataAccessObjectHelper->lastError();
-        if(error.isValid()) {
-            setLastError(error);
-            return Qp::Error;
+    return sync(object);
+}
+
+bool QpDaoBase::synchronizeAllObjects()
+{
+    double currentTime = Qp::Private::databaseTime();
+
+    if(data->lastSync > 0.0) {
+        QHash<QObject *, bool> createdObjects;
+        foreach(QSharedPointer<QObject> object, createdSince(data->lastSync)) {
+            emit objectCreated(object);
+            createdObjects.insert(object.data(), true);
         }
+        foreach(QSharedPointer<QObject> object, updatedSince(data->lastSync)) {
+            if(createdObjects.value(object.data(), false))
+                continue;
 
-        if(data->count < 0)
-            count();
-        else
-            --data->count;
-
-        data->cache.remove(Qp::primaryKey(object));
-        emit objectRemoved(object);
-
-        return Qp::Removed;
+            sync(object);
+        }
     }
 
-    foreach(QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
-        QpRelationResolver::readRelationFromDatabase(relation, obj);
-    }
+    data->lastSync = currentTime;
+    if(lastError().isValid())
+        return false;
 
-    if(Qp::Private::isDeleted(object.data())) {
-        emit objectMarkedAsDeleted(object);
-        return Qp::Deleted;
-    }
-
-    emit objectUpdated(object);
-    return Qp::Updated;
+    return true;
 }
 
 #ifndef QP_NO_TIMESTAMPS
 QList<QSharedPointer<QObject> > QpDaoBase::createdSince(const QDateTime &time)
 {
+    return createdSince(time.toString("yyyyMMddHHmmss.zzz").toDouble());
+}
+
+QList<QSharedPointer<QObject> > QpDaoBase::createdSince(double time)
+{
     return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME,
-                                                QpSqlCondition::GreaterThan,
-                                                time.toString("yyyyMMddHHmmss.zzz").toDouble()));
+                                                QpSqlCondition::GreaterThanOrEqualTo,
+                                                time));
 }
 
 QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(const QDateTime &time)
 {
+    return updatedSince(time.toString("yyyyMMddHHmmss.zzz").toDouble());
+}
+
+QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(double time)
+{
     return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME,
-                                                QpSqlCondition::GreaterThan,
-                                                time.toString("yyyyMMddHHmmss.zzz").toDouble()));
+                                                QpSqlCondition::GreaterThanOrEqualTo,
+                                                time));
 }
 #endif
 
