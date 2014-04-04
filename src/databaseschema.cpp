@@ -130,17 +130,20 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
                 QMetaEnum metaEnum = metaProperty.metaProperty().enumerator();
                 int count = metaEnum.keyCount();
                 int i = 0;
+                int offset = 0;
 
                 bool isFlag = metaProperty.metaProperty().isFlagType();
 
                  // Start at 1 because first value corresponds to MySQL empty string
-                if(metaEnum.value(0) == 0)
+                if(metaEnum.value(0) == 0) {
                     i = 1;
+                    offset = 1;
+                }
 
                 QStringList enumValues;
                 for(; i < count; ++i) {
 
-                    if(isFlag && metaEnum.value(i) != qPow(2, i - 1))
+                    if(isFlag && metaEnum.value(i) != qPow(2, i - offset))
                         break;
 
                     enumValues << QString("'%1'").arg(metaEnum.key(i));
