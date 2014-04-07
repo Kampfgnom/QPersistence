@@ -174,6 +174,11 @@ bool undelete(QSharedPointer<T> object)
 #ifndef QP_NO_TIMESTAMPS
 QDateTime dateFromDouble(double value);
 
+template<class T> QDateTime creationTimeInInObject(QSharedPointer<T> object)
+{
+    return dateFromDouble(Qp::Private::creationTimeInObject(object.data()));
+}
+
 template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object)
 {
     return dateFromDouble(Qp::Private::creationTimeInDatabase(object.data()));
