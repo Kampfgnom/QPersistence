@@ -190,17 +190,18 @@ QSharedPointer<QObject> QpDaoBase::readObject(int id) const
         return p;
 
     QObject *object = createInstance();
+    QSharedPointer<QObject> obj = data->cache.insert(id, object);
+    Qp::Private::enableSharedFromThis(obj);
 
     if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, object)) {
         QpError error = data->sqlDataAccessObjectHelper->lastError();
         if(error.isValid())
             setLastError(error);
 
+        data->cache.remove(id);
         delete object;
         return QSharedPointer<QObject>();
     }
-    QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
-    Qp::Private::enableSharedFromThis(obj);
 
     return obj;
 }
