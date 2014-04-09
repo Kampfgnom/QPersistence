@@ -190,17 +190,18 @@ QSharedPointer<QObject> QpDaoBase::readObject(int id) const
         return p;
 
     QObject *object = createInstance();
+    QSharedPointer<QObject> obj = data->cache.insert(id, object);
+    Qp::Private::enableSharedFromThis(obj);
 
     if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, object)) {
         QpError error = data->sqlDataAccessObjectHelper->lastError();
         if(error.isValid())
             setLastError(error);
 
+        data->cache.remove(id);
         delete object;
         return QSharedPointer<QObject>();
     }
-    QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
-    Qp::Private::enableSharedFromThis(obj);
 
     return obj;
 }
@@ -220,11 +221,13 @@ QSharedPointer<QObject> QpDaoBase::createObject()
     return obj;
 }
 
+#ifndef QP_NO_TIMESTAMPS
 Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2) Q_REQUIRED_RESULT;
 Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2)
 {
     return (qAbs(p1 - p2) * 10000000000000000. <= qMin(qAbs(p1), qAbs(p2)));
 }
+#endif
 
 Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 {
@@ -298,6 +301,7 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
 
 bool QpDaoBase::synchronizeAllObjects()
 {
+#ifndef QP_NO_TIMESTAMPS
     double currentTime = Qp::Private::databaseTime();
 
     if(data->lastSync > 0.0) {
@@ -317,6 +321,7 @@ bool QpDaoBase::synchronizeAllObjects()
     data->lastSync = currentTime;
     if(lastError().isValid())
         return false;
+#endif
 
     return true;
 }

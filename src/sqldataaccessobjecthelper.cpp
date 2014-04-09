@@ -256,6 +256,7 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
 
 #ifndef QP_NO_TIMESTAMPS
     query.addField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME);
 #endif
 }
 
@@ -266,6 +267,10 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
                                                       int updateTimeRecordIndex,
                                                       int deletedFlagRecordIndex)
 {
+#ifdef QP_NO_TIMESTAMPS
+    Q_UNUSED(updateTimeRecordIndex);
+#endif
+
     int fieldCount = record.count();
     for (int i = 0; i < fieldCount; ++i) {
 
@@ -309,6 +314,10 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
         updateTimeRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
 
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, query.value(updateTimeRecordIndex));
+
+    int creationTimeRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME);
+
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME, query.value(creationTimeRecordIndex));
 #endif
 }
 
