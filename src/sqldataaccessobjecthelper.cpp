@@ -267,6 +267,10 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
                                                       int updateTimeRecordIndex,
                                                       int deletedFlagRecordIndex)
 {
+#ifdef QP_NO_TIMESTAMPS
+    Q_UNUSED(updateTimeRecordIndex);
+#endif
+
     int fieldCount = record.count();
     for (int i = 0; i < fieldCount; ++i) {
 

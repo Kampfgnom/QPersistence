@@ -140,6 +140,7 @@ void addAdditionalLockInformationField(const QString &field, QVariant::Type type
 }
 #endif
 
+#ifndef QP_NO_TIMESTAMPS
 QDateTime dateFromDouble(double value)
 {
     QString string = QString("%1").arg(value, 17, 'f', 3);
@@ -150,5 +151,6 @@ QDateTime databaseTime()
 {
     return dateFromDouble(Private::databaseTime());
 }
+#endif
 
 }

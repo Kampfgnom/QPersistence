@@ -221,11 +221,13 @@ QSharedPointer<QObject> QpDaoBase::createObject()
     return obj;
 }
 
+#ifndef QP_NO_TIMESTAMPS
 Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2) Q_REQUIRED_RESULT;
 Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2)
 {
     return (qAbs(p1 - p2) * 10000000000000000. <= qMin(qAbs(p1), qAbs(p2)));
 }
+#endif
 
 Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 {
@@ -299,6 +301,7 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
 
 bool QpDaoBase::synchronizeAllObjects()
 {
+#ifndef QP_NO_TIMESTAMPS
     double currentTime = Qp::Private::databaseTime();
 
     if(data->lastSync > 0.0) {
@@ -318,6 +321,7 @@ bool QpDaoBase::synchronizeAllObjects()
     data->lastSync = currentTime;
     if(lastError().isValid())
         return false;
+#endif
 
     return true;
 }
