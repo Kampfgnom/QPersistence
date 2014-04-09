@@ -312,7 +312,10 @@ void QpSqlQuery::prepareSelect()
     else {
         QStringList fields;
         foreach (const QString &field, data->fields.keys()) {
-            fields.append(QString("%1").arg(field));
+            if(field.contains("+"))
+                fields.append(QString("%1").arg(field));
+            else
+                fields.append(QString("`%1`").arg(field));
         }
         query.append(fields.join(", "));
     }
