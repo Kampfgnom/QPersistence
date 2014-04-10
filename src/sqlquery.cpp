@@ -245,7 +245,7 @@ void QpSqlQuery::prepareCreateTable()
     QHashIterator<QString, QVariant> it(data->fields);
     while (it.hasNext()) {
         it.next();
-        fields.append(QString("%1 %2")
+        fields.append(QString("`%1` %2")
                       .arg(it.key())
                       .arg(it.value().toString()));
     }
@@ -372,10 +372,10 @@ bool QpSqlQuery::prepareUpdate()
 
     QStringList fields;
     foreach (const QString &field, data->fields.keys()) {
-        fields.append(QString("%1 = ?").arg(field));
+        fields.append(QString("`%1` = ?").arg(field));
     }
     foreach (const QString &field, data->rawFields.keys()) {
-        fields.append(QString("%1 = %2")
+        fields.append(QString("`%1` = %2")
                       .arg(field)
                       .arg(data->rawFields.value(field)));
     }
@@ -412,7 +412,7 @@ void QpSqlQuery::prepareInsert()
 
     QStringList fields;
     foreach (const QString &field, data->fields.keys()) {
-        fields.append(field);
+        fields.append(QString("`%1`").arg(field));
     }
     foreach (QString field, rawFieldKeys) {
         fields.append(field);
