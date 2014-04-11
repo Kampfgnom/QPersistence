@@ -61,6 +61,8 @@ void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> newObject) cons
     if(previousObject == newObject)
         return;
 
+    qDebug() << Q_FUNC_INFO;
+
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
     data->object = newObject.toWeakRef();
     QSharedPointer<QObject> shared = Qp::sharedFrom(data->parent);
@@ -73,8 +75,17 @@ void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> newObject) cons
         else {
             QVariant wrapper = Qp::Private::variantCast(shared);
 
-            QpMetaObject reverseObject = reverse.metaObject();
-            QMetaMethod method = reverseObject.removeObjectMethod(reverse);
+            const QMetaObject *mo = previousObject->metaObject();
+            QByteArray methodName = reverse.metaObject().removeObjectMethod(reverse).methodSignature();
+            int index = mo->indexOfMethod(methodName);
+
+            Q_ASSERT_X(index > 0, Q_FUNC_INFO,
+                       QString("You have to add a public slot with the signature '%1' to your '%2' class!")
+                       .arg(QString::fromLatin1(methodName))
+                       .arg(mo->className())
+                       .toLatin1());
+
+            QMetaMethod method = mo->method(index);
 
             Q_ASSERT(method.invoke(previousObject.data(), Qt::DirectConnection,
                                    QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));
@@ -88,8 +99,17 @@ void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> newObject) cons
         else {
             QVariant wrapper = Qp::Private::variantCast(shared);
 
-            QpMetaObject reverseObject = reverse.metaObject();
-            QMetaMethod method = reverseObject.addObjectMethod(reverse);
+            const QMetaObject *mo = newObject->metaObject();
+            QByteArray methodName = reverse.metaObject().addObjectMethod(reverse).methodSignature();
+            int index = mo->indexOfMethod(methodName);
+
+            Q_ASSERT_X(index > 0, Q_FUNC_INFO,
+                       QString("You have to add a public slot with the signature '%1' to your '%2' class!")
+                       .arg(QString::fromLatin1(methodName))
+                       .arg(mo->className())
+                       .toLatin1());
+
+            QMetaMethod method = mo->method(index);
 
             Q_ASSERT(method.invoke(newObject.data(), Qt::DirectConnection,
                                    QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));

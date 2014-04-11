@@ -5,6 +5,10 @@
 #include <QDebug>
 #include <QPersistence.h>
 
+#ifdef Q_OS_WIN
+#include <time.h>
+#endif
+
 namespace TestNameSpace {
 
 int ParentObject::NEXT_INDEX(-1);
