@@ -1,7 +1,9 @@
 #include "tst_manytomanyrelationstest.h"
 
 ManyToManyRelationsTest::ManyToManyRelationsTest(QObject *parent) :
-    QObject(parent)
+    QObject(parent),
+    CHILDCOUNT(3),
+    PARENTCOUNT(2)
 {
 }
 

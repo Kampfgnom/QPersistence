@@ -69,8 +69,17 @@ void QpHasManyBase::add(QSharedPointer<QObject> object)
             QSharedPointer<QObject> shared = Qp::sharedFrom(data->parent);
             QVariant wrapper = Qp::Private::variantCast(shared, className);
 
-            QpMetaObject reverseObject = reverse.metaObject();
-            QMetaMethod method = reverseObject.addObjectMethod(reverse);
+            const QMetaObject *mo = object->metaObject();
+            QByteArray methodName = reverse.metaObject().addObjectMethod(reverse).methodSignature();
+            int index = mo->indexOfMethod(methodName);
+
+            Q_ASSERT_X(index > 0, Q_FUNC_INFO,
+                       QString("You have to add a public slot with the signature '%1' to your '%2' class!")
+                       .arg(QString::fromLatin1(methodName))
+                       .arg(mo->className())
+                       .toLatin1());
+
+            QMetaMethod method = mo->method(index);
 
             Q_ASSERT(method.invoke(object.data(), Qt::DirectConnection,
                                    QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));
@@ -99,10 +108,19 @@ void QpHasManyBase::remove(QSharedPointer<QObject> object)
         }
         else {
             QSharedPointer<QObject> shared = Qp::sharedFrom(data->parent);
-            QVariant wrapper = Qp::Private::variantCast(shared, className);
+            QVariant wrapper = Qp::Private::variantCast(shared, className);       
 
-            QpMetaObject reverseObject = reverse.metaObject();
-            QMetaMethod method = reverseObject.removeObjectMethod(reverse);
+            const QMetaObject *mo = object->metaObject();
+            QByteArray methodName = reverse.metaObject().removeObjectMethod(reverse).methodSignature();
+            int index = mo->indexOfMethod(methodName);
+
+            Q_ASSERT_X(index > 0, Q_FUNC_INFO,
+                       QString("You have to add a public slot with the signature '%1' to your '%2' class!")
+                       .arg(QString::fromLatin1(methodName))
+                       .arg(mo->className())
+                       .toLatin1());
+
+            QMetaMethod method = mo->method(index);
 
             Q_ASSERT(method.invoke(object.data(), Qt::DirectConnection,
                                    QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));

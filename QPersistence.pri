@@ -5,9 +5,20 @@ isEmpty(QPERSISTENCE_PATH) {
 QPERSISTENCE_TARGET          = qpersistence
 QPERSISTENCE_VERSION         = 0.0.0
 QPERSISTENCE_INCLUDEPATH     = $$PWD/include
-QPERSISTENCE_LIBS            = -L$$QPERSISTENCE_PATH/src -l$$QPERSISTENCE_TARGET
-QPERSISTENCE_POST_TARGETDEPS = $$OUT_PWD/$$QPERSISTENCE_PATH/src/lib$${QPERSISTENCE_TARGET}.a
-QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Wall \
+
+unix:LIBPATH = $$QPERSISTENCE_PATH/src
+win32 {
+    CONFIG(debug, release | debug) {
+        LIBPATH = $$QPERSISTENCE_PATH/src/debug
+    }
+    CONFIG(release, release | debug) {
+        LIBPATH = $$QPERSISTENCE_PATH/src/release
+    }
+}
+
+QPERSISTENCE_LIBS            = -L$$LIBPATH -l$$QPERSISTENCE_TARGET
+QPERSISTENCE_POST_TARGETDEPS = $$OUT_PWD/$$LIBPATH/lib$${QPERSISTENCE_TARGET}.a
+unix:QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Wall \
                                         -Wno-c++98-compat \
                                         -Wno-padded  \
                                         -Wno-undefined-reinterpret-cast  \
