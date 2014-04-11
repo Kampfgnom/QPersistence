@@ -54,7 +54,6 @@ void QpHasManyBase::add(QSharedPointer<QObject> object)
     if(data->objects.contains(object))
         return;
 
-    qDebug() << Q_FUNC_INFO;
     data->objects.append(object);
 
     QpMetaProperty reverse = data->metaProperty.reverseRelation();

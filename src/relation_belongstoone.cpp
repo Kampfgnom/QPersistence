@@ -61,8 +61,6 @@ void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> newObject) cons
     if(previousObject == newObject)
         return;
 
-    qDebug() << Q_FUNC_INFO;
-
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
     data->object = newObject.toWeakRef();
     QSharedPointer<QObject> shared = Qp::sharedFrom(data->parent);

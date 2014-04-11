@@ -63,7 +63,6 @@ void QpBelongsToManyBase::add(QSharedPointer<QObject> object)
     QWeakPointer<QObject> weakRef = object.toWeakRef();
     if(data->objects.contains(weakRef))
         return;
-    qDebug() << Q_FUNC_INFO;
 
     data->objects.append(weakRef);
 

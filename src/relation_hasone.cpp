@@ -57,7 +57,6 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
 
     if(previousObject == newObject)
         return;
-    qDebug() << Q_FUNC_INFO;
 
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
     QString className = data->metaProperty.metaObject().className();
