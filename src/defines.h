@@ -1,6 +1,9 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#include <QtGlobal>
+
+#ifndef Q_OS_WIN
 #define BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS \
     _Pragma("GCC diagnostic push") \
     _Pragma("GCC diagnostic ignored \"-Wc++98-compat-pedantic\"") \
@@ -17,8 +20,16 @@
     _Pragma("GCC diagnostic ignored \"-Wweak-vtables\"") \
     _Pragma("GCC diagnostic ignored \"-Wdocumentation-unknown-command\"") \
     _Pragma("GCC diagnostic ignored \"-Wdocumentation\"")
+#else
+#define BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#endif
+
+#ifndef Q_OS_WIN
 #define END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS \
     _Pragma("GCC diagnostic pop")
+#else
+#define END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#endif
 
 #define QP_DEFINE_STATIC_LOCAL(type, name) \
     type *name(); \

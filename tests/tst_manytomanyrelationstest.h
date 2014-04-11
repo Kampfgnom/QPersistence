@@ -47,8 +47,8 @@ private:
 
     Tree createTree();
 
-    const int CHILDCOUNT = 3;
-    const int PARENTCOUNT = 2;
+    const int CHILDCOUNT;
+    const int PARENTCOUNT;
 };
 
 #endif // TST_MANYTOMANYRELATIONSTEST_H
