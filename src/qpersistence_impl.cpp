@@ -104,6 +104,7 @@ UpdateResult update(QSharedPointer<T> object)
     beginTransaction();
     Qp::UpdateResult result = QpDaoBase::forClass(*object->metaObject())->updateObject(object);
     if(result == Qp::UpdateConflict) {
+        qWarning() << "Update conflict for " << T::staticMetaObject.className() << Qp::primaryKey(object);
         Qp::database().rollback();
         return Qp::UpdateConflict;
     }
