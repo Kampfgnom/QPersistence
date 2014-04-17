@@ -179,7 +179,7 @@ QString QpMySqlBackend::variantTypeToSqlType(QVariant::Type type) const
     case QVariant::DateTime:
         return QLatin1String("DATETIME");
     case QVariant::Time:
-        return QLatin1String("TIMESTAMP");
+        return QLatin1String("TIME");
     case QVariant::Char:
         return QLatin1String("CHAR");
     case QVariant::Double:
