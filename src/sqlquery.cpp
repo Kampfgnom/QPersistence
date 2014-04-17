@@ -506,11 +506,13 @@ void QpSqlQuery::addBindValue(const QVariant &val)
     QSqlQuery::addBindValue(variantToSqlStorableVariant(val));
 }
 
+const char LISTSEPARATOR = 0x1;
+
 QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
 {
     QVariant value = val;
     if (static_cast<QMetaType::Type>(val.type()) == QMetaType::QStringList) {
-        return QVariant::fromValue<QString>(val.toStringList().join(','));
+        return QVariant::fromValue<QString>(val.toStringList().join(LISTSEPARATOR));
     }
     else if (static_cast<QMetaType::Type>(val.type()) == QMetaType::QPixmap) {
         QByteArray byteArray;
@@ -532,7 +534,7 @@ QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaTyp
 {
     QVariant value = val;
     if (type == QMetaType::QStringList) {
-        return QVariant::fromValue<QStringList>(val.toString().split(','));
+        return QVariant::fromValue<QStringList>(val.toString().split(LISTSEPARATOR));
     }
     else if (type == QMetaType::QPixmap) {
         QByteArray byteArray = QByteArray::fromBase64(val.toByteArray());
