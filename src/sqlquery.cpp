@@ -172,6 +172,17 @@ void QpSqlQuery::startBulkExec()
     QpSqlQueryPrivate::bulkExec = true;
 }
 
+QString QpSqlQuery::escapeField(const QString &field)
+{
+    QStringList fields = field.split(".");
+    QStringList escaped;
+    foreach(QString f, fields) {
+        escaped << QString("`%1`").arg(f);
+    }
+
+    return escaped.join(".");
+}
+
 void QpSqlQuery::setTable(const QString &table)
 {
     data->table = table;
@@ -239,37 +250,41 @@ void QpSqlQuery::setForUpdate(bool forUpdate)
 void QpSqlQuery::prepareCreateTable()
 {
     QString query("CREATE TABLE ");
-    query.append(data->table).append(" (\n\t");
+    query.append(escapeField(data->table)).append(" (\n\t");
 
     QStringList fields;
     QHashIterator<QString, QVariant> it(data->fields);
     while (it.hasNext()) {
         it.next();
         fields.append(QString("%1 %2")
-                      .arg(it.key())
+                      .arg(escapeField(it.key()))
                       .arg(it.value().toString()));
     }
     query.append(fields.join(",\n\t"));
 
     foreach(QString key, data->keys.keys()) {
-        QStringList value = data->keys.value(key);
+        QStringList v = data->keys.value(key);
+        QStringList values;
+        foreach(QString value, v) {
+            values << escapeField(value);
+        }
 
         query.append(QString(",\n\t%1 ")
                      .arg(key));
 #ifndef QP_FOR_SQLITE
-        QString name = value.join("_").prepend("_Qp_key_");
+        QString name = v.join("_").prepend("_Qp_key_");
         query.append(name);
 #endif
-        QString keyFields = value.join(", ");
+        QString keyFields = values.join(", ");
         query.append(QString(" (%1)")
                      .arg(keyFields));
     }
 
     foreach (const QStringList foreignKey, data->foreignKeys) {
         query.append(QString(",\n\tFOREIGN KEY (%1) REFERENCES %2(%3)")
-                     .arg(foreignKey.first())
-                     .arg(foreignKey.at(2))
-                     .arg(foreignKey.at(1)));
+                     .arg(escapeField(foreignKey.first()))
+                     .arg(escapeField(foreignKey.at(2)))
+                     .arg(escapeField(foreignKey.at(1))));
 
         QString onDelete = foreignKey.at(3);
         if(!onDelete.isEmpty()) {
@@ -289,7 +304,7 @@ void QpSqlQuery::prepareCreateTable()
 void QpSqlQuery::prepareDropTable()
 {
     QString query("DROP TABLE ");
-    query.append(data->table).append(";");
+    query.append(escapeField(data->table)).append(";");
 
     QSqlQuery::prepare(query);
 }
@@ -297,8 +312,8 @@ void QpSqlQuery::prepareDropTable()
 void QpSqlQuery::prepareAlterTable()
 {
     QSqlQuery::prepare(QString("ALTER TABLE %1 ADD COLUMN %2 %3;")
-                       .arg(data->table)
-                       .arg(data->fields.keys().first())
+                       .arg(escapeField(data->table))
+                       .arg(escapeField(data->fields.keys().first()))
                        .arg(data->fields.values().first().toString()));
 }
 
@@ -312,12 +327,15 @@ void QpSqlQuery::prepareSelect()
     else {
         QStringList fields;
         foreach (const QString &field, data->fields.keys()) {
-            fields.append(QString("%1").arg(field));
+            if(field.contains("+"))
+                fields.append(QString("%1").arg(field));
+            else
+                fields.append(QString("%1").arg(escapeField(field)));
         }
         query.append(fields.join(", "));
     }
 
-    query.append(" FROM ").append(data->table).append("");
+    query.append(" FROM ").append(escapeField(data->table)).append("");
 
     if (data->whereCondition.isValid()) {
         query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
@@ -328,7 +346,7 @@ void QpSqlQuery::prepareSelect()
         QStringList orderClauses;
         typedef QPair<QString, QpSqlQuery::Order> OrderPair;
         foreach (OrderPair order, data->orderBy) {
-            QString orderClause = order.first.prepend("\n\t\t");
+            QString orderClause = escapeField(order.first).prepend("\n\t\t");
             if (order.second == QpSqlQuery::Descending)
                 orderClause.append(" DESC");
             else
@@ -365,15 +383,15 @@ bool QpSqlQuery::prepareUpdate()
         return false;
 
     QString query("UPDATE ");
-    query.append(data->table).append(" SET\n\t");
+    query.append(escapeField(data->table)).append(" SET\n\t");
 
     QStringList fields;
     foreach (const QString &field, data->fields.keys()) {
-        fields.append(QString("%1 = ?").arg(field));
+        fields.append(QString("%1 = ?").arg(escapeField(field)));
     }
     foreach (const QString &field, data->rawFields.keys()) {
         fields.append(QString("%1 = %2")
-                      .arg(field)
+                      .arg(escapeField(field))
                       .arg(data->rawFields.value(field)));
     }
     query.append(fields.join(",\n\t"));
@@ -403,16 +421,16 @@ void QpSqlQuery::prepareInsert()
 
     query.append(" INTO ");
 
-    query.append(data->table).append("\n\t(");
+    query.append(escapeField(data->table)).append("\n\t(");
 
     QStringList rawFieldKeys = data->rawFields.keys();
 
     QStringList fields;
     foreach (const QString &field, data->fields.keys()) {
-        fields.append(field);
+        fields.append(QString("%1").arg(escapeField(field)));
     }
     foreach (QString field, rawFieldKeys) {
-        fields.append(field);
+        fields.append(escapeField(field));
     }
     query.append(fields.join(", "));
 
@@ -447,7 +465,7 @@ void QpSqlQuery::prepareInsert()
 void QpSqlQuery::prepareDelete()
 {
     QString query("DELETE FROM ");
-    query.append(data->table).append("\n\tWHERE ");
+    query.append(escapeField(data->table)).append("\n\tWHERE ");
 
     if (data->whereCondition.isValid()) {
         query.append(data->whereCondition.toWhereClause());

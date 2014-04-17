@@ -1,5 +1,7 @@
 #include "sqlcondition.h"
 
+#include "sqlquery.h"
+
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QList>
 #include <QSharedData>
@@ -139,7 +141,7 @@ QString QpSqlCondition::toWhereClause() const
     if(data->bindValues)
         value = data->value.toString();
 
-    return comparisonOperator().prepend(QString("%1").arg(data->key)).append(value);
+    return comparisonOperator().prepend(QString("%1").arg(QpSqlQuery::escapeField(data->key))).append(value);
 }
 
 QVariantList QpSqlCondition::bindValues() const
