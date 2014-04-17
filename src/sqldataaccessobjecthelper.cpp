@@ -63,7 +63,7 @@ int QpSqlDataAccessObjectHelper::count(const QpMetaObject &metaObject) const
 {
     QpSqlQuery query(data->database);
     query.prepare(QString("SELECT COUNT(*) FROM %1")
-                  .arg(metaObject.tableName()));
+                  .arg(QpSqlQuery::escapeField(metaObject.tableName())));
 
     if (!query.exec()
             || !query.first()
@@ -623,7 +623,7 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
                                                              "\n\t\tON %2.%3 = %1.%4 "
                                                              "\n\tSET %1.%5 = %6 "
                                                              "\n\tWHERE %7")
-            .arg(relation.reverseRelation().metaObject().tableName())
+            .arg(QpSqlQuery::escapeField(relation.reverseRelation().metaObject().tableName()))
             .arg(relation.tableName())
             .arg(relation.reverseRelation().columnName())
             .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
@@ -650,7 +650,7 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
     QString updateNewlyRelatedTimeQueryString = QString("UPDATE %1 SET %2 = %3 "
                                                         "WHERE %4 "
                                                         "AND NOT EXISTS (SELECT 1 FROM %5 WHERE %6 = %1.%7 AND %8 = %9)")
-            .arg(relation.reverseRelation().metaObject().tableName())
+            .arg(QpSqlQuery::escapeField(relation.reverseRelation().metaObject().tableName()))
             .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
             .arg(QpSqlBackend::forDatabase(data->database)->nowTimestamp())
             .arg(relatedObjectsWhereClause2.toWhereClause())
