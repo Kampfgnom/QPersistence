@@ -69,8 +69,11 @@ public:
     static void bulkExec();
     static void startBulkExec();
 
+    static QString escapeField(const QString &field);
+
 private:
     QExplicitlySharedDataPointer<QpSqlQueryPrivate> data;
+
 };
 
 #endif // QPERSISTENCE_SQLQUERY_H
