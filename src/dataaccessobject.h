@@ -87,7 +87,7 @@ private:
 };
 
 namespace Qp {
-template<class T>
+template<class T, class... Superclasses>
 void registerClass();
 template<class T, class Source>
 QList<QSharedPointer<T> > castList(const QList<QSharedPointer<Source> >&);
@@ -111,10 +111,8 @@ protected:
     QObject *createInstance() const Q_DECL_OVERRIDE { return new T; }
 
 private:
-    template<class O> friend void Qp::registerClass();
+    template<class O, class... Superclasses> friend void Qp::registerClass();
     Q_DISABLE_COPY(QpDao)
 };
-
-uint qHash(const QVariant &var);
 
 #endif // QPERSISTENCE_DATAACCESSOBJECT_H

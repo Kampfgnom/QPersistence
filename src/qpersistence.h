@@ -61,7 +61,7 @@ void startBulkDatabaseQueries();
 void commitBulkDatabaseQueries();
 
 template<class T> int primaryKey(QSharedPointer<T> object);
-template<class T> void registerClass();
+template<class T, class... Superclasses> void registerClass();
 template<class T> QpDao<T> *dataAccessObject();
 template<class T> QSharedPointer<T> read(int id);
 template<class T> QList<QSharedPointer<T> > readAll();
