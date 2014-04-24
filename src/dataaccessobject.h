@@ -52,6 +52,7 @@ public:
     enum SynchronizeMode { NormalMode, IgnoreTimes };
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode = NormalMode);
     bool synchronizeAllObjects();
+    bool setNextId(QSharedPointer<QObject> object, const QString &fieldName);
 
 #ifndef QP_NO_TIMESTAMPS
     QList<QSharedPointer<QObject>> createdSince(const QDateTime &time);

@@ -56,6 +56,7 @@ public:
     bool prepareUpdate();
     void prepareInsert();
     void prepareDelete();
+    void prepareSetNextId();
 
     QMetaProperty propertyForIndex(const QSqlRecord &record, const QMetaObject *metaObject, int index) const;
 
