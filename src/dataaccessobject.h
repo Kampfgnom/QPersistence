@@ -49,7 +49,8 @@ public:
     bool removeObject(QSharedPointer<QObject> object);
     bool markAsDeleted(QSharedPointer<QObject> object);
     bool undelete(QSharedPointer<QObject> object);
-    Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object);
+    enum SynchronizeMode { NormalMode, IgnoreTimes };
+    Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode = NormalMode);
     bool synchronizeAllObjects();
 
 #ifndef QP_NO_TIMESTAMPS

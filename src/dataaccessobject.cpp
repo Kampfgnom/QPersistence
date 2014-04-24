@@ -291,8 +291,11 @@ bool QpDaoBase::undelete(QSharedPointer<QObject> object)
 }
 
 
-Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object)
+Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode)
 {
+    if(mode == IgnoreTimes)
+        return sync(object);
+
 #ifndef QP_NO_TIMESTAMPS
     QObject *obj = object.data();
     double localTime = Qp::Private::updateTimeInObject(obj);
