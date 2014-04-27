@@ -43,9 +43,16 @@ QpMetaObject QpMetaObject::registerMetaObject(const QMetaObject &metaObject)
     }
 
     QpMetaObject result = QpMetaObject(metaObject);
-    MetaObjectsForName()->insert(result.classNameWithoutNamespace(), result);
-    MetaObjectsForName()->insert(className, result);
     MetaObjects()->append(result);
+
+    const QMetaObject *objectInClassHierarchy = &metaObject;
+    do {
+        QpMetaObject qpmo = QpMetaObject(*objectInClassHierarchy);
+        MetaObjectsForName()->insert(qpmo.classNameWithoutNamespace(), result);
+        MetaObjectsForName()->insert(qpmo.className(), result);
+
+        objectInClassHierarchy = objectInClassHierarchy->superClass();
+    } while(objectInClassHierarchy->className() != QObject::staticMetaObject.className());
 
     return result;
 }

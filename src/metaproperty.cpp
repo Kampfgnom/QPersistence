@@ -52,7 +52,7 @@ QString QpMetaProperty::generateColumnName() const
     if (cardinality() == QpMetaProperty::ManyToManyCardinality) {
         QString relationName;
 
-        if(reverseClassName() == data->metaObject.className())
+        if(reverseMetaObject().className() == data->metaObject.className())
             relationName = name();
         else
             relationName = data->metaObject.tableName();
@@ -310,6 +310,11 @@ QString QpMetaProperty::tableName() const
         s1 = QString(name());
         s2 = QString(reverseRelation().name());
         if (table > reverseTable) {
+            qSwap(table, reverseTable);
+            qSwap(s1, s2);
+        }
+        if(table == reverseTable
+           && s1 < s2) {
             qSwap(table, reverseTable);
             qSwap(s1, s2);
         }

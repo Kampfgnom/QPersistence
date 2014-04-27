@@ -49,8 +49,10 @@ public:
     bool removeObject(QSharedPointer<QObject> object);
     bool markAsDeleted(QSharedPointer<QObject> object);
     bool undelete(QSharedPointer<QObject> object);
-    Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object);
+    enum SynchronizeMode { NormalMode, IgnoreTimes };
+    Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode = NormalMode);
     bool synchronizeAllObjects();
+    bool setNextId(QSharedPointer<QObject> object, const QString &fieldName);
 
 #ifndef QP_NO_TIMESTAMPS
     QList<QSharedPointer<QObject>> createdSince(const QDateTime &time);
@@ -87,7 +89,7 @@ private:
 };
 
 namespace Qp {
-template<class T>
+template<class T, class... Superclasses>
 void registerClass();
 template<class T, class Source>
 QList<QSharedPointer<T> > castList(const QList<QSharedPointer<Source> >&);
@@ -111,10 +113,8 @@ protected:
     QObject *createInstance() const Q_DECL_OVERRIDE { return new T; }
 
 private:
-    template<class O> friend void Qp::registerClass();
+    template<class O, class... Superclasses> friend void Qp::registerClass();
     Q_DISABLE_COPY(QpDao)
 };
-
-uint qHash(const QVariant &var);
 
 #endif // QPERSISTENCE_DATAACCESSOBJECT_H

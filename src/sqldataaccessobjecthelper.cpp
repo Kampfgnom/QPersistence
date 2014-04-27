@@ -701,6 +701,26 @@ bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, Q
     return true;
 }
 
+bool QpSqlDataAccessObjectHelper::setNextId(QObject *object, const QString &fieldName)
+{
+    QpMetaObject mo = QpMetaObject::forObject(object);
+    QpSqlQuery query(data->database);
+    query.setTable(mo.tableName());
+    query.addField(fieldName);
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpSqlCondition::EqualTo,
+                                           Qp::Private::primaryKey(object)));
+    query.prepareSetNextId();
+
+    if (!query.exec()
+            || query.lastError().isValid()) {
+        setLastError(query);
+        return false;
+    }
+
+    return true;
+}
+
 #ifndef QP_NO_TIMESTAMPS
 double QpSqlDataAccessObjectHelper::readUpdateTime(const QpMetaObject &metaObject, QObject *object)
 {

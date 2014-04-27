@@ -52,9 +52,15 @@ QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
 {
     data->sqlDataAccessObjectHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
     data->metaObject = QpMetaObject::registerMetaObject(metaObject);
-    QString className = QpMetaObject::removeNamespaces(metaObject.className());
-    DaoPerMetaObjectName()->insert(metaObject.className(), this);
-    DaoPerMetaObjectName()->insert(className, this);
+
+    const QMetaObject *objectInClassHierarchy = &metaObject;
+    do {
+        QString className = QpMetaObject::removeNamespaces(objectInClassHierarchy->className());
+        DaoPerMetaObjectName()->insert(objectInClassHierarchy->className(), this);
+        DaoPerMetaObjectName()->insert(className, this);
+
+        objectInClassHierarchy = objectInClassHierarchy->superClass();
+    } while(objectInClassHierarchy->className() != QObject::staticMetaObject.className());
 }
 
 QpDaoBase::~QpDaoBase()
@@ -285,8 +291,11 @@ bool QpDaoBase::undelete(QSharedPointer<QObject> object)
 }
 
 
-Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object)
+Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode)
 {
+    if(mode == IgnoreTimes)
+        return sync(object);
+
 #ifndef QP_NO_TIMESTAMPS
     QObject *obj = object.data();
     double localTime = Qp::Private::updateTimeInObject(obj);
@@ -326,6 +335,16 @@ bool QpDaoBase::synchronizeAllObjects()
     return true;
 }
 
+bool QpDaoBase::setNextId(QSharedPointer<QObject> object, const QString &fieldName)
+{
+    if (!data->sqlDataAccessObjectHelper->setNextId(object.data(), fieldName)) {
+        setLastError(data->sqlDataAccessObjectHelper->lastError());
+        return false;
+    }
+
+    return true;
+}
+
 #ifndef QP_NO_TIMESTAMPS
 QList<QSharedPointer<QObject> > QpDaoBase::createdSince(const QDateTime &time)
 {
@@ -351,89 +370,3 @@ QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(double time)
                                                 time));
 }
 #endif
-
-uint qHash(const QVariant &var)
-{
-    if (!var.isValid() || var.isNull())
-        return 0;
-
-    switch (var.type())
-    {
-        case QVariant::Int:
-            return qHash( var.toInt() );
-        case QVariant::UInt:
-            return qHash( var.toUInt() );
-        case QVariant::Bool:
-            return qHash( var.toUInt() );
-        case QVariant::Double:
-            return qHash( var.toUInt() );
-        case QVariant::LongLong:
-            return qHash( var.toLongLong() );
-        case QVariant::ULongLong:
-            return qHash( var.toULongLong() );
-        case QVariant::String:
-            return qHash( var.toString() );
-        case QVariant::Char:
-            return qHash( var.toChar() );
-        case QVariant::StringList:
-            return qHash( var.toString() );
-        case QVariant::ByteArray:
-            return qHash( var.toByteArray() );
-        case QVariant::Date:
-        case QVariant::Time:
-        case QVariant::DateTime:
-        case QVariant::Url:
-        case QVariant::Locale:
-        case QVariant::RegExp:
-            return qHash( var.toString() );
-        case QVariant::BitArray:
-        case QVariant::Bitmap:
-        case QVariant::Brush:
-        case QVariant::Color:
-        case QVariant::Cursor:
-        case QVariant::EasingCurve:
-        case QVariant::Font:
-        case QVariant::Hash:
-        case QVariant::Icon:
-        case QVariant::Image:
-        case QVariant::Invalid:
-        case QVariant::KeySequence:
-        case QVariant::LastCoreType:
-        case QVariant::LastType:
-        case QVariant::Line:
-        case QVariant::LineF:
-        case QVariant::List:
-        case QVariant::Matrix4x4:
-        case QVariant::Matrix:
-        case QVariant::ModelIndex:
-        case QVariant::Palette:
-        case QVariant::Pen:
-        case QVariant::Pixmap:
-        case QVariant::Point:
-        case QVariant::PointF:
-        case QVariant::Polygon:
-        case QVariant::PolygonF:
-        case QVariant::Quaternion:
-        case QVariant::Rect:
-        case QVariant::RectF:
-        case QVariant::Region:
-        case QVariant::RegularExpression:
-        case QVariant::Size:
-        case QVariant::SizeF:
-        case QVariant::SizePolicy:
-        case QVariant::TextFormat:
-        case QVariant::TextLength:
-        case QVariant::Transform:
-        case QVariant::UserType:
-        case QVariant::Uuid:
-        case QVariant::Vector2D:
-        case QVariant::Vector3D:
-        case QVariant::Vector4D:
-        case QVariant::Map:
-            Q_ASSERT(false);
-    }
-
-    // could not generate a hash for the given variant
-    Q_ASSERT(false);
-    return 0;
-}

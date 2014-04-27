@@ -480,6 +480,27 @@ void QpSqlQuery::prepareDelete()
     data->canBulkExec = true;
 }
 
+void QpSqlQuery::prepareSetNextId()
+{
+    Q_ASSERT(data->fields.size() == 1);
+    Q_ASSERT(data->whereCondition.isValid());
+
+    QString query("UPDATE ");
+    query.append(escapeField(data->table)).append(" SET\n\t");
+    query.append(QString("%1 = (SELECT MAX(%1) + 1 FROM (SELECT %1 FROM %2) AS tempTable)")
+                 .arg(escapeField(data->fields.keys().first()))
+                 .arg(escapeField(data->table)));
+    query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
+
+    QSqlQuery::prepare(query);
+
+    foreach (const QVariant value, data->whereCondition.bindValues()) {
+        addBindValue(value);
+    }
+
+    data->canBulkExec = false;
+}
+
 QMetaProperty QpSqlQuery::propertyForIndex(const QSqlRecord &record, const QMetaObject *metaObject, int index) const
 {
     int propertyIndex = data->propertyIndexes.value(index, -123);
@@ -506,11 +527,13 @@ void QpSqlQuery::addBindValue(const QVariant &val)
     QSqlQuery::addBindValue(variantToSqlStorableVariant(val));
 }
 
+const char LISTSEPARATOR = 0x1;
+
 QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
 {
     QVariant value = val;
     if (static_cast<QMetaType::Type>(val.type()) == QMetaType::QStringList) {
-        return QVariant::fromValue<QString>(val.toStringList().join(','));
+        return QVariant::fromValue<QString>(val.toStringList().join(LISTSEPARATOR));
     }
     else if (static_cast<QMetaType::Type>(val.type()) == QMetaType::QPixmap) {
         QByteArray byteArray;
@@ -532,7 +555,7 @@ QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaTyp
 {
     QVariant value = val;
     if (type == QMetaType::QStringList) {
-        return QVariant::fromValue<QStringList>(val.toString().split(','));
+        return QVariant::fromValue<QStringList>(val.toString().split(LISTSEPARATOR));
     }
     else if (type == QMetaType::QPixmap) {
         QByteArray byteArray = QByteArray::fromBase64(val.toByteArray());

@@ -61,7 +61,7 @@ void startBulkDatabaseQueries();
 void commitBulkDatabaseQueries();
 
 template<class T> int primaryKey(QSharedPointer<T> object);
-template<class T> void registerClass();
+template<class T, class... Superclasses> void registerClass();
 template<class T> QpDao<T> *dataAccessObject();
 template<class T> QSharedPointer<T> read(int id);
 template<class T> QList<QSharedPointer<T> > readAll();
@@ -73,6 +73,7 @@ template<class T> bool markAsDeleted(QSharedPointer<T> object);
 template<class T> bool undelete(QSharedPointer<T> object);
 template<class T> bool isDeleted(QSharedPointer<T> object);
 template<class T> SynchronizeResult synchronize(QSharedPointer<T> object);
+template<class T> bool setNextId(const QString &fieldName);
 #ifndef QP_NO_TIMESTAMPS
 template<class T> QList<QSharedPointer<T>> createdSince(const QDateTime &time);
 template<class T> QList<QSharedPointer<T>> updatedSince(const QDateTime &time);

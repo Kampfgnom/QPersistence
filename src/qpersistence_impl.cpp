@@ -14,13 +14,10 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 namespace Qp {
 
-template<class T>
-void registerClass()
-{
+template <class T>
+void registerMetaType() {
     qRegisterMetaType<QSharedPointer<T> >();
     qRegisterMetaType<QList<QSharedPointer<T> > >();
-
-    new QpDao<T>(Private::GlobalGuard());
 
     // Create converter
     Private::ObjectConverter<T> *converter = new Private::ObjectConverter<T>(Private::GlobalGuard());
@@ -30,6 +27,17 @@ void registerClass()
 
     // Register converter for list type
     Private::registerConverter<QSharedPointer<T> >(converter);
+}
+
+template<class T, class... Superclasses>
+void registerClass()
+{
+    new QpDao<T>(Private::GlobalGuard());
+
+    registerMetaType<T>();
+    int _[] = {0, (registerMetaType<Superclasses>(), 0)...}; // I AM CRAAAAZY
+    // http://stackoverflow.com/questions/12515616/expression-contains-unexpanded-parameter-packs/12515637#12515637
+    Q_UNUSED(_)
 }
 
 template <typename T>
@@ -99,12 +107,24 @@ QpDao<T> *dataAccessObject()
 }
 
 template<class T>
+bool setNextId(QSharedPointer<T> object, const QString &fieldName)
+{
+    QpDao<T> *dao = dataAccessObject<T>();
+    if(!dao->setNextId(object, fieldName))
+        return false;
+
+    return dao->synchronizeObject(object, QpDao<T>::IgnoreTimes) == Updated;
+}
+
+
+template<class T>
 UpdateResult update(QSharedPointer<T> object)
 {
     beginTransaction();
     Qp::UpdateResult result = QpDaoBase::forClass(*object->metaObject())->updateObject(object);
     if(result == Qp::UpdateConflict) {
         qWarning() << "Update conflict for " << T::staticMetaObject.className() << Qp::primaryKey(object);
+        qFatal("Aborting");
         Qp::database().rollback();
         return Qp::UpdateConflict;
     }
