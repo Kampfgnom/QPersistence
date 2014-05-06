@@ -71,9 +71,6 @@ QModelIndex QpSortFilterProxyObjectModel<T>::index(int row, int column, const QM
 template<class T>
 bool QpSortFilterProxyObjectModel<T>::lessThan(const QModelIndex &left, const QModelIndex &right) const
 {
-    if(sortRole() <= Qt::UserRole)
-        return QSortFilterProxyModel::lessThan(left, right);
-
     if(!left.isValid())
         return true;
     if(!right.isValid())
@@ -99,9 +96,6 @@ bool QpSortFilterProxyObjectModel<T>::filterAcceptsRow(int source_row, const QMo
     if(!includeDeletedObjects()
        && Qp::isDeleted(o))
         return false;
-
-    if(filterRole() < Qt::UserRole)
-        return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
 
     return filterAcceptsObject(o);
 }
