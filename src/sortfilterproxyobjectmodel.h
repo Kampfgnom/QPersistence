@@ -30,10 +30,10 @@ class QpSortFilterProxyObjectModel : public QpSortFilterProxyObjectModelBase
 {
 public:
     explicit QpSortFilterProxyObjectModel(QpObjectListModel<T> *sourceModel, QObject *parent = 0);
+    explicit QpSortFilterProxyObjectModel(QObject *parent = 0);
 
     QpObjectListModel<T> *sourceModel() const;
     QSharedPointer<T> objectByIndex(const QModelIndex &index) const;
-    QModelIndex index(int row, int column = 0, const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
 
 protected:
     bool lessThan(const QModelIndex &left, const QModelIndex &right) const Q_DECL_OVERRIDE;
@@ -50,9 +50,19 @@ QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QpObjectListModel<
 }
 
 template<class T>
+QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QObject *parent) :
+    QpSortFilterProxyObjectModelBase(parent)
+{
+}
+
+template<class T>
 QpObjectListModel<T> *QpSortFilterProxyObjectModel<T>::sourceModel() const
 {
-    return static_cast<QpObjectListModel<T> *>(QSortFilterProxyModel::sourceModel());
+    QAbstractItemModel *source = QSortFilterProxyModel::sourceModel();
+    while(QAbstractProxyModel *proxy = qobject_cast<QAbstractProxyModel *>(source))
+        source = proxy->sourceModel();
+
+    return static_cast<QpObjectListModel<T> *>(source);
 }
 
 template<class T>
@@ -60,12 +70,6 @@ QSharedPointer<T> QpSortFilterProxyObjectModel<T>::objectByIndex(const QModelInd
 {
     QModelIndex i = mapToSource(index);
     return sourceModel()->objectByIndex(i);
-}
-
-template<class T>
-QModelIndex QpSortFilterProxyObjectModel<T>::index(int row, int column, const QModelIndex &parent) const
-{
-    return QSortFilterProxyModel::index(row, column, parent);
 }
 
 template<class T>
