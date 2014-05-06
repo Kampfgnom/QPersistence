@@ -480,7 +480,7 @@ void QpSqlQuery::prepareDelete()
     data->canBulkExec = true;
 }
 
-void QpSqlQuery::prepareSetNextId()
+void QpSqlQuery::prepareincrementNumericColumn()
 {
     Q_ASSERT(data->fields.size() == 1);
     Q_ASSERT(data->whereCondition.isValid());

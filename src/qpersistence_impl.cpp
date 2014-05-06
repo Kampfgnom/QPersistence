@@ -107,10 +107,10 @@ QpDao<T> *dataAccessObject()
 }
 
 template<class T>
-bool setNextId(QSharedPointer<T> object, const QString &fieldName)
+bool incrementNumericColumn(QSharedPointer<T> object, const QString &fieldName)
 {
     QpDao<T> *dao = dataAccessObject<T>();
-    if(!dao->setNextId(object, fieldName))
+    if(!dao->incrementNumericColumn(object, fieldName))
         return false;
 
     return dao->synchronizeObject(object, QpDao<T>::IgnoreTimes) == Updated;
