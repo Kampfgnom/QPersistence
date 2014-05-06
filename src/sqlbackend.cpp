@@ -164,7 +164,7 @@ QString QpMySqlBackend::variantTypeToSqlType(QVariant::Type type) const
 {
     switch (type) {
     case QVariant::UInt:
-        return QLatin1String("UNSIGNED INTEGER");
+        return QLatin1String("INTEGER UNSIGNED");
     case QVariant::Int:
         return QLatin1String("INTEGER");
     case QVariant::Bool:

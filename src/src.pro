@@ -37,7 +37,8 @@ HEADERS += \
     relation_hasmany.h \
     relation_belongstomany.h \
     defines.h \
-    usermanagement.h
+    usermanagement.h \
+    throttledfetchproxymodel.h
 
 SOURCES += \
         cache.cpp \
@@ -62,4 +63,5 @@ SOURCES += \
     relation_belongstoone.cpp \
     relation_hasmany.cpp \
     relation_belongstomany.cpp \
-    usermanagement.cpp
+    usermanagement.cpp \
+    throttledfetchproxymodel.cpp
