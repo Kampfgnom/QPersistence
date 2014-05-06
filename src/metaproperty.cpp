@@ -218,9 +218,6 @@ QpMetaProperty::Cardinality QpMetaProperty::cardinality() const
     if (data->cardinality != UnknownCardinality)
         return data->cardinality;
 
-    QString reverseName = reverseRelationName();
-    Q_ASSERT(!reverseName.isEmpty());
-
     QpMetaProperty r = reverseRelation();
     if (isToOneRelationProperty()) {
         if (r.isToOneRelationProperty()) {
@@ -272,7 +269,30 @@ QString QpMetaProperty::reverseRelationName() const
     if (data->attributes.isEmpty())
         parseAttributes();
 
-    return data->attributes.value(QPERSISTENCE_PROPERTYMETADATA_REVERSERELATION);
+    QString reverse = data->attributes.value(QPERSISTENCE_PROPERTYMETADATA_REVERSERELATION);
+    if(!reverse.isEmpty())
+        return reverse;
+
+    QList<QpMetaProperty> possibleReverses;
+    foreach(QpMetaProperty relation, reverseMetaObject().relationProperties()) {
+        if(relation.reverseClassName() == metaObject().className()) {
+            possibleReverses << relation;
+        }
+    }
+
+    Q_ASSERT_X(!possibleReverses.isEmpty(), Q_FUNC_INFO,
+               QString("The %1::%2 relation must have a reverse in %3")
+               .arg(metaObject().className())
+               .arg(name())
+               .arg(reverseClassName())
+               .toLatin1());
+    Q_ASSERT_X(possibleReverses.size() == 1, Q_FUNC_INFO,
+               QString("You must explicitly specify the reverse relation for %1::%2 in %3, since it it ambigious.")
+               .arg(metaObject().className())
+               .arg(name())
+               .arg(reverseClassName())
+               .toLatin1());
+    return possibleReverses.first().name();
 }
 
 QpMetaProperty QpMetaProperty::reverseRelation() const
