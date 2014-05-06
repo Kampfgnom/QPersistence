@@ -210,12 +210,14 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
         return false;
     }
 
+    // Update related objects
+    bool result = adjustRelationsInDatabase(metaObject, object);
+
 #ifndef QP_NO_TIMESTAMPS
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, readUpdateTime(metaObject, object));
 #endif
 
-    // Update related objects
-    return adjustRelationsInDatabase(metaObject, object);
+    return result;
 }
 
 void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaObject,

@@ -1,5 +1,6 @@
 #include "../src/dataaccessobject.h"
 #include "../src/databaseschema.h"
+#include "../src/defines.h"
 #include "../src/error.h"
 #include "../src/lock.h"
 #include "../src/objectlistmodel.h"
@@ -9,5 +10,5 @@
 #include "../src/relation_hasmany.h"
 #include "../src/relation_hasone.h"
 #include "../src/sortfilterproxyobjectmodel.h"
+#include "../src/throttledfetchproxymodel.h"
 #include "../src/usermanagement.h"
-#include "../src/defines.h"
