@@ -49,6 +49,7 @@ public:
     QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const Q_DECL_OVERRIDE;
     QSharedPointer<T> objectByIndex(const QModelIndex &index) const;
     QList<QSharedPointer<T> > objects() const;
+    QModelIndex indexForObject(QSharedPointer<T> object) const;
 
 protected:
     void objectInserted(QSharedPointer<QObject>) Q_DECL_OVERRIDE;
@@ -81,6 +82,16 @@ template<class T>
 bool QpObjectListModel<T>::canFetchMore(const QModelIndex &) const
 {
     return (m_objects.size() < Qp::count<T>());
+}
+
+template<class T>
+QModelIndex QpObjectListModel<T>::indexForObject(QSharedPointer<T> object) const
+{
+    if(!m_rows.contains(object))
+        return QModelIndex();
+
+    int row = m_rows.value(object);
+    return index(row);
 }
 
 template<class T>
@@ -186,13 +197,9 @@ template<class T>
 void QpObjectListModel<T>::objectUpdated(QSharedPointer<QObject> object)
 {
     QSharedPointer<T> t = qSharedPointerCast<T>(object);
-
-    if(!m_rows.contains(t))
-        return;
-
-    int row = m_rows.value(t);
-    QModelIndex i = index(row);
-    emit dataChanged(i, i);
+    QModelIndex i = indexForObject(t);
+    if(i.isValid())
+        emit dataChanged(i, i);
 }
 
 template<class T>

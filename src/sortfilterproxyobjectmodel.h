@@ -34,6 +34,7 @@ public:
 
     QpObjectListModel<T> *sourceModel() const;
     QSharedPointer<T> objectByIndex(const QModelIndex &index) const;
+    QModelIndex indexForObject(QSharedPointer<T> object) const;
 
 protected:
     bool lessThan(const QModelIndex &left, const QModelIndex &right) const Q_DECL_OVERRIDE;
@@ -47,6 +48,12 @@ QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QpObjectListModel<
     QpSortFilterProxyObjectModelBase(parent)
 {
     setSourceModel(sourceModel);
+}
+
+template<class T>
+QModelIndex QpSortFilterProxyObjectModel<T>::indexForObject(QSharedPointer<T> object) const
+{
+    return mapFromSource(sourceModel()->indexForObject(object));
 }
 
 template<class T>

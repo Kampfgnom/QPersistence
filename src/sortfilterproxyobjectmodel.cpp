@@ -34,3 +34,4 @@ void QpSortFilterProxyObjectModelBase::setIncludeDeletedObjects(bool includeDele
 {
     m_includeDeletedObjects = includeDeletedObjects;
 }
+
