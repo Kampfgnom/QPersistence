@@ -31,7 +31,7 @@ public:
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);
-    bool setNextId(QObject *object, const QString &fieldName);
+    bool incrementNumericColumn(QObject *object, const QString &fieldName);
 
 #ifndef QP_NO_TIMESTAMPS
     double readUpdateTime(const QpMetaObject &metaObject, QObject *object);

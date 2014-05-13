@@ -73,7 +73,7 @@ template<class T> bool markAsDeleted(QSharedPointer<T> object);
 template<class T> bool undelete(QSharedPointer<T> object);
 template<class T> bool isDeleted(QSharedPointer<T> object);
 template<class T> SynchronizeResult synchronize(QSharedPointer<T> object);
-template<class T> bool setNextId(const QString &fieldName);
+template<class T> bool incrementNumericColumn(QSharedPointer<T> object, const QString &fieldName);
 #ifndef QP_NO_TIMESTAMPS
 template<class T> QList<QSharedPointer<T>> createdSince(const QDateTime &time);
 template<class T> QList<QSharedPointer<T>> updatedSince(const QDateTime &time);

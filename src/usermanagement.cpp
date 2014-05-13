@@ -47,7 +47,7 @@ bool QpUserManagement::grandTable(const QString &table, const QString &username,
     if (permissions & Delete) l.append("DELETE");
 
     return exec("GRANT " + l.join(",") + " "
-                "ON " + table + " "
+                "ON `" + table + "` "
                 "TO '" + username + "'@'%'; "
                 "FLUSH PRIVILEGES;");
 }
@@ -59,8 +59,8 @@ bool QpUserManagement::grandTableColumn(const QString &table, const QString &col
     if (permissions & Select) l.append("SELECT");
     if (permissions & Update) l.append("UPDATE");
 
-    return exec("GRANT " + l.join(",") + " (" + column + ") "
-                "ON " + table + " "
+    return exec("GRANT " + l.join(",") + " (`" + column + "`) "
+                "ON `" + table + "` "
                 "TO '" + username + "'@'%'; "
                 "FLUSH PRIVILEGES;");
 }
@@ -72,10 +72,10 @@ bool QpUserManagement::grandAll(const QString &username)
                 "TO '" + username + "'@'%' "
                 "WITH GRANT OPTION; "
                 "GRANT SELECT, INSERT, UPDATE, DELETE "
-                "ON " + Qp::database().databaseName() + ".* "
+                "ON `" + Qp::database().databaseName() + "`.* "
                 "TO '" + username + "'@'%'; "
                 "GRANT SELECT, INSERT, UPDATE, DELETE "
-                "ON mysql.* "
+                "ON `mysql`.* "
                 "TO '" + username + "'@'%'; "
                 "FLUSH PRIVILEGES;");
 }
@@ -86,7 +86,7 @@ bool QpUserManagement::revokeAll(const QString &username)
                 "ON *.* "
                 "FROM '" + username + "'@'%'; "
                 "REVOKE ALL PRIVILEGES "
-                "ON " + Qp::database().databaseName() + ".*, mysql.* "
+                "ON `" + Qp::database().databaseName() + "`.*, mysql.* "
                 "FROM '" + username + "'@'%'; "
                 "REVOKE GRANT OPTION ON *.* FROM '" + username + "'@'%'; "
                 "FLUSH PRIVILEGES;");

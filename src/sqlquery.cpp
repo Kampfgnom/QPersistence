@@ -480,7 +480,7 @@ void QpSqlQuery::prepareDelete()
     data->canBulkExec = true;
 }
 
-void QpSqlQuery::prepareSetNextId()
+void QpSqlQuery::prepareincrementNumericColumn()
 {
     Q_ASSERT(data->fields.size() == 1);
     Q_ASSERT(data->whereCondition.isValid());
@@ -541,8 +541,8 @@ QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
 
         QBuffer buffer(&byteArray);
         buffer.open(QIODevice::WriteOnly);
-        pixmap.save(&buffer, "PNG");
-        return byteArray.toBase64();
+        pixmap.save(&buffer, "png");
+        return byteArray;
     }
     else if (Qp::Private::canConvertToSqlStorableVariant(val)) {
         return Qp::Private::convertToSqlStorableVariant(val);
@@ -558,9 +558,9 @@ QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaTyp
         return QVariant::fromValue<QStringList>(val.toString().split(LISTSEPARATOR));
     }
     else if (type == QMetaType::QPixmap) {
-        QByteArray byteArray = QByteArray::fromBase64(val.toByteArray());
+        QByteArray byteArray = val.toByteArray();
         QPixmap pixmap;
-        pixmap.loadFromData(byteArray, "PNG");
+        pixmap.loadFromData(byteArray, "png");
         return QVariant::fromValue<QPixmap>(pixmap);
     }
     else if (Qp::Private::canConvertFromSqlStoredVariant(type)) {

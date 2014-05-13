@@ -703,7 +703,7 @@ bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, Q
     return true;
 }
 
-bool QpSqlDataAccessObjectHelper::setNextId(QObject *object, const QString &fieldName)
+bool QpSqlDataAccessObjectHelper::incrementNumericColumn(QObject *object, const QString &fieldName)
 {
     QpMetaObject mo = QpMetaObject::forObject(object);
     QpSqlQuery query(data->database);
@@ -712,7 +712,7 @@ bool QpSqlDataAccessObjectHelper::setNextId(QObject *object, const QString &fiel
     query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                            QpSqlCondition::EqualTo,
                                            Qp::Private::primaryKey(object)));
-    query.prepareSetNextId();
+    query.prepareincrementNumericColumn();
 
     if (!query.exec()
             || query.lastError().isValid()) {

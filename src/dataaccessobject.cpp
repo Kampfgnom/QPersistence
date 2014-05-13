@@ -335,9 +335,9 @@ bool QpDaoBase::synchronizeAllObjects()
     return true;
 }
 
-bool QpDaoBase::setNextId(QSharedPointer<QObject> object, const QString &fieldName)
+bool QpDaoBase::incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName)
 {
-    if (!data->sqlDataAccessObjectHelper->setNextId(object.data(), fieldName)) {
+    if (!data->sqlDataAccessObjectHelper->incrementNumericColumn(object.data(), fieldName)) {
         setLastError(data->sqlDataAccessObjectHelper->lastError());
         return false;
     }
