@@ -190,6 +190,10 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
 
 #ifndef QP_NO_LOCKS
     data->query.addField(QpDatabaseSchema::COLUMN_LOCK, variantTypeToSqlType(QVariant::Int));
+    data->query.addForeignKey(QpDatabaseSchema::COLUMN_LOCK,
+                              COLUMN_NAME_PRIMARY_KEY,
+                              TABLENAME_LOCKS,
+                              "SET NULL");
 #endif
 
     data->query.prepareCreateTable();

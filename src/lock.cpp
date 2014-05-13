@@ -156,22 +156,7 @@ void QpLockData::removeLock(int id, QSharedPointer<QObject> object)
 {
     LOCALLOCKS()->remove(object);
 
-    QpMetaObject metaObject = QpMetaObject::forObject(object);
-
     QpSqlQuery query(Qp::database());
-    query.setTable(metaObject.tableName());
-    query.addField(QpDatabaseSchema::COLUMN_LOCK, 0);
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                           QpSqlCondition::EqualTo,
-                                           Qp::primaryKey(object)));
-    query.prepareUpdate();
-
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        Qp::Private::setLastError(QpError(query.lastError()));
-        return;
-    }
-
     query.clear();
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
     query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
