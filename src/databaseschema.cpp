@@ -7,6 +7,7 @@
 #include "qpersistence.h"
 #include "sqlbackend.h"
 #include "sqlquery.h"
+#include "storage.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QDebug>
@@ -40,17 +41,19 @@ public:
         QSharedData()
     {}
 
+    QpStorage *storage;
     QSqlDatabase database;
     mutable QpError lastError;
     QpSqlQuery query;
 };
 
-QpDatabaseSchema::QpDatabaseSchema(const QSqlDatabase &database, QObject *parent) :
-    QObject(parent),
+QpDatabaseSchema::QpDatabaseSchema(QpStorage *storage) :
+    QObject(storage),
     data(new QpDatabaseSchemaPrivate)
 {
-    data->database = database;
-    data->query = QpSqlQuery(database);
+    data->storage = storage;
+    data->database = storage->database();
+    data->query = QpSqlQuery(data->database);
 }
 
 QpDatabaseSchema::~QpDatabaseSchema()
@@ -302,7 +305,7 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
 #endif
 
 #ifndef QP_NO_LOCKS
-        if(!hasLockColumn && QpLock::isLocksEnabled())
+        if(!hasLockColumn && data->storage->isLocksEnabled())
             data->query.addField(COLUMN_LOCK, variantTypeToSqlType(QVariant::Int));
 #endif
 
@@ -478,7 +481,7 @@ void QpDatabaseSchema::adjustSchema()
 #ifndef QP_NO_LOCKS
 void QpDatabaseSchema::createLocksTable()
 {
-    if (!QpLock::isLocksEnabled())
+    if (!data->storage->isLocksEnabled())
         return;
 
     if (!existsTable(QpDatabaseSchema::TABLENAME_LOCKS)) {
@@ -487,8 +490,8 @@ void QpDatabaseSchema::createLocksTable()
         data->query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
         data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
 
-        foreach(QString field, QpLock::additionalInformationFields().keys()) {
-            QString type = variantTypeToSqlType(QpLock::additionalInformationFields().value(field));
+        foreach(QString field, data->storage->additionalLockInformationFields().keys()) {
+            QString type = variantTypeToSqlType(data->storage->additionalLockInformationFields().value(field));
             data->query.addField(field, type);
         }
 
@@ -502,11 +505,11 @@ void QpDatabaseSchema::createLocksTable()
     else {
         QSqlRecord record = data->database.record(QpDatabaseSchema::TABLENAME_LOCKS);
 
-        foreach(QString field, QpLock::additionalInformationFields().keys()) {
+        foreach(QString field, data->storage->additionalLockInformationFields().keys()) {
             if (record.indexOf(field) != -1)
                 continue;
 
-            QString type = variantTypeToSqlType(QpLock::additionalInformationFields().value(field));
+            QString type = variantTypeToSqlType(data->storage->additionalLockInformationFields().value(field));
             addColumn(QpDatabaseSchema::TABLENAME_LOCKS, field, type);
         }
     }
@@ -622,7 +625,7 @@ void QpDatabaseSchema::setLastError(const QpError &error) const
 {
     qDebug() << error;
     data->lastError = error;
-    Qp::Private::setLastError(error);
+    data->storage->setLastError(error);
 }
 
 void QpDatabaseSchema::setLastError(const QSqlQuery &query) const

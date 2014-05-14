@@ -17,6 +17,7 @@ void enableLocks();
 
 class QpError;
 class QpSqlQuery;
+class QpStorage;
 
 class QpLockData;
 class QpLock
@@ -36,14 +37,9 @@ public:
         DatabaseError
     };
 
-    static void enableLocks();
-    static bool isLocksEnabled();
-    static void addAdditionalInformationField(const QString &name, QVariant::Type type = QVariant::UserType);
-    static QHash<QString, QVariant::Type> additionalInformationFields();
-
-    static QpLock isLocked(QSharedPointer<QObject> object);
-    static QpLock tryLock(QSharedPointer<QObject> object, QHash<QString,QVariant> additionalInformation);
-    static QpLock unlock(QSharedPointer<QObject> object);
+    static QpLock isLocked(QpStorage *storage, QSharedPointer<QObject> object);
+    static QpLock tryLock(QpStorage *storage, QSharedPointer<QObject> object, QHash<QString,QVariant> additionalInformation);
+    static QpLock unlock(QpStorage *storage, QSharedPointer<QObject> object);
 
     QpLock(const QpLock &);
     QpLock &operator=(const QpLock &);

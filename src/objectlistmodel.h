@@ -4,11 +4,14 @@
 #include "defines.h"
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QAbstractListModel>
+#include <QtCore/QMetaProperty>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "dataaccessobject.h"
 #include "private.h"
 #include "qpersistence.h"
+#include "storage.h"
+#include "defaultstorage.h"
 
 class QpObjectListModelBase : public QAbstractListModel
 {
@@ -37,6 +40,7 @@ class QpObjectListModel : public QpObjectListModelBase
 {
 public:
     explicit QpObjectListModel(QObject *parent = 0);
+    explicit QpObjectListModel(QpStorage *storage, QObject *parent = 0);
 
     bool canFetchMore(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     void fetchMore(const QModelIndex & parent = QModelIndex()) Q_DECL_OVERRIDE;
@@ -65,9 +69,15 @@ private:
 
 template<class T>
 QpObjectListModel<T>::QpObjectListModel(QObject *parent) :
+    QpObjectListModel(QpStorage::defaultStorage(), parent)
+{
+}
+
+template<class T>
+QpObjectListModel<T>::QpObjectListModel(QpStorage *storage, QObject *parent) :
     QpObjectListModelBase(parent)
 {
-    m_dao = Qp::dataAccessObject<T>();
+    m_dao = storage->dataAccessObject<T>();
     connect(m_dao, &QpDaoBase::objectCreated,
             this, &QpObjectListModel<T>::objectInserted);
     connect(m_dao, &QpDaoBase::objectRemoved,
@@ -81,7 +91,7 @@ QpObjectListModel<T>::QpObjectListModel(QObject *parent) :
 template<class T>
 bool QpObjectListModel<T>::canFetchMore(const QModelIndex &) const
 {
-    return (m_objects.size() < Qp::count<T>());
+    return (m_objects.size() < m_dao->count());
 }
 
 template<class T>

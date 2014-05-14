@@ -7,7 +7,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtSql/QSqlDatabase>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-#include "dataaccessobject.h"
+#include "private.h"
 
 template<class T>
 class QpDao;
@@ -40,52 +40,6 @@ enum UpdateResult : short {
     UpdateError
 };
 
-void setDatabase(const QSqlDatabase &database);
-QSqlDatabase database();
-bool adjustDatabaseSchema();
-bool createCleanSchema();
-QpError lastError();
-#ifndef QP_NO_LOCKS
-void enableLocks();
-void addAdditionalLockInformationField(const QString &field, QVariant::Type type = QVariant::UserType);
-#endif
-#ifndef QP_NO_TIMESTAMPS
-QDateTime databaseTime();
-#endif
-
-bool beginTransaction();
-CommitResult commitOrRollbackTransaction();
-
-void setSqlDebugEnabled(bool enable);
-void startBulkDatabaseQueries();
-void commitBulkDatabaseQueries();
-
-template<class T> int primaryKey(QSharedPointer<T> object);
-template<class T, class... Superclasses> void registerClass();
-template<class T> QpDao<T> *dataAccessObject();
-template<class T> QSharedPointer<T> read(int id);
-template<class T> QList<QSharedPointer<T> > readAll();
-template<class T> int count();
-template<class T> QSharedPointer<T> create();
-template<class T> UpdateResult update(QSharedPointer<T> object);
-template<class T> bool remove(QSharedPointer<T> object);
-template<class T> bool markAsDeleted(QSharedPointer<T> object);
-template<class T> bool undelete(QSharedPointer<T> object);
-template<class T> bool isDeleted(QSharedPointer<T> object);
-template<class T> SynchronizeResult synchronize(QSharedPointer<T> object);
-template<class T> bool incrementNumericColumn(QSharedPointer<T> object, const QString &fieldName);
-#ifndef QP_NO_TIMESTAMPS
-template<class T> QList<QSharedPointer<T>> createdSince(const QDateTime &time);
-template<class T> QList<QSharedPointer<T>> updatedSince(const QDateTime &time);
-template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object);
-template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object);
-template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object);
-#endif
-#ifndef QP_NO_LOCKS
-template<class T> QpLock tryLock(QSharedPointer<T> object, QHash<QString,QVariant> additionalInformation = QHash<QString,QVariant>());
-template<class T> QpLock unlock(QSharedPointer<T> object);
-template<class T> QpLock isLocked(QSharedPointer<T> object);
-#endif
 
 template<class K, class V> void registerMappableTypes();
 template<class T> void registerSetType();
@@ -96,9 +50,74 @@ QList<Target> castList(const QList<Source>& list);
 template<class T, class O>
 QList<QSharedPointer<T> > castList(const QList<QSharedPointer<O> >& list);
 
-} // namespace Qp
 
-#include "qpersistence_impl.cpp"
+
+
+
+/*******************************************************
+ * Implementation
+ */
+template<class T>
+QSharedPointer<T> sharedFrom(const T *object)
+{
+    return qSharedPointerCast<T>(Qp::Private::sharedFrom(object));
+}
+
+template <typename T>
+QList<T> reversed( const QList<T> & in ) {
+    QList<T> result;
+    result.reserve( in.size() );
+    std::reverse_copy( in.begin(), in.end(), std::back_inserter( result ) );
+    return result;
+}
+
+template<class K, class V>
+void registerMappableTypes()
+{
+    qRegisterMetaType<K>();
+    qRegisterMetaType<V>();
+    qRegisterMetaType<QMap<K,V> >();
+
+    // Create converter
+    Private::registerConverter<QMap<K,V> >(new Private::MapConverter<K,V>(Private::GlobalGuard()));
+
+    if (!Private::canConvertFromSqlStoredVariant<K>())
+        Private::registerConverter<K>(new Private::SqlConverter<K>(Private::GlobalGuard()));
+    if (!Private::canConvertFromSqlStoredVariant<V>())
+        Private::registerConverter<V>(new Private::SqlConverter<V>(Private::GlobalGuard()));
+}
+
+template<class T>
+void registerSetType()
+{
+    qRegisterMetaType<T>();
+    qRegisterMetaType<QSet<T> >();
+
+    // Create converter
+    Private::registerConverter<QSet<T> >(new Private::SetConverter<T>(Private::GlobalGuard()));
+
+    if (!Private::canConvertFromSqlStoredVariant<T>())
+        Private::registerConverter<T>(new Private::SqlConverter<T>(Private::GlobalGuard()));
+}
+
+template<class Target, class Source>
+QList<Target> castList(const QList<Source>& list)
+{
+    QList<Target> result;
+    foreach(Source s, list) result.append(static_cast<Target>(s));
+    return result;
+}
+
+template<class Target, class Source>
+QList<QSharedPointer<Target> > castList(const QList<QSharedPointer<Source> >& list)
+{
+    QList<QSharedPointer<Target> > result;
+    result.reserve(list.size());
+    foreach(QSharedPointer<Source> s, list) result.append(qSharedPointerCast<Target>(s));
+    return result;
+}
+
+} // namespace Qp
 
 #define QPERSISTENCE_PROPERTYMETADATA "QPERSISTENCE_PROPERTYMETADATA"
 #define QPERSISTENCE_SQLFILTER "QPERSISTENCE_SQLFILTER"

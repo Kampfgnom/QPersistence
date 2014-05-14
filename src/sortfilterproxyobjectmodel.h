@@ -99,7 +99,7 @@ bool QpSortFilterProxyObjectModel<T>::lessThan(const QModelIndex &left, const QM
 template<class T>
 bool QpSortFilterProxyObjectModel<T>::lessThan(QSharedPointer<T> left, QSharedPointer<T> right) const
 {
-    return Qp::primaryKey(left) < Qp::primaryKey(right);
+    return Qp::Private::primaryKey(left.data()) < Qp::Private::primaryKey(right.data());
 }
 
 template<class T>
@@ -108,7 +108,7 @@ bool QpSortFilterProxyObjectModel<T>::filterAcceptsRow(int source_row, const QMo
     QSharedPointer<T> o = sourceModel()->objectByIndex(sourceModel()->index(source_row, 0, source_parent));
 
     if(!includeDeletedObjects()
-       && Qp::isDeleted(o))
+       && Qp::Private::isDeleted(o.data()))
         return false;
 
     if(filterRole() < Qt::UserRole)

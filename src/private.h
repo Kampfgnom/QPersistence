@@ -13,22 +13,12 @@ QObject *GlobalGuard();
 void enableSharedFromThis(QSharedPointer<QObject> object);
 QSharedPointer<QObject> sharedFrom(const QObject *object);
 
-void setLastError(const QpError &error);
-
 int primaryKey(QObject *object);
 void setPrimaryKey(QObject *object, int key);
 
 bool isDeleted(QObject *object);
 void markAsDeleted(QObject *object);
 void undelete(QObject *object);
-
-#ifndef QP_NO_TIMESTAMPS
-double creationTimeInDatabase(QObject *object);
-double updateTimeInDatabase(QObject *object);
-double updateTimeInObject(QObject *object);
-double creationTimeInObject(QObject *object);
-double databaseTime();
-#endif
 
 template<class T> QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bool *ok = 0);
 template<class T> QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list);

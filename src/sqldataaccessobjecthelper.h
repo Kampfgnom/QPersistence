@@ -14,6 +14,7 @@ class QpMetaObject;
 class QpMetaProperty;
 class QpSqlCondition;
 class QpSqlQuery;
+class QpStorage;
 
 class QpSqlDataAccessObjectHelperPrivate;
 class QpSqlDataAccessObjectHelper : public QObject
@@ -22,7 +23,7 @@ class QpSqlDataAccessObjectHelper : public QObject
 public:
     ~QpSqlDataAccessObjectHelper();
 
-    static QpSqlDataAccessObjectHelper *forDatabase(const QSqlDatabase &database = QSqlDatabase::database());
+    explicit QpSqlDataAccessObjectHelper(QpStorage *storage);
 
     int count(const QpMetaObject &metaObject) const;
     QList<int> allKeys(const QpMetaObject &metaObject, int skip, int count) const;
@@ -34,22 +35,18 @@ public:
     bool incrementNumericColumn(QObject *object, const QString &fieldName);
 
 #ifndef QP_NO_TIMESTAMPS
-    double readUpdateTime(const QpMetaObject &metaObject, QObject *object);
-    double readCreationTime(const QpMetaObject &metaObject, QObject *object);
+    double readUpdateTime(QObject *object);
+    double readCreationTime(QObject *object);
 #endif
 
     void readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record,
                              QObject *object, int primaryKeyRecordIndex = -1, int updateTimeRecordIndex = -1, int deletedFlagRecordIndex = -1);
 
-    QpError lastError() const;
-
     int foreignKey(const QpMetaProperty relation, QObject *object);
     QList<int> foreignKeys(const QpMetaProperty relation, QObject *object);
 
 private:
-    QSharedDataPointer<QpSqlDataAccessObjectHelperPrivate> data;
-
-    explicit QpSqlDataAccessObjectHelper(const QSqlDatabase &database, QObject *parent = 0);
+    QExplicitlySharedDataPointer<QpSqlDataAccessObjectHelperPrivate> data;
 
     void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;

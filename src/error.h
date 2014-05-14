@@ -9,13 +9,6 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpError;
-
-namespace Qp {
-namespace Private {
-void setLastError(const QpError &);
-}
-}
-
 class QSqlError;
 class QSqlQuery;
 
@@ -29,8 +22,6 @@ public:
         TransactionError,
         UserError = 1024
     };
-
-    static QpError lastError();
 
     QpError(const QString &text = QString(),
             ErrorType type = NoError,
@@ -48,9 +39,6 @@ public:
     void addAdditionalInformation(const QString &key, const QVariant &value);
 
 private:
-    friend void Qp::Private::setLastError(const QpError &);
-    static void setLastError(const QpError error);
-
     QSharedDataPointer<QpErrorData> data;
 };
 

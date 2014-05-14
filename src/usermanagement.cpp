@@ -1,6 +1,7 @@
 #include "usermanagement.h"
 
-QpUserManagement::QpUserManagement()
+QpUserManagement::QpUserManagement(QpStorage *storage) :
+    storage(storage)
 {
 }
 
@@ -9,10 +10,12 @@ QpUserManagement::QpUserManagement()
 #include "error.h"
 #include "qpersistence.h"
 #include "sqlquery.h"
+#include "storage.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+
 
 bool QpUserManagement::createUser(const QString &username, const QString &password)
 {
@@ -72,7 +75,7 @@ bool QpUserManagement::grandAll(const QString &username)
                 "TO '" + username + "'@'%' "
                 "WITH GRANT OPTION; "
                 "GRANT SELECT, INSERT, UPDATE, DELETE "
-                "ON `" + Qp::database().databaseName() + "`.* "
+                "ON `" + storage->database().databaseName() + "`.* "
                 "TO '" + username + "'@'%'; "
                 "GRANT SELECT, INSERT, UPDATE, DELETE "
                 "ON `mysql`.* "
@@ -86,7 +89,7 @@ bool QpUserManagement::revokeAll(const QString &username)
                 "ON *.* "
                 "FROM '" + username + "'@'%'; "
                 "REVOKE ALL PRIVILEGES "
-                "ON `" + Qp::database().databaseName() + "`.*, mysql.* "
+                "ON `" + storage->database().databaseName() + "`.*, mysql.* "
                 "FROM '" + username + "'@'%'; "
                 "REVOKE GRANT OPTION ON *.* FROM '" + username + "'@'%'; "
                 "FLUSH PRIVILEGES;");
@@ -94,10 +97,10 @@ bool QpUserManagement::revokeAll(const QString &username)
 
 bool QpUserManagement::exec(const QString &query)
 {
-    QpSqlQuery q(Qp::database());
+    QpSqlQuery q(storage->database());
     if(!q.exec(query) ||
             q.lastError().isValid()) {
-        Qp::Private::setLastError(QpError(q.lastError()));
+        storage->setLastError(QpError(q.lastError()));
         return false;
     }
     return true;

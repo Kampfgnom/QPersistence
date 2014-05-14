@@ -9,6 +9,7 @@
 #include "sqlbackend.h"
 #include "sqldataaccessobjecthelper.h"
 #include "sqlquery.h"
+#include "storage.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
@@ -24,43 +25,21 @@ class QpDaoBaseData : public QSharedData
         {
         }
 
-        QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper;
+        QpStorage *storage;
         QpMetaObject metaObject;
         mutable QpError lastError;
         mutable QpCache cache;
         double lastSync;
 };
 
-typedef QHash<QString, QpDaoBase *> HashStringToDao;
-QP_DEFINE_STATIC_LOCAL(HashStringToDao, DaoPerMetaObjectName)
-
-QpDaoBase *QpDaoBase::forClass(const QMetaObject &metaObject)
-{
-    Q_ASSERT(DaoPerMetaObjectName()->contains(metaObject.className()));
-    return DaoPerMetaObjectName()->value(metaObject.className());
-}
-
-QList<QpDaoBase *> QpDaoBase::dataAccessObjects()
-{
-    return DaoPerMetaObjectName()->values();
-}
 
 QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
-                     QObject *parent) :
+                     QpStorage *parent) :
     QObject(parent),
     data(new QpDaoBaseData)
 {
-    data->sqlDataAccessObjectHelper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
+    data->storage = parent;
     data->metaObject = QpMetaObject::registerMetaObject(metaObject);
-
-    const QMetaObject *objectInClassHierarchy = &metaObject;
-    do {
-        QString className = QpMetaObject::removeNamespaces(objectInClassHierarchy->className());
-        DaoPerMetaObjectName()->insert(objectInClassHierarchy->className(), this);
-        DaoPerMetaObjectName()->insert(className, this);
-
-        objectInClassHierarchy = objectInClassHierarchy->superClass();
-    } while(objectInClassHierarchy->className() != QObject::staticMetaObject.className());
 }
 
 QpDaoBase::~QpDaoBase()
@@ -80,7 +59,7 @@ QpCache QpDaoBase::cache() const
 void QpDaoBase::setLastError(const QpError &error) const
 {
     data->lastError = error;
-    Qp::Private::setLastError(error);
+    data->storage->setLastError(error);
 }
 
 void QpDaoBase::resetLastError() const
@@ -91,15 +70,16 @@ void QpDaoBase::resetLastError() const
 Qp::SynchronizeResult QpDaoBase::sync(QSharedPointer<QObject> object)
 {
     QObject *obj = object.data();
-    int id = Qp::primaryKey(object);
-    if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, obj)) {
-        QpError error = data->sqlDataAccessObjectHelper->lastError();
+    int id = data->storage->primaryKey(object);
+    data->storage->setSqlDebugEnabled(true);
+    if (!data->storage->sqlDataAccessObjectHelper()->readObject(data->metaObject, id, obj)) {
+        QpError error = data->storage->lastError();
         if(error.isValid()) {
             setLastError(error);
             return Qp::Error;
         }
 
-        data->cache.remove(Qp::primaryKey(object));
+        data->cache.remove(data->storage->primaryKey(object));
         emit objectRemoved(object);
 
         return Qp::Removed;
@@ -109,6 +89,7 @@ Qp::SynchronizeResult QpDaoBase::sync(QSharedPointer<QObject> object)
         QpRelationResolver::readRelationFromDatabase(relation, obj);
     }
 
+    data->storage->setSqlDebugEnabled(false);
     if(Qp::Private::isDeleted(object.data())) {
         emit objectMarkedAsDeleted(object);
         return Qp::Deleted;
@@ -118,11 +99,6 @@ Qp::SynchronizeResult QpDaoBase::sync(QSharedPointer<QObject> object)
     return Qp::Updated;
 }
 
-QpSqlDataAccessObjectHelper *QpDaoBase::sqlDataAccessObjectHelper() const
-{
-    return data->sqlDataAccessObjectHelper;
-}
-
 QpMetaObject QpDaoBase::qpMetaObject() const
 {
     return data->metaObject;
@@ -130,25 +106,25 @@ QpMetaObject QpDaoBase::qpMetaObject() const
 
 int QpDaoBase::count() const
 {
-    return data->sqlDataAccessObjectHelper->count(data->metaObject);
+    return data->storage->sqlDataAccessObjectHelper()->count(data->metaObject);
 }
 
 QList<int> QpDaoBase::allKeys(int skip, int count) const
 {
-    QList<int> result = data->sqlDataAccessObjectHelper->allKeys(data->metaObject, skip, count);
+    QList<int> result = data->storage->sqlDataAccessObjectHelper()->allKeys(data->metaObject, skip, count);
 
-    if (data->sqlDataAccessObjectHelper->lastError().isValid())
-        setLastError(data->sqlDataAccessObjectHelper->lastError());
+    if (data->storage->lastError().isValid())
+        setLastError(data->storage->lastError());
 
     return result;
 }
 
 QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, const QpSqlCondition &condition) const
 {
-    QpSqlQuery query = data->sqlDataAccessObjectHelper->readAllObjects(data->metaObject, skip, count, condition);
+    QpSqlQuery query = data->storage->sqlDataAccessObjectHelper()->readAllObjects(data->metaObject, skip, count, condition);
 
-    if (data->sqlDataAccessObjectHelper->lastError().isValid()) {
-        setLastError(data->sqlDataAccessObjectHelper->lastError());
+    if (data->storage->lastError().isValid()) {
+        setLastError(data->storage->lastError());
         return QList<QSharedPointer<QObject> >();
     }
 
@@ -172,16 +148,17 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, c
 
         if(!currentObject) {
             QObject *object = createInstance();
+            data->storage->enableStorageFrom(object);
             currentObject = data->cache.insert(key, object);
-            data->sqlDataAccessObjectHelper->readQueryIntoObject(query, record, object, index, updateTimeRecordIndex);
+            data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query, record, object, index, updateTimeRecordIndex);
             Qp::Private::enableSharedFromThis(currentObject);
         }
 
         result.append(currentObject);
     }
 
-    if (data->sqlDataAccessObjectHelper->lastError().isValid()) {
-        setLastError(data->sqlDataAccessObjectHelper->lastError());
+    if (data->storage->lastError().isValid()) {
+        setLastError(data->storage->lastError());
         return QList<QSharedPointer<QObject> >();
     }
 
@@ -196,11 +173,12 @@ QSharedPointer<QObject> QpDaoBase::readObject(int id) const
         return p;
 
     QObject *object = createInstance();
+    data->storage->enableStorageFrom(object);
     QSharedPointer<QObject> obj = data->cache.insert(id, object);
     Qp::Private::enableSharedFromThis(obj);
 
-    if (!data->sqlDataAccessObjectHelper->readObject(data->metaObject, id, object)) {
-        QpError error = data->sqlDataAccessObjectHelper->lastError();
+    if (!data->storage->sqlDataAccessObjectHelper()->readObject(data->metaObject, id, object)) {
+        QpError error = data->storage->lastError();
         if(error.isValid())
             setLastError(error);
 
@@ -215,9 +193,10 @@ QSharedPointer<QObject> QpDaoBase::readObject(int id) const
 QSharedPointer<QObject> QpDaoBase::createObject()
 {
     QObject *object = createInstance();
+    data->storage->enableStorageFrom(object);
 
-    if (!data->sqlDataAccessObjectHelper->insertObject(data->metaObject, object)) {
-        setLastError(data->sqlDataAccessObjectHelper->lastError());
+    if (!data->storage->sqlDataAccessObjectHelper()->insertObject(data->metaObject, object)) {
+        setLastError(data->storage->lastError());
         return QSharedPointer<QObject>();
     }
     QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
@@ -238,8 +217,8 @@ Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2)
 Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 {
 #ifndef QP_NO_TIMESTAMPS
-    double databaseTime = Qp::Private::updateTimeInDatabase(object.data());
-    double objectTime = Qp::Private::updateTimeInObject(object.data());
+    double databaseTime = data->storage->updateTimeInDatabase(object.data());
+    double objectTime = data->storage->updateTimeInObject(object.data());
 
     if(databaseTime > objectTime)
         return Qp::UpdateConflict;
@@ -247,8 +226,8 @@ Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
     Q_ASSERT(qpFuzzyCompare(databaseTime, objectTime));
 #endif
 
-    if (!data->sqlDataAccessObjectHelper->updateObject(data->metaObject, object.data())) {
-        setLastError(data->sqlDataAccessObjectHelper->lastError());
+    if (!data->storage->sqlDataAccessObjectHelper()->updateObject(data->metaObject, object.data())) {
+        setLastError(data->storage->lastError());
         return Qp::UpdateError;
     }
 
@@ -258,12 +237,12 @@ Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 
 bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
 {
-    if (!data->sqlDataAccessObjectHelper->removeObject(data->metaObject, object.data())) {
-        setLastError(data->sqlDataAccessObjectHelper->lastError());
+    if (!data->storage->sqlDataAccessObjectHelper()->removeObject(data->metaObject, object.data())) {
+        setLastError(data->storage->lastError());
         return false;
     }
 
-    data->cache.remove(Qp::primaryKey(object));
+    data->cache.remove(data->storage->primaryKey(object));
     emit objectRemoved(object);
     return true;
 }
@@ -298,8 +277,8 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
 
 #ifndef QP_NO_TIMESTAMPS
     QObject *obj = object.data();
-    double localTime = Qp::Private::updateTimeInObject(obj);
-    double remoteTime = Qp::Private::updateTimeInDatabase(obj);
+    double localTime = data->storage->updateTimeInObject(obj);
+    double remoteTime = data->storage->updateTimeInDatabase(obj);
 
     if(qpFuzzyCompare(localTime, remoteTime))
         return Qp::Unchanged;
@@ -311,7 +290,7 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
 bool QpDaoBase::synchronizeAllObjects()
 {
 #ifndef QP_NO_TIMESTAMPS
-    double currentTime = Qp::Private::databaseTime();
+    double currentTime = data->storage->databaseTimeInternal();
 
     if(data->lastSync > 0.0) {
         QHash<QObject *, bool> createdObjects;
@@ -337,8 +316,8 @@ bool QpDaoBase::synchronizeAllObjects()
 
 bool QpDaoBase::incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName)
 {
-    if (!data->sqlDataAccessObjectHelper->incrementNumericColumn(object.data(), fieldName)) {
-        setLastError(data->sqlDataAccessObjectHelper->lastError());
+    if (!data->storage->sqlDataAccessObjectHelper()->incrementNumericColumn(object.data(), fieldName)) {
+        setLastError(data->storage->lastError());
         return false;
     }
 
