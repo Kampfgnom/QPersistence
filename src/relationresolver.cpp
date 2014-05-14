@@ -55,7 +55,7 @@ QSharedPointer<QObject> QpRelationResolver::resolveToOneRelation(const QString &
 {
     QpMetaObject metaObject = QpMetaObject::forObject(object);
     QpMetaProperty relation = metaObject.metaProperty(name);
-    const char* column = relation.columnName().toLatin1();
+    QByteArray column = relation.columnName().toLatin1();
 
     QpStorage *storage = QpStorage::forObject(object);
     QVariant variantForeignKey = object->property(column);
