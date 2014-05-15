@@ -71,7 +71,6 @@ Qp::SynchronizeResult QpDaoBase::sync(QSharedPointer<QObject> object)
 {
     QObject *obj = object.data();
     int id = data->storage->primaryKey(object);
-    data->storage->setSqlDebugEnabled(true);
     if (!data->storage->sqlDataAccessObjectHelper()->readObject(data->metaObject, id, obj)) {
         QpError error = data->storage->lastError();
         if(error.isValid()) {
@@ -89,7 +88,6 @@ Qp::SynchronizeResult QpDaoBase::sync(QSharedPointer<QObject> object)
         QpRelationResolver::readRelationFromDatabase(relation, obj);
     }
 
-    data->storage->setSqlDebugEnabled(false);
     if(Qp::Private::isDeleted(object.data())) {
         emit objectMarkedAsDeleted(object);
         return Qp::Deleted;
