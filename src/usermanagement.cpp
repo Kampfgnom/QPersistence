@@ -1,5 +1,12 @@
 #include "usermanagement.h"
 
+#include "storage.h"
+
+QpUserManagement::QpUserManagement() :
+    storage(QpStorage::defaultStorage())
+{
+}
+
 QpUserManagement::QpUserManagement(QpStorage *storage) :
     storage(storage)
 {
