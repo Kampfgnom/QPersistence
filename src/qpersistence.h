@@ -49,8 +49,10 @@ template<class Source, class Target>
 QList<Target> castList(const QList<Source>& list);
 template<class T, class O>
 QList<QSharedPointer<T> > castList(const QList<QSharedPointer<O> >& list);
-
-
+template<class T> QVariant variant(QSharedPointer<T> object)
+{
+    return QVariant::fromValue<QSharedPointer<T> >(object);
+}
 
 
 
