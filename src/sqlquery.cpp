@@ -447,9 +447,10 @@ void QpSqlQuery::prepareInsert()
 void QpSqlQuery::prepareDelete()
 {
     QString query("DELETE FROM ");
-    query.append(escapeField(data->table)).append("\n\tWHERE ");
+    query.append(escapeField(data->table));
 
     if (data->whereCondition.isValid()) {
+        query.append("\n\tWHERE ");
         query.append(data->whereCondition.toWhereClause());
     }
 
