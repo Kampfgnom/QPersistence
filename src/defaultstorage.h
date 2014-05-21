@@ -13,6 +13,7 @@ bool createCleanSchema();
 QpError lastError();
 #ifndef QP_NO_LOCKS
 void enableLocks();
+bool unlockAllLocks();
 void addAdditionalLockInformationField(const QString &field, QVariant::Type type = QVariant::UserType);
 #endif
 #ifndef QP_NO_TIMESTAMPS

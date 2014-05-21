@@ -7,6 +7,7 @@ bool Qp::createCleanSchema() { return QpStorage::defaultStorage()->createCleanSc
 QpError Qp::lastError() { return QpStorage::defaultStorage()->lastError(); }
 
 #ifndef QP_NO_LOCKS
+bool Qp::unlockAllLocks() { return QpStorage::defaultStorage()->unlockAllLocks(); }
 void Qp::enableLocks() { return QpStorage::defaultStorage()->enableLocks(); }
 void Qp::addAdditionalLockInformationField(const QString &field, QVariant::Type type)
 { return QpStorage::defaultStorage()->addAdditionalLockInformationField(field, type); }
@@ -19,3 +20,4 @@ QDateTime Qp::databaseTime() { return QpStorage::defaultStorage()->databaseTime(
 bool Qp::beginTransaction() { return QpStorage::defaultStorage()->beginTransaction(); }
 Qp::CommitResult Qp::commitOrRollbackTransaction() { return QpStorage::defaultStorage()->commitOrRollbackTransaction(); }
 void Qp::setSqlDebugEnabled(bool enable) { return QpStorage::defaultStorage()->setSqlDebugEnabled(enable); }
+

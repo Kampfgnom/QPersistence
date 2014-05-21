@@ -196,6 +196,21 @@ bool QpStorage::isLocksEnabled()
     return data->locksEnabled;
 }
 
+bool QpStorage::unlockAllLocks()
+{
+    QpSqlQuery query(data->database);
+    query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
+    query.prepareDelete();
+
+    if (!query.exec()
+            || query.lastError().isValid()) {
+        setLastError(query.lastError());
+        return false;
+    }
+
+    return true;
+}
+
 void QpStorage::addAdditionalLockInformationField(const QString &name, QVariant::Type type)
 {
     data->additionalLockFields.insert(name, type);

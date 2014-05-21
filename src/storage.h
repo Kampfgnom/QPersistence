@@ -72,6 +72,7 @@ public:
 #ifndef QP_NO_LOCKS
     void enableLocks();
     bool isLocksEnabled();
+    bool unlockAllLocks();
     void addAdditionalLockInformationField(const QString &name, QVariant::Type type = QVariant::UserType);
     QHash<QString, QVariant::Type> additionalLockInformationFields();
     template<class T> QpLock tryLock(QSharedPointer<T> object, QHash<QString,QVariant> additionalInformation = QHash<QString,QVariant>());
