@@ -211,15 +211,20 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
     // Add simple properties
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
         QVariant value = property.metaProperty().read(object);
-        if(property.metaProperty().isEnumType() && !property.metaProperty().isFlagType())
-#ifdef QP_FOR_MYSQL
-            value = property.metaProperty().enumerator().valueToKey(value.toInt());
-#elif QP_FOR_SQLITE
-            value = value.toInt();
-#endif
-
-        if(property.metaProperty().isFlagType() && value == QVariant(0))
+        if(property.metaProperty().isEnumType() && value == QVariant(0)) {
             value = "NULL";
+        }
+        else {
+            if(property.metaProperty().isEnumType() && !property.metaProperty().isFlagType())
+    #ifdef QP_FOR_MYSQL
+                value = property.metaProperty().enumerator().valueToKey(value.toInt());
+    #elif QP_FOR_SQLITE
+                value = value.toInt();
+    #endif
+
+            if(property.metaProperty().isFlagType() && value == QVariant(0))
+                value = "NULL";
+        }
 
         query.addField(property.columnName(), value);
     }
