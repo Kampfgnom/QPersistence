@@ -253,7 +253,7 @@ QString QpSqliteBackend::orIgnore() const
 
 QString QpMySqlBackend::nowTimestamp() const
 {
-    return QLatin1String("NOW() + 0");
+    return QLatin1String("NOW(6) + 0");
 }
 
 QString QpMySqlBackend::orIgnore() const
