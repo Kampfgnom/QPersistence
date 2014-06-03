@@ -447,10 +447,10 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToManyRelatio
 #ifndef QP_NO_TIMESTAMPS
     QpSqlCondition relatedObjectsWhereClause2 = relatedObjectsWhereClause;
     relatedObjectsWhereClause2.setBindValuesAsString(true);
-    QString updateTimeQueryString = QString("UPDATE %1"
+    QString updateTimeQueryString = QString("UPDATE %1 AS tableToUpdate"
                                             "\n\tINNER JOIN %2 "
-                                            "\n\t\tON %2.%3 = %1.%4 "
-                                            "\n\tSET %1.%5 = %6 "
+                                            "\n\t\tON %2.%3 = tableToUpdate.%4 "
+                                            "\n\tSET tableToUpdate.%5 = %6 "
                                             "\n\tWHERE %7")
             .arg(relation.metaObject().tableName())
             .arg(relation.tableName())
@@ -609,10 +609,10 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
     QpSqlCondition resetCondition2 = resetCondition;
     resetCondition2.setBindValuesAsString(true);
     // Update the times of now unrelated objects
-    QString updatePreviouslyRelatedTimeQueryString = QString("UPDATE %1"
+    QString updatePreviouslyRelatedTimeQueryString = QString("UPDATE %1 AS tableToUpdate"
                                                              "\n\tINNER JOIN %2 "
-                                                             "\n\t\tON %2.%3 = %1.%4 "
-                                                             "\n\tSET %1.%5 = %6 "
+                                                             "\n\t\tON %2.%3 = tableToUpdate.%4 "
+                                                             "\n\tSET tableToUpdate.%5 = %6 "
                                                              "\n\tWHERE %7")
             .arg(QpSqlQuery::escapeField(relation.reverseRelation().metaObject().tableName()))
             .arg(relation.tableName())
