@@ -4,6 +4,9 @@ QpSortFilterProxyObjectModelBase::QpSortFilterProxyObjectModelBase(QObject *pare
     QSortFilterProxyModel(parent),
     m_includeDeletedObjects(false)
 {
+    setSortCaseSensitivity(Qt::CaseInsensitive);
+    setFilterCaseSensitivity(Qt::CaseInsensitive);
+    setSortLocaleAware(true);
 }
 
 int QpSortFilterProxyObjectModelBase::sortRoleCount() const
