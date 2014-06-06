@@ -37,7 +37,8 @@ public:
         DatabaseError
     };
 
-    static QpLock isLocked(QpStorage *storage, QSharedPointer<QObject> object);
+    static bool isLocked(QSharedPointer<QObject> object);
+    static QpLock lockStatus(QpStorage *storage, QSharedPointer<QObject> object);
     static QpLock tryLock(QpStorage *storage, QSharedPointer<QObject> object, QHash<QString,QVariant> additionalInformation);
     static QpLock unlock(QpStorage *storage, QSharedPointer<QObject> object);
 

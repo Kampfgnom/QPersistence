@@ -179,6 +179,13 @@ QpLock::QpLock()
 
 #ifndef QP_NO_LOCKS
 
+bool QpLock::isLocked(QSharedPointer<QObject> object)
+{
+    bool ok = false;
+    int lockId = object->property(QpDatabaseSchema::COLUMN_LOCK).toInt(&ok);
+    return ok && lockId > 0;
+}
+
 QpLock::QpLock(const QpError &error) : data(new QpLockData)
 {
     data->error = error;
@@ -215,7 +222,7 @@ QVariant QpLock::additionalInformation(const QString &name) const
     return data->information.value(name);
 }
 
-QpLock QpLock::isLocked(QpStorage *storage, QSharedPointer<QObject> object)
+QpLock QpLock::lockStatus(QpStorage *storage, QSharedPointer<QObject> object)
 {
     if(!storage->beginTransaction()) {
         QpError error = storage->lastError();

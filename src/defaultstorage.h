@@ -48,10 +48,12 @@ template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object) { ret
 template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object) { return QpStorage::defaultStorage()->updateTimeInObject(object); }
 #endif
 #ifndef QP_NO_LOCKS
+template<class T> bool isLocked(QSharedPointer<T> object, QpStorage::IsLockedOption option = QpStorage::LockStateFromLastSync)
+ { return QpStorage::defaultStorage()->isLocked(object, option); }
 template<class T> QpLock tryLock(QSharedPointer<T> object, QHash<QString,QVariant> additionalInformation = QHash<QString,QVariant>())
  { return QpStorage::defaultStorage()->tryLock(object, additionalInformation); }
 template<class T> QpLock unlock(QSharedPointer<T> object) { return QpStorage::defaultStorage()->unlock(object); }
-template<class T> QpLock isLocked(QSharedPointer<T> object) { return QpStorage::defaultStorage()->isLocked(object); }
+template<class T> QpLock lockStatus(QSharedPointer<T> object) { return QpStorage::defaultStorage()->lockStatus(object); }
 #endif
 
 }

@@ -249,6 +249,9 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
     query.addField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
     query.addField(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME);
 #endif
+#ifndef QP_NO_LOCKS
+    query.addField(QpDatabaseSchema::COLUMN_LOCK);
+#endif
 }
 
 void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
@@ -309,6 +312,10 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
     int creationTimeRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME);
 
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME, query.value(creationTimeRecordIndex));
+#endif
+#ifndef QP_NO_LOCKS
+    int lockRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_LOCK);
+    object->setProperty(QpDatabaseSchema::COLUMN_LOCK, query.value(lockRecordIndex));
 #endif
 }
 

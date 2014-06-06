@@ -160,7 +160,7 @@ Qp::unlock(object);
 
 Note that while QpLock is implemented in a way where updates to the object are blocking _while creating_ the lock, nothing prevents you from updating objects, while someone holds a lock for it. You have to manually check for locks yourself.
 
-If you want to query the lock-status of a row without locking it, you can use `QpLock Qp::isLocked()`.
+If you want to query the lock-status of a row without locking it, you can use `QpLock Qp::lockStatus()`.
 
 You can also store additional information with each lock. Simply pass a `QHash<String, QVariant>` to `tryLock`, which other instances of your app can read from `QpLock::additionalInformation(QString)`.
 

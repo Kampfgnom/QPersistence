@@ -70,14 +70,17 @@ public:
     double updateTimeInObject(QObject *object);
 #endif
 #ifndef QP_NO_LOCKS
+    enum IsLockedOption { LockStateFromDatabase, LockStateFromLastSync };
+
     void enableLocks();
     bool isLocksEnabled();
     bool unlockAllLocks();
     void addAdditionalLockInformationField(const QString &name, QVariant::Type type = QVariant::UserType);
     QHash<QString, QVariant::Type> additionalLockInformationFields();
+    template<class T> bool isLocked(QSharedPointer<T> object, IsLockedOption option = LockStateFromLastSync);
     template<class T> QpLock tryLock(QSharedPointer<T> object, QHash<QString,QVariant> additionalInformation = QHash<QString,QVariant>());
     template<class T> QpLock unlock(QSharedPointer<T> object);
-    template<class T> QpLock isLocked(QSharedPointer<T> object);
+    template<class T> QpLock lockStatus(QSharedPointer<T> object);
 #endif
 
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
@@ -88,7 +91,6 @@ private:
     void registerDataAccessObject(QpDaoBase *dao, const QMetaObject *metaObject);
     QExplicitlySharedDataPointer<QpStorageData> data;
 };
-
 Q_DECLARE_METATYPE(QpStorage*)
 
 template <class T>
@@ -252,6 +254,17 @@ template<class T> QDateTime QpStorage::updateTimeInObject(QSharedPointer<T> obje
 #endif
 
 #ifndef QP_NO_LOCKS
+
+template<class T> bool QpStorage::isLocked(QSharedPointer<T> object, IsLockedOption option)
+{
+    if(option == LockStateFromLastSync)
+        return QpLock::isLocked(qSharedPointerCast<QObject>(object));
+
+    QpLock lock = QpLock::lockStatus(this, qSharedPointerCast<QObject>(object));
+    return (lock.status() == QpLock::LockedRemotely
+            || lock.status() == QpLock::LockedLocally);
+}
+
 template<class T> QpLock QpStorage::tryLock(QSharedPointer<T> object, QHash<QString,QVariant> additionalInformation)
 {
     return QpLock::tryLock(this, qSharedPointerCast<QObject>(object), additionalInformation);
@@ -262,9 +275,9 @@ template<class T> QpLock QpStorage::unlock(QSharedPointer<T> object)
     return QpLock::unlock(this, qSharedPointerCast<QObject>(object));
 }
 
-template<class T> QpLock QpStorage::isLocked(QSharedPointer<T> object)
+template<class T> QpLock QpStorage::lockStatus(QSharedPointer<T> object)
 {
-    return QpLock::isLocked(this, qSharedPointerCast<QObject>(object));
+    return QpLock::lockStatus(this, qSharedPointerCast<QObject>(object));
 }
 #endif
 
