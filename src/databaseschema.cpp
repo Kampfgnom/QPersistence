@@ -192,11 +192,13 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
 
 
 #ifndef QP_NO_LOCKS
-    data->query.addField(QpDatabaseSchema::COLUMN_LOCK, variantTypeToSqlType(QVariant::Int));
-    data->query.addForeignKey(QpDatabaseSchema::COLUMN_LOCK,
-                              COLUMN_NAME_PRIMARY_KEY,
-                              TABLENAME_LOCKS,
-                              "SET NULL");
+    if(data->storage->isLocksEnabled()) {
+        data->query.addField(QpDatabaseSchema::COLUMN_LOCK, variantTypeToSqlType(QVariant::Int));
+        data->query.addForeignKey(QpDatabaseSchema::COLUMN_LOCK,
+                                  COLUMN_NAME_PRIMARY_KEY,
+                                  TABLENAME_LOCKS,
+                                  "SET NULL");
+    }
 #endif
 
     data->query.prepareCreateTable();
@@ -468,7 +470,8 @@ void QpDatabaseSchema::createCleanSchema()
 void QpDatabaseSchema::adjustSchema()
 {
 #ifndef QP_NO_LOCKS
-    createLocksTable();
+    if (data->storage->isLocksEnabled())
+        createLocksTable();
 #endif
 
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
@@ -481,9 +484,6 @@ void QpDatabaseSchema::adjustSchema()
 #ifndef QP_NO_LOCKS
 void QpDatabaseSchema::createLocksTable()
 {
-    if (!data->storage->isLocksEnabled())
-        return;
-
     if (!existsTable(QpDatabaseSchema::TABLENAME_LOCKS)) {
 
         data->query.clear();

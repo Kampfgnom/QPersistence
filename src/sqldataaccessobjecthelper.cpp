@@ -250,7 +250,8 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
     query.addField(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME);
 #endif
 #ifndef QP_NO_LOCKS
-    query.addField(QpDatabaseSchema::COLUMN_LOCK);
+    if (data->storage->isLocksEnabled())
+        query.addField(QpDatabaseSchema::COLUMN_LOCK);
 #endif
 }
 
