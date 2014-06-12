@@ -242,6 +242,18 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
         query.addField(columnName);
     }
 
+    foreach(const QpMetaProperty relation, metaObject.relationProperties()) {
+        if(relation.hasTableForeignKey()) {
+            query.addField(relation.columnName());
+        }
+        else if(relation.isToOneRelationProperty()) {
+            query.addRawField(QpSqlQuery::escapeField(relation.tableName()) + "." + QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+            query.addJoin("LEFT", relation.tableName(),
+                          QpSqlQuery::escapeField(relation.tableName()) + "." + QpSqlQuery::escapeField(relation.columnName()) +
+                          " = " + query.escapedQualifiedField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
+        }
+    }
+
     query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
     query.addField(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG);
 

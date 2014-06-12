@@ -19,32 +19,39 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlQueryPrivate : public QSharedData {
-                                     public:
-                                     QpSqlQueryPrivate() :
-                                     QSharedData(),
-                                     count(-1),
-                                     skip(-1),
-                                     ignore(false),
-                                     forUpdate(false)
-{}
+public:
+    QpSqlQueryPrivate() :
+        QSharedData(),
+        count(-1),
+        skip(-1),
+        ignore(false),
+        forUpdate(false)
+    {}
 
-                                     int count;
-QSqlDatabase database;
-QpSqlBackend *backend;
-QString table;
-QHash<QString, QVariant> fields;
-// inserted directly into query instead of using bindValue
-QHash<QString, QString> rawFields;
-QpSqlCondition whereCondition;
-QList<QPair<QString, QpSqlQuery::Order> > orderBy;
-QList<QStringList> foreignKeys;
-QHash<QString, QStringList> keys;
-QHash<int, int> propertyIndexes;
-int skip;
-bool ignore;
-bool forUpdate;
+    struct Join {
+        QString direction;
+        QString table;
+        QString on;
+    };
 
-static bool debugEnabled;
+    int count;
+    QSqlDatabase database;
+    QpSqlBackend *backend;
+    QString table;
+    QHash<QString, QVariant> fields;
+    // inserted directly into query instead of using bindValue
+    QHash<QString, QString> rawFields;
+    QpSqlCondition whereCondition;
+    QList<QPair<QString, QpSqlQuery::Order> > orderBy;
+    QList<QStringList> foreignKeys;
+    QHash<QString, QStringList> keys;
+    QHash<int, int> propertyIndexes;
+    int skip;
+    bool ignore;
+    bool forUpdate;
+    QList<Join> joins;
+
+    static bool debugEnabled;
 };
 
 bool QpSqlQueryPrivate::debugEnabled = false;
@@ -155,6 +162,16 @@ void QpSqlQuery::setDebugEnabled(bool value)
     QpSqlQueryPrivate::debugEnabled = value;
 }
 
+QString QpSqlQuery::escapedQualifiedField(const QString &field)
+{
+    if(data->table.isEmpty())
+        return escapeField(field);
+
+    return QString("%1.%2")
+            .arg(escapeField(data->table))
+            .arg(escapeField(field));
+}
+
 QString QpSqlQuery::escapeField(const QString &field)
 {
     QStringList fields = field.split(".");
@@ -228,6 +245,15 @@ void QpSqlQuery::addOrder(const QString &field, QpSqlQuery::Order order)
 void QpSqlQuery::setForUpdate(bool forUpdate)
 {
     data->forUpdate = forUpdate;
+}
+
+void QpSqlQuery::addJoin(const QString &direction, const QString &table, const QString &on)
+{
+    QpSqlQueryPrivate::Join join;
+    join.direction = direction;
+    join.table = table;
+    join.on = on;
+    data->joins.append(join);
 }
 
 void QpSqlQuery::prepareCreateTable()
@@ -304,7 +330,7 @@ void QpSqlQuery::prepareSelect()
 {
     QString query("SELECT ");
 
-    if (data->fields.isEmpty()) {
+    if (data->fields.isEmpty() && data->rawFields.isEmpty()) {
         query.append("*");
     }
     else {
@@ -313,12 +339,23 @@ void QpSqlQuery::prepareSelect()
             if(field.contains("+"))
                 fields.append(QString("%1").arg(field));
             else
-                fields.append(QString("%1").arg(escapeField(field)));
+                fields.append(QString("%1").arg(escapedQualifiedField(field)));
         }
+        foreach(QString field, data->rawFields.keys()) {
+            fields.append(field);
+        }
+
         query.append(fields.join(", "));
     }
 
     query.append(" FROM ").append(escapeField(data->table)).append("");
+
+    foreach(QpSqlQueryPrivate::Join join, data->joins) {
+        query.append(QString("\n%1 JOIN %2 ON %3")
+                .arg(join.direction)
+                .arg(escapeField(join.table))
+                .arg(join.on));
+    }
 
     if (data->whereCondition.isValid()) {
         query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
@@ -329,7 +366,7 @@ void QpSqlQuery::prepareSelect()
         QStringList orderClauses;
         typedef QPair<QString, QpSqlQuery::Order> OrderPair;
         foreach (OrderPair order, data->orderBy) {
-            QString orderClause = escapeField(order.first).prepend("\n\t\t");
+            QString orderClause = escapedQualifiedField(order.first).prepend("\n\t\t");
             if (order.second == QpSqlQuery::Descending)
                 orderClause.append(" DESC");
             else

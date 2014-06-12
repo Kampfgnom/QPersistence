@@ -35,7 +35,7 @@ public:
     void addPrimaryKey(const QString &name);
     void addKey(const QString &keyType, const QStringList &fields);
     void setOrIgnore(bool ignore);
-    void addRawField(const QString &name, const QString &value);
+    void addRawField(const QString &name, const QString &value = QString());
     void addField(const QString &name, const QVariant &value = QVariant());
     void addForeignKey(const QString &columnName,
                        const QString &keyName,
@@ -47,6 +47,7 @@ public:
     void setWhereCondition(const QpSqlCondition &condition);
     void addOrder(const QString &field, Order order = Ascending);
     void setForUpdate(bool forUpdate);
+    void addJoin(const QString &direction, const QString &table, const QString &on);
 
     void prepareCreateTable();
     void prepareDropTable();
@@ -69,6 +70,8 @@ public:
     static void setDebugEnabled(bool value);
     static void bulkExec();
     static void startBulkExec();
+
+    QString escapedQualifiedField(const QString &field);
 
     static QString escapeField(const QString &field);
 
