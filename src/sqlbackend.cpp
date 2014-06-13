@@ -90,6 +90,8 @@ QString QpSqliteBackend::variantTypeToSqlType(QVariant::Type type) const
         return QLatin1String("TEXT");
     case QVariant::Double:
         return QLatin1String("REAL");
+    case QVariant::Pixmap:
+        return QLatin1String("MEDIUMBLOB");
     case QVariant::BitArray:
     case QVariant::Bitmap:
     case QVariant::Brush:
@@ -116,7 +118,6 @@ QString QpSqliteBackend::variantTypeToSqlType(QVariant::Type type) const
     case QVariant::ModelIndex:
     case QVariant::Palette:
     case QVariant::Pen:
-    case QVariant::Pixmap:
     case QVariant::Point:
     case QVariant::PointF:
     case QVariant::Polygon:
