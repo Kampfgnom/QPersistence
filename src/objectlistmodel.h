@@ -25,6 +25,8 @@ public:
     int fetchCount() const;
     void setFetchCount(int fetchCount);
 
+    virtual QModelIndex indexForObject(QSharedPointer<QObject> object) const = 0;
+
 protected slots:
     virtual void objectInserted(QSharedPointer<QObject>) = 0;
     virtual void objectUpdated(QSharedPointer<QObject>) = 0;
@@ -54,6 +56,7 @@ public:
     QSharedPointer<T> objectByIndex(const QModelIndex &index) const;
     QList<QSharedPointer<T> > objects() const;
     QModelIndex indexForObject(QSharedPointer<T> object) const;
+    QModelIndex indexForObject(QSharedPointer<QObject> object) const Q_DECL_OVERRIDE;
 
 protected:
     void objectInserted(QSharedPointer<QObject>) Q_DECL_OVERRIDE;
@@ -102,6 +105,12 @@ QModelIndex QpObjectListModel<T>::indexForObject(QSharedPointer<T> object) const
 
     int row = m_rows.value(object);
     return index(row);
+}
+
+template<class T>
+QModelIndex QpObjectListModel<T>::indexForObject(QSharedPointer<QObject> object) const
+{
+    return indexForObject(qSharedPointerCast<T>(object));
 }
 
 template<class T>

@@ -21,6 +21,8 @@ public:
     bool includeDeletedObjects() const;
     void setIncludeDeletedObjects(bool includeDeletedObjects);
 
+    QModelIndex indexForObject(QSharedPointer<QObject> object) const;
+
 private:
     bool m_includeDeletedObjects;
 };
@@ -53,7 +55,7 @@ QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QpObjectListModel<
 template<class T>
 QModelIndex QpSortFilterProxyObjectModel<T>::indexForObject(QSharedPointer<T> object) const
 {
-    return mapFromSource(sourceModel()->indexForObject(object));
+    return QpSortFilterProxyObjectModelBase::indexForObject(qSharedPointerCast<QObject>(object));
 }
 
 template<class T>

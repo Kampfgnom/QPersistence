@@ -38,3 +38,16 @@ void QpSortFilterProxyObjectModelBase::setIncludeDeletedObjects(bool includeDele
     m_includeDeletedObjects = includeDeletedObjects;
 }
 
+QModelIndex QpSortFilterProxyObjectModelBase::indexForObject(QSharedPointer<QObject> object) const
+{
+    QAbstractItemModel *source = QSortFilterProxyModel::sourceModel();
+    if(QpSortFilterProxyObjectModelBase *proxy = qobject_cast<QpSortFilterProxyObjectModelBase *>(source)) {
+        return mapFromSource(proxy->indexForObject(object));
+    }
+    else if(QpObjectListModelBase *model = qobject_cast<QpObjectListModelBase *>(source)) {
+        return mapFromSource(model->indexForObject(object));
+    }
+
+    return QModelIndex();
+}
+
