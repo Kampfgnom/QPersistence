@@ -17,6 +17,8 @@ public:
 
     bool canFetchMore(const QModelIndex &parent) const Q_DECL_OVERRIDE;
 
+    QModelIndex indexForObject(QSharedPointer<QObject> object) const;
+
 private:
     int m_throttle;
     mutable QElapsedTimer m_timer;

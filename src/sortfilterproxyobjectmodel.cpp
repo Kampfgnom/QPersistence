@@ -1,5 +1,7 @@
 #include "sortfilterproxyobjectmodel.h"
 
+#include "throttledfetchproxymodel.h"
+
 QpSortFilterProxyObjectModelBase::QpSortFilterProxyObjectModelBase(QObject *parent) :
     QSortFilterProxyModel(parent),
     m_includeDeletedObjects(false)
@@ -41,10 +43,13 @@ void QpSortFilterProxyObjectModelBase::setIncludeDeletedObjects(bool includeDele
 QModelIndex QpSortFilterProxyObjectModelBase::indexForObject(QSharedPointer<QObject> object) const
 {
     QAbstractItemModel *source = QSortFilterProxyModel::sourceModel();
-    if(QpSortFilterProxyObjectModelBase *proxy = qobject_cast<QpSortFilterProxyObjectModelBase *>(source)) {
-        return mapFromSource(proxy->indexForObject(object));
+    if(QpSortFilterProxyObjectModelBase *model = qobject_cast<QpSortFilterProxyObjectModelBase *>(source)) {
+        return mapFromSource(model->indexForObject(object));
     }
     else if(QpObjectListModelBase *model = qobject_cast<QpObjectListModelBase *>(source)) {
+        return mapFromSource(model->indexForObject(object));
+    }
+    else if(QpThrottledFetchProxyModel *model = qobject_cast<QpThrottledFetchProxyModel *>(source)) {
         return mapFromSource(model->indexForObject(object));
     }
 
