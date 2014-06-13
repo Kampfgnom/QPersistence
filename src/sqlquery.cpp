@@ -162,7 +162,7 @@ void QpSqlQuery::setDebugEnabled(bool value)
     QpSqlQueryPrivate::debugEnabled = value;
 }
 
-QString QpSqlQuery::escapedQualifiedField(const QString &field)
+QString QpSqlQuery::escapedQualifiedField(const QString &field) const
 {
     if(data->table.isEmpty())
         return escapeField(field);
@@ -235,6 +235,7 @@ void QpSqlQuery::setSkip(int skip)
 void QpSqlQuery::setWhereCondition(const QpSqlCondition &condition)
 {
     data->whereCondition = condition;
+    data->whereCondition.setTable(data->table);
 }
 
 void QpSqlQuery::addOrder(const QString &field, QpSqlQuery::Order order)

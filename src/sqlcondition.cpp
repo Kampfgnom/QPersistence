@@ -17,11 +17,12 @@ public:
     {}
     bool bindValues;
     QString rawString;
-    QString key;
+    QString field;
     QVariant value;
     QpSqlCondition::BooleanOperator booleanOperator;
     QpSqlCondition::ComparisonOperator comparisonOperator;
     QList<QpSqlCondition> conditions;
+    QString table;
 };
 
 QpSqlCondition::QpSqlCondition() :
@@ -35,10 +36,10 @@ QpSqlCondition::QpSqlCondition(const QString &rawString) :
     data->rawString = rawString;
 }
 
-QpSqlCondition::QpSqlCondition(const QString &key, QpSqlCondition::ComparisonOperator op, const QVariant &value) :
+QpSqlCondition::QpSqlCondition(const QString &field, QpSqlCondition::ComparisonOperator op, const QVariant &value) :
     data(new QpSqlConditionData)
 {
-    data->key = key;
+    data->field = field;
     data->booleanOperator = And;
     data->comparisonOperator = op;
     data->value = value;
@@ -62,7 +63,7 @@ QpSqlCondition::QpSqlCondition(QpSqlCondition::BooleanOperator op, const QList<Q
 
 bool QpSqlCondition::isValid() const
 {
-    return !data->key.isEmpty()
+    return !data->field.isEmpty()
             || !data->rawString.isEmpty()
             || (data->booleanOperator == Not
                 && data->conditions.size() == 1)
@@ -135,13 +136,17 @@ QString QpSqlCondition::toWhereClause() const
         return result;
     }
 
-    Q_ASSERT(!data->key.isEmpty());
+    Q_ASSERT(!data->field.isEmpty());
 
     QString value = "?";
     if(data->bindValues)
         value = data->value.toString();
 
-    return comparisonOperator().prepend(QString("%1").arg(QpSqlQuery::escapeField(data->key))).append(value);
+    return comparisonOperator()
+            .prepend(QString("%1.%2")
+                     .arg(QpSqlQuery::escapeField(data->table))
+                     .arg(QpSqlQuery::escapeField(data->field)))
+            .append(value);
 }
 
 QVariantList QpSqlCondition::bindValues() const
@@ -158,7 +163,7 @@ QVariantList QpSqlCondition::bindValues() const
         result.append(condition.bindValues());
     }
 
-    if (!data->key.isEmpty())
+    if (!data->field.isEmpty())
         result.append(data->value);
 
     return result;
@@ -200,4 +205,7 @@ QString QpSqlCondition::comparisonOperator() const
     return QString();
 }
 
-
+void QpSqlCondition::setTable(const QString &table)
+{
+    data->table = table;
+}

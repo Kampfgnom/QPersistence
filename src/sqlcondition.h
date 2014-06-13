@@ -8,6 +8,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QVariant;
+class QpSqlQuery;
 
 class QpSqlConditionData;
 class QpSqlCondition
@@ -30,7 +31,7 @@ public:
 
     QpSqlCondition();
     QpSqlCondition(const QString &rawString);
-    QpSqlCondition(const QString &key, ComparisonOperator op, const QVariant &value);
+    QpSqlCondition(const QString &field, ComparisonOperator op, const QVariant &value);
     QpSqlCondition(BooleanOperator op, QpSqlCondition &condition);
     QpSqlCondition(BooleanOperator op, const QList<QpSqlCondition> &conditions);
 
@@ -51,6 +52,8 @@ public:
 
     QString booleanOperator() const;
     QString comparisonOperator() const;
+
+    void setTable(const QString &table);
 
 private:
     QSharedDataPointer<QpSqlConditionData> data;

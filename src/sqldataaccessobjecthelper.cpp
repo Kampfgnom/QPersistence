@@ -20,6 +20,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlRecord>
 #include <QStringList>
 #include <QVariant>
+#include <QSqlField>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlDataAccessObjectHelperPrivate : public QSharedData
@@ -247,7 +248,9 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
             query.addField(relation.columnName());
         }
         else if(relation.isToOneRelationProperty()) {
-            query.addRawField(QpSqlQuery::escapeField(relation.tableName()) + "." + QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+            query.addRawField(QpSqlQuery::escapeField(relation.tableName()) + "." +
+                              QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY +
+                              " AS  _Qp_FK_" + relation.name());
             query.addJoin("LEFT", relation.tableName(),
                           QpSqlQuery::escapeField(relation.tableName()) + "." + QpSqlQuery::escapeField(relation.columnName()) +
                           " = " + query.escapedQualifiedField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
@@ -278,12 +281,17 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
     Q_UNUSED(updateTimeRecordIndex);
 #endif
 
+    if(primaryKeyRecordIndex < 0)
+        primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+
     int fieldCount = record.count();
     for (int i = 0; i < fieldCount; ++i) {
 
         QMetaProperty property = query.propertyForIndex(record, object->metaObject(), i);
-        if(!property.isValid())
+        if(!property.isValid()) {
+            object->setProperty(record.fieldName(i).toLatin1(), query.value(i));
             continue;
+        }
 
         QVariant value = query.value(i);
 
@@ -305,8 +313,6 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
         property.write(object, value);
     }
 
-    if(primaryKeyRecordIndex < 0)
-        primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
 
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, query.value(primaryKeyRecordIndex));
 

@@ -71,7 +71,7 @@ public:
     static void bulkExec();
     static void startBulkExec();
 
-    QString escapedQualifiedField(const QString &field);
+    QString escapedQualifiedField(const QString &field) const;
 
     static QString escapeField(const QString &field);
 

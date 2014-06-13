@@ -55,7 +55,13 @@ QSharedPointer<QObject> QpRelationResolver::resolveToOneRelation(const QString &
 {
     QpMetaObject metaObject = QpMetaObject::forObject(object);
     QpMetaProperty relation = metaObject.metaProperty(name);
-    QByteArray column = relation.columnName().toLatin1();
+    QByteArray column;
+    if(relation.hasTableForeignKey()) {
+       column = relation.columnName().toLatin1();
+    }
+    else {
+        column = QByteArray("_Qp_FK_") + relation.name().toLatin1();
+    }
 
     QpStorage *storage = QpStorage::forObject(object);
     QVariant variantForeignKey = object->property(column);
