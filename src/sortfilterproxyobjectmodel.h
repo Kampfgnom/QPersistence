@@ -125,10 +125,10 @@ bool QpSortFilterProxyObjectModel<T>::filterAcceptsRow(int source_row, const QMo
        && Qp::Private::isDeleted(o.data()))
         return false;
 
-    if(filterRole() < Qt::UserRole)
-        return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
+    if(!filterAcceptsObject(o))
+        return false;
 
-    return filterAcceptsObject(o);
+    return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
 }
 
 template<class T>
