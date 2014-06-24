@@ -18,6 +18,7 @@ class QSqlQuery;
 class QpCache;
 class QpError;
 class QpSqlDataAccessObjectHelper;
+class QpStorage;
 
 namespace Qp {
 enum SynchronizeResult : short;
@@ -32,12 +33,8 @@ class QpDaoBase : public QObject
 {
     Q_OBJECT
 public:
-    static QpDaoBase *forClass(const QMetaObject &metaObject);
-    static QList<QpDaoBase *> dataAccessObjects();
-
     ~QpDaoBase();
 
-    QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
     QpMetaObject qpMetaObject() const;
 
     int count() const;
@@ -73,7 +70,7 @@ Q_SIGNALS:
 
 protected:
     explicit QpDaoBase(const QMetaObject &metaObject,
-                       QObject *parent = 0);
+                       QpStorage *parent = 0);
 
     virtual QObject *createInstance() const = 0;
 
@@ -89,8 +86,6 @@ private:
 };
 
 namespace Qp {
-template<class T, class... Superclasses>
-void registerClass();
 template<class T, class Source>
 QList<QSharedPointer<T> > castList(const QList<QSharedPointer<Source> >&);
 }
@@ -106,14 +101,14 @@ public:
     }
 
 protected:
-    QpDao(QObject *parent) :
+    QpDao(QpStorage *parent) :
         QpDaoBase(T::staticMetaObject, parent)
     {}
 
     QObject *createInstance() const Q_DECL_OVERRIDE { return new T; }
 
 private:
-    template<class O, class... Superclasses> friend void Qp::registerClass();
+    friend class QpStorage;
     Q_DISABLE_COPY(QpDao)
 };
 

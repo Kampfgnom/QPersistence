@@ -1,9 +1,14 @@
 #include "sortfilterproxyobjectmodel.h"
 
+#include "throttledfetchproxymodel.h"
+
 QpSortFilterProxyObjectModelBase::QpSortFilterProxyObjectModelBase(QObject *parent) :
     QSortFilterProxyModel(parent),
     m_includeDeletedObjects(false)
 {
+    setSortCaseSensitivity(Qt::CaseInsensitive);
+    setFilterCaseSensitivity(Qt::CaseInsensitive);
+    setSortLocaleAware(true);
 }
 
 int QpSortFilterProxyObjectModelBase::sortRoleCount() const
@@ -33,5 +38,21 @@ bool QpSortFilterProxyObjectModelBase::includeDeletedObjects() const
 void QpSortFilterProxyObjectModelBase::setIncludeDeletedObjects(bool includeDeletedObjects)
 {
     m_includeDeletedObjects = includeDeletedObjects;
+}
+
+QModelIndex QpSortFilterProxyObjectModelBase::indexForObject(QSharedPointer<QObject> object) const
+{
+    QAbstractItemModel *source = QSortFilterProxyModel::sourceModel();
+    if(QpSortFilterProxyObjectModelBase *model = qobject_cast<QpSortFilterProxyObjectModelBase *>(source)) {
+        return mapFromSource(model->indexForObject(object));
+    }
+    else if(QpObjectListModelBase *model = qobject_cast<QpObjectListModelBase *>(source)) {
+        return mapFromSource(model->indexForObject(object));
+    }
+    else if(QpThrottledFetchProxyModel *model = qobject_cast<QpThrottledFetchProxyModel *>(source)) {
+        return mapFromSource(model->indexForObject(object));
+    }
+
+    return QModelIndex();
 }
 

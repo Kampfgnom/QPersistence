@@ -24,16 +24,6 @@ class QpErrorData : public QSharedData
         bool isValid;
 };
 
-QpError *QpErrorData::lastError(nullptr);
-
-QpError QpError::lastError()
-{
-    if(!QpErrorData::lastError)
-        QpErrorData::lastError = new QpError;
-
-    return *QpErrorData::lastError;
-}
-
 QpError::QpError(const QString &text,
              ErrorType type,
              QVariantMap additionalInformation) :
@@ -94,12 +84,6 @@ QVariantMap QpError::additionalInformation() const
 void QpError::addAdditionalInformation(const QString &key, const QVariant &value)
 {
     data->additionalInformation.insert(key, value);
-}
-
-void QpError::setLastError(const QpError error)
-{
-    lastError();
-    (*QpErrorData::lastError) = error;
 }
 
 QDebug operator<<(QDebug dbg, const QpError &error)

@@ -15,6 +15,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QStringList>
 #include <QSqlDriver>
 #include <QSqlRecord>
+#include <QMetaProperty>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlQueryPrivate : public QSharedData {
@@ -23,7 +24,6 @@ class QpSqlQueryPrivate : public QSharedData {
                                      QSharedData(),
                                      count(-1),
                                      skip(-1),
-                                     canBulkExec(false),
                                      ignore(false),
                                      forUpdate(false)
 {}
@@ -41,18 +41,13 @@ QList<QStringList> foreignKeys;
 QHash<QString, QStringList> keys;
 QHash<int, int> propertyIndexes;
 int skip;
-bool canBulkExec;
 bool ignore;
 bool forUpdate;
 
 static bool debugEnabled;
-static bool bulkExec;
 };
 
-bool QpSqlQueryPrivate::bulkExec = false;
 bool QpSqlQueryPrivate::debugEnabled = false;
-
-QP_DEFINE_STATIC_LOCAL(QList<QpSqlQuery>, BulkQueries)
 
 QpSqlQuery::QpSqlQuery() :
     QSqlQuery(),
@@ -93,13 +88,7 @@ bool QpSqlQuery::exec(const QString &queryString)
     bool ok = true;
     QString query = queryString;
     if (query.isEmpty()) {
-        if (QpSqlQueryPrivate::bulkExec
-                && data->canBulkExec) {
-            BulkQueries()->append(*this);
-        }
-        else {
-            ok = QSqlQuery::exec();
-        }
+        ok = QSqlQuery::exec();
     }
     else {
         ok = QSqlQuery::exec(queryString);
@@ -151,7 +140,6 @@ void QpSqlQuery::clear()
     data->foreignKeys.clear();
     data->keys.clear();
     data->rawFields.clear();
-    data->canBulkExec = false;
     data->ignore = false;
     data->forUpdate = false;
     data->propertyIndexes.clear();
@@ -165,11 +153,6 @@ bool QpSqlQuery::isDebugEnabled()
 void QpSqlQuery::setDebugEnabled(bool value)
 {
     QpSqlQueryPrivate::debugEnabled = value;
-}
-
-void QpSqlQuery::startBulkExec()
-{
-    QpSqlQueryPrivate::bulkExec = true;
 }
 
 QString QpSqlQuery::escapeField(const QString &field)
@@ -409,7 +392,6 @@ bool QpSqlQuery::prepareUpdate()
         addBindValue(value);
     }
 
-    data->canBulkExec = true;
     return true;
 }
 
@@ -465,9 +447,10 @@ void QpSqlQuery::prepareInsert()
 void QpSqlQuery::prepareDelete()
 {
     QString query("DELETE FROM ");
-    query.append(escapeField(data->table)).append("\n\tWHERE ");
+    query.append(escapeField(data->table));
 
     if (data->whereCondition.isValid()) {
+        query.append("\n\tWHERE ");
         query.append(data->whereCondition.toWhereClause());
     }
 
@@ -477,7 +460,6 @@ void QpSqlQuery::prepareDelete()
     foreach (const QVariant value, data->whereCondition.bindValues()) {
         addBindValue(value);
     }
-    data->canBulkExec = true;
 }
 
 void QpSqlQuery::prepareincrementNumericColumn()
@@ -497,8 +479,6 @@ void QpSqlQuery::prepareincrementNumericColumn()
     foreach (const QVariant value, data->whereCondition.bindValues()) {
         addBindValue(value);
     }
-
-    data->canBulkExec = false;
 }
 
 QMetaProperty QpSqlQuery::propertyForIndex(const QSqlRecord &record, const QMetaObject *metaObject, int index) const
@@ -569,15 +549,3 @@ QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaTyp
     return value;
 }
 
-void QpSqlQuery::bulkExec()
-{
-    Qp::database().transaction();
-    QpSqlQueryPrivate::bulkExec = false;
-    foreach (QpSqlQuery query, *BulkQueries()) {
-        query.exec();
-    }
-    Qp::database().commit();
-
-    BulkQueries()->clear();
-    QpSqlQueryPrivate::bulkExec = false;
-}

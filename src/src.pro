@@ -38,7 +38,9 @@ HEADERS += \
     relation_belongstomany.h \
     defines.h \
     usermanagement.h \
-    throttledfetchproxymodel.h
+    throttledfetchproxymodel.h \
+    storage.h \
+    defaultstorage.h
 
 SOURCES += \
         cache.cpp \
@@ -51,7 +53,6 @@ SOURCES += \
     objectlistmodel.cpp \
     private.cpp \
     qpersistence.cpp \
-    qpersistence_impl.cpp \
     relationresolver.cpp \
     sortfilterproxyobjectmodel.cpp \
     sqlcondition.cpp \
@@ -64,4 +65,6 @@ SOURCES += \
     relation_hasmany.cpp \
     relation_belongstomany.cpp \
     usermanagement.cpp \
-    throttledfetchproxymodel.cpp
+    throttledfetchproxymodel.cpp \
+    storage.cpp \
+    defaultstorage.cpp

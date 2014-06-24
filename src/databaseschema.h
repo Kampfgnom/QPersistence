@@ -13,6 +13,7 @@ class QSqlQuery;
 class QpError;
 class QpMetaProperty;
 class QpSqlQuery;
+class QpStorage;
 
 class QpDatabaseSchemaPrivate;
 class QpDatabaseSchema : public QObject
@@ -32,7 +33,7 @@ public:
     static const char* COLUMN_LOCKTIME;
 #endif
 
-    explicit QpDatabaseSchema(const QSqlDatabase &database = QSqlDatabase::database(), QObject *parent = 0);
+    explicit QpDatabaseSchema(QpStorage *storage);
     ~QpDatabaseSchema();
 
     bool existsTable(const QMetaObject &metaObject);

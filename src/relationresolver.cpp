@@ -6,6 +6,7 @@
 #include "qpersistence.h"
 #include "sqldataaccessobjecthelper.h"
 #include "conversion.h"
+#include "storage.h"
 
 void QpRelationResolver::readRelationFromDatabase(const QpMetaProperty &relation, QObject *object)
 {
@@ -54,13 +55,14 @@ QSharedPointer<QObject> QpRelationResolver::resolveToOneRelation(const QString &
 {
     QpMetaObject metaObject = QpMetaObject::forObject(object);
     QpMetaProperty relation = metaObject.metaProperty(name);
-    const char* column = relation.columnName().toLatin1();
+    QByteArray column = relation.columnName().toLatin1();
 
+    QpStorage *storage = QpStorage::forObject(object);
     QVariant variantForeignKey = object->property(column);
     int foreignKey = variantForeignKey.toInt();
 
     if (!variantForeignKey.isValid()) {
-        QpSqlDataAccessObjectHelper *helper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
+        QpSqlDataAccessObjectHelper *helper = storage->sqlDataAccessObjectHelper();
         foreignKey = helper->foreignKey(relation, const_cast<QObject*>(object));
     }
 
@@ -68,7 +70,7 @@ QSharedPointer<QObject> QpRelationResolver::resolveToOneRelation(const QString &
         return QSharedPointer<QObject>();
 
     QpMetaObject foreignMetaObject = relation.reverseMetaObject();
-    QSharedPointer<QObject> related = QpDaoBase::forClass(foreignMetaObject.metaObject())->readObject(foreignKey);
+    QSharedPointer<QObject> related = storage->dataAccessObject(foreignMetaObject.metaObject())->readObject(foreignKey);
 
     if (!related)
         const_cast<QObject*>(object)->setProperty(column, 0);
@@ -81,12 +83,13 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveToManyRelation(const 
     QpMetaObject metaObject = QpMetaObject::forObject(object);
     QpMetaProperty relation = metaObject.metaProperty(name);
 
-    QpSqlDataAccessObjectHelper *helper = QpSqlDataAccessObjectHelper::forDatabase(Qp::database());
+    QpStorage *storage = QpStorage::forObject(object);
+    QpSqlDataAccessObjectHelper *helper = storage->sqlDataAccessObjectHelper();
     QList<int> foreignKeys = helper->foreignKeys(relation, const_cast<QObject*>(object));
 
 
     QpMetaObject foreignMetaObject = relation.reverseMetaObject();
-    QpDaoBase *dao = QpDaoBase::forClass(foreignMetaObject.metaObject());
+    QpDaoBase *dao = storage->dataAccessObject(foreignMetaObject.metaObject());
 
     QList<QSharedPointer<QObject> > relatedObjects;
     relatedObjects.reserve(foreignKeys.size());

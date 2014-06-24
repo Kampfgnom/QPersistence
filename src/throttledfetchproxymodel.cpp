@@ -1,5 +1,7 @@
 #include "throttledfetchproxymodel.h"
 
+#include "sortfilterproxyobjectmodel.h"
+
 QpThrottledFetchProxyModel::QpThrottledFetchProxyModel(QObject *parent) :
     QIdentityProxyModel(parent),
     m_throttle(1000)
@@ -31,4 +33,20 @@ bool QpThrottledFetchProxyModel::canFetchMore(const QModelIndex &parent) const
         return false;
 
     return sourceModel()->canFetchMore(mapToSource(parent));
+}
+
+QModelIndex QpThrottledFetchProxyModel::indexForObject(QSharedPointer<QObject> object) const
+{
+    QAbstractItemModel *source = QIdentityProxyModel::sourceModel();
+    if(QpSortFilterProxyObjectModelBase *model = qobject_cast<QpSortFilterProxyObjectModelBase *>(source)) {
+        return mapFromSource(model->indexForObject(object));
+    }
+    else if(QpObjectListModelBase *model = qobject_cast<QpObjectListModelBase *>(source)) {
+        return mapFromSource(model->indexForObject(object));
+    }
+    else if(QpThrottledFetchProxyModel *model = qobject_cast<QpThrottledFetchProxyModel *>(source)) {
+        return mapFromSource(model->indexForObject(object));
+    }
+
+    return QModelIndex();
 }
