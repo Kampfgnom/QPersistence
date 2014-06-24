@@ -2,13 +2,10 @@
 
 #include "storage.h"
 
-QpUserManagement::QpUserManagement() :
-    storage(QpStorage::defaultStorage())
-{
-}
-
-QpUserManagement::QpUserManagement(QpStorage *storage) :
-    storage(storage)
+QpUserManagement::QpUserManagement()
+#ifndef QP_NO_USERMANAGEMENT
+    : storage(QpStorage::defaultStorage())
+#endif
 {
 }
 
@@ -23,6 +20,10 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
+QpUserManagement::QpUserManagement(QpStorage *storage) :
+    storage(storage)
+{
+}
 
 bool QpUserManagement::createUser(const QString &username, const QString &password)
 {

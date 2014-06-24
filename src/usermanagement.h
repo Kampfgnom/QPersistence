@@ -12,7 +12,6 @@ class QpUserManagement
 {
 public:
     QpUserManagement();
-    explicit QpUserManagement(QpStorage *storage);
 
 #ifndef QP_NO_USERMANAGEMENT
 public:
@@ -25,6 +24,8 @@ public:
         NoPermission = 0x0
     };
     Q_DECLARE_FLAGS(Permissions, Permission)
+
+    explicit QpUserManagement(QpStorage *storage);
 
     bool createUser(const QString &username, const QString &password);
     bool deleteUser(const QString &username);

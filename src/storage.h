@@ -186,18 +186,6 @@ Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<T> object)
 }
 
 template<class T>
-QList<QSharedPointer<T> > QpStorage::createdSince(const QDateTime &time)
-{
-    return Qp::castList<T>(dataAccessObject<T>()->createdSince(time));
-}
-
-template<class T>
-QList<QSharedPointer<T> > QpStorage::updatedSince(const QDateTime &time)
-{
-    return Qp::castList<T>(dataAccessObject<T>()->updatedSince(time));
-}
-
-template<class T>
 bool QpStorage::remove(QSharedPointer<T> object)
 {
     beginTransaction();
@@ -231,6 +219,18 @@ bool QpStorage::undelete(QSharedPointer<T> object)
 
 #ifndef QP_NO_TIMESTAMPS
 QDateTime dateFromDouble(double value);
+
+template<class T>
+QList<QSharedPointer<T> > QpStorage::createdSince(const QDateTime &time)
+{
+    return Qp::castList<T>(dataAccessObject<T>()->createdSince(time));
+}
+
+template<class T>
+QList<QSharedPointer<T> > QpStorage::updatedSince(const QDateTime &time)
+{
+    return Qp::castList<T>(dataAccessObject<T>()->updatedSince(time));
+}
 
 template<class T> QDateTime QpStorage::creationTimeInDatabase(QSharedPointer<T> object)
 {
