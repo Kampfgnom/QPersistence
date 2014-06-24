@@ -6,18 +6,18 @@ QPERSISTENCE_TARGET          = qpersistence
 QPERSISTENCE_VERSION         = 0.0.0
 QPERSISTENCE_INCLUDEPATH     = $$PWD/include
 
-unix:LIBPATH = $$QPERSISTENCE_PATH/src
+unix:QPERSISTENCE_LIBPATH = $$QPERSISTENCE_PATH/src
 win32 {
     CONFIG(debug, release | debug) {
-        LIBPATH = $$QPERSISTENCE_PATH/src/debug
+        QPERSISTENCE_LIBPATH = $$QPERSISTENCE_PATH/src/debug
     }
     CONFIG(release, release | debug) {
-        LIBPATH = $$QPERSISTENCE_PATH/src/release
+        QPERSISTENCE_LIBPATH = $$QPERSISTENCE_PATH/src/release
     }
 }
 
-QPERSISTENCE_LIBS            = -L$$LIBPATH -l$$QPERSISTENCE_TARGET
-QPERSISTENCE_POST_TARGETDEPS = $$OUT_PWD/$$LIBPATH/lib$${QPERSISTENCE_TARGET}.a
+QPERSISTENCE_LIBS            = -L$$QPERSISTENCE_LIBPATH -l$$QPERSISTENCE_TARGET
+QPERSISTENCE_POST_TARGETDEPS = $$OUT_PWD/$$QPERSISTENCE_LIBPATH/lib$${QPERSISTENCE_TARGET}.a
 unix:QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Wall \
                                         -Wno-c++98-compat \
                                         -Wno-padded  \
@@ -25,6 +25,5 @@ unix:QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Wall \
                                         -Wno-pragmas  \
                                         -Wno-unknown-warning-option
 
-#DEFINES += QP_FOR_SQLITE
-DEFINES += QP_FOR_MYSQL
+DEFINES += QP_FOR_SQLITE
 
