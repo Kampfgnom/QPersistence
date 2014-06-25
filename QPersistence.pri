@@ -23,7 +23,8 @@ unix:QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Wall \
                                         -Wno-padded  \
                                         -Wno-undefined-reinterpret-cast  \
                                         -Wno-pragmas  \
-                                        -Wno-unknown-warning-option
+                                        -Wno-unknown-warning-option \
+                                        -Wno-unkown-pragmas
 
 DEFINES += QP_FOR_MYSQL
 
