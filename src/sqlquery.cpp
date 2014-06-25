@@ -177,7 +177,11 @@ QString QpSqlQuery::escapeField(const QString &field)
     QStringList fields = field.split(".");
     QStringList escaped;
     foreach(QString f, fields) {
-        escaped << QString("`%1`").arg(f);
+        QStringList split = f.split('+');
+        if(split.size() == 2)
+            escaped << QString("`%1`+%2").arg(split.at(0)).arg(split.at(1));
+        else
+            escaped << QString("`%1`").arg(f);
     }
 
     return escaped.join(".");
@@ -340,10 +344,7 @@ void QpSqlQuery::prepareSelect()
     else {
         QStringList fields;
         foreach (const QString &field, data->fields.keys()) {
-            if(field.contains("+"))
-                fields.append(QString("%1").arg(field));
-            else
-                fields.append(QString("%1").arg(escapedQualifiedField(field)));
+            fields.append(QString("%1").arg(escapedQualifiedField(field)));
         }
         foreach(QString field, data->rawFields.keys()) {
             fields.append(field);
@@ -532,8 +533,13 @@ QMetaProperty QpSqlQuery::propertyForIndex(const QSqlRecord &record, const QMeta
 
     QString fieldName = record.fieldName(index);
     propertyIndex = metaObject->indexOfProperty(fieldName.toLatin1());
-    if(propertyIndex <= 0)
-        propertyIndex = metaObject->indexOfProperty(fieldName.left(fieldName.length() - 2).toLatin1()); // removes the "+0" from enum and flag fields
+    if(propertyIndex <= 0) {
+        if(fieldName.contains('+'))
+            fieldName = fieldName.left(fieldName.length() - 2);
+        fieldName = fieldName.split('.').last();
+        fieldName = fieldName.remove('`');
+        propertyIndex = metaObject->indexOfProperty(fieldName.toLatin1()); // removes the "+0" from enum and flag fields
+    }
 
     data->propertyIndexes.insert(index, propertyIndex);
 
