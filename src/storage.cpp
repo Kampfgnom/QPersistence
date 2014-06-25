@@ -120,6 +120,10 @@ QpError QpStorage::lastError() const
     return data->lastError;
 }
 
+#ifdef __clang__
+_Pragma("clang diagnostic push")
+_Pragma("clang diagnostic ignored \"-Wmissing-noreturn\"")
+#endif
 void QpStorage::setLastError(QpError error)
 {
     data->lastError = error;
@@ -127,6 +131,9 @@ void QpStorage::setLastError(QpError error)
     qWarning("Aborting due to SQL errors!");
     Q_ASSERT(false);
 }
+#ifdef __clang__
+_Pragma("clang diagnostic pop")
+#endif
 
 void QpStorage::setSqlDebugEnabled(bool enable)
 {
