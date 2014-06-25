@@ -90,9 +90,10 @@ void QpBelongsToManyBase::add(QSharedPointer<QObject> object)
                        .toLatin1());
 
             QMetaMethod method = mo->method(index);
-
-            Q_ASSERT(method.invoke(object.data(), Qt::DirectConnection,
-                                   QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));
+            bool result = method.invoke(object.data(), Qt::DirectConnection,
+                                        QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data()));
+            Q_ASSERT(result);
+            Q_UNUSED(result);
         }
     }
 }
@@ -130,9 +131,10 @@ void QpBelongsToManyBase::remove(QSharedPointer<QObject> object)
                        .toLatin1());
 
             QMetaMethod method = mo->method(index);
-
-            Q_ASSERT(method.invoke(object.data(), Qt::DirectConnection,
-                                   QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));
+            bool result = method.invoke(object.data(), Qt::DirectConnection,
+                                        QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data()));
+            Q_ASSERT(result);
+            Q_UNUSED(result);
         }
     }
 }

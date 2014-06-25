@@ -84,9 +84,10 @@ void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> newObject) cons
                        .toLatin1());
 
             QMetaMethod method = mo->method(index);
-
-            Q_ASSERT(method.invoke(previousObject.data(), Qt::DirectConnection,
-                                   QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));
+            bool result = method.invoke(previousObject.data(), Qt::DirectConnection,
+                                        QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data()));
+            Q_ASSERT(result);
+            Q_UNUSED(result);
         }
     }
 
@@ -108,9 +109,10 @@ void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> newObject) cons
                        .toLatin1());
 
             QMetaMethod method = mo->method(index);
-
-            Q_ASSERT(method.invoke(newObject.data(), Qt::DirectConnection,
-                                   QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data())));
+            bool result = method.invoke(newObject.data(), Qt::DirectConnection,
+                                        QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data()));
+            Q_ASSERT(result);
+            Q_UNUSED(result);
         }
     }
 

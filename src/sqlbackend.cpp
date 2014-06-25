@@ -13,13 +13,13 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 class QpSqlBackendData
 {
 public:
-    static QpSqlBackend *createForDatabase(const QSqlDatabase &database);
+    static QpSqlBackend *createForDatabase();
 };
 
 typedef QHash<QString, QpSqlBackend *> HashStringToBackend;
 QP_DEFINE_STATIC_LOCAL(HashStringToBackend, Backends)
 
-QpSqlBackend *QpSqlBackendData::createForDatabase(const QSqlDatabase &database)
+QpSqlBackend *QpSqlBackendData::createForDatabase()
 {
 #ifdef QP_FOR_SQLITE
     return new QpSqliteBackend(Qp::Private::GlobalGuard());
@@ -43,7 +43,7 @@ QpSqlBackend *QpSqlBackend::forDatabase(const QSqlDatabase &database)
     if(it != Backends()->end())
         return it.value();
 
-    QpSqlBackend *backend = QpSqlBackendData::createForDatabase(database);
+    QpSqlBackend *backend = QpSqlBackendData::createForDatabase();
     Backends()->insert(database.driverName(),backend);
     return backend;
 }
