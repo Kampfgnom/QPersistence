@@ -1,8 +1,12 @@
 #ifndef QPERSISTENCE_STORAGE_H
 #define QPERSISTENCE_STORAGE_H
 
+#include "defines.h"
+
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QObject>
 #include <QDebug>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "qpersistence.h"
 #include "private.h"

@@ -275,12 +275,15 @@ void QpSqlQuery::prepareCreateTable()
     foreach(QString key, data->keys.keys()) {
         QStringList v = data->keys.value(key);
         QStringList values;
-        foreach(QString value, v) {
-            values << escapeField(value);
-        }
+
+        QStringList::const_iterator it2;
+        QStringList::const_iterator end = v.end();
+        for(it2 = v.constBegin(); it2 != end; ++it2)
+            values << escapeField(*it2);
 
         query.append(QString(",\n\t%1 ")
                      .arg(key));
+
 #ifndef QP_FOR_SQLITE
         QString name = v.join("_").prepend("_Qp_key_");
         query.append(name);

@@ -20,8 +20,8 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-QpUserManagement::QpUserManagement(QpStorage *storage) :
-    storage(storage)
+QpUserManagement::QpUserManagement(QpStorage *s) :
+    storage(s)
 {
 }
 

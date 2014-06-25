@@ -1,8 +1,12 @@
 #ifndef THROTTLEDFETCHPROXYMODEL_H
 #define THROTTLEDFETCHPROXYMODEL_H
 
-#include <QIdentityProxyModel>
-#include <QElapsedTimer>
+#include "defines.h"
+
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QtCore/QIdentityProxyModel>
+#include <QtCore/QElapsedTimer>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpThrottledFetchProxyModel : public QIdentityProxyModel
 {

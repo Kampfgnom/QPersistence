@@ -18,13 +18,14 @@ win32 {
 
 QPERSISTENCE_LIBS            = -L$$QPERSISTENCE_LIBPATH -l$$QPERSISTENCE_TARGET
 QPERSISTENCE_POST_TARGETDEPS = $$OUT_PWD/$$QPERSISTENCE_LIBPATH/lib$${QPERSISTENCE_TARGET}.a
-unix:QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Wall \
-                                        -Wno-c++98-compat \
-                                        -Wno-padded  \
-                                        -Wno-undefined-reinterpret-cast  \
-                                        -Wno-pragmas  \
-                                        -Wno-unknown-warning-option \
-                                        -Wno-unkown-pragmas
+macx:QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Weverything \
+                                          -Wno-c++98-compat \
+                                          -Wno-c++98-compat-pedantic \
+                                          -Wno-padded  \
+                                          -Wno-undefined-reinterpret-cast  \
+                                          -Wno-pragmas  \
+                                          -Wno-unknown-warning-option \
+                                          -Wno-unkown-pragmas
 
 DEFINES += QP_FOR_MYSQL
 

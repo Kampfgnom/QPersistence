@@ -41,11 +41,11 @@ QModelIndex QpThrottledFetchProxyModel::indexForObject(QSharedPointer<QObject> o
     if(QpSortFilterProxyObjectModelBase *model = qobject_cast<QpSortFilterProxyObjectModelBase *>(source)) {
         return mapFromSource(model->indexForObject(object));
     }
-    else if(QpObjectListModelBase *model = qobject_cast<QpObjectListModelBase *>(source)) {
-        return mapFromSource(model->indexForObject(object));
+    else if(QpObjectListModelBase *model2 = qobject_cast<QpObjectListModelBase *>(source)) {
+        return mapFromSource(model2->indexForObject(object));
     }
-    else if(QpThrottledFetchProxyModel *model = qobject_cast<QpThrottledFetchProxyModel *>(source)) {
-        return mapFromSource(model->indexForObject(object));
+    else if(QpThrottledFetchProxyModel *model3 = qobject_cast<QpThrottledFetchProxyModel *>(source)) {
+        return mapFromSource(model3->indexForObject(object));
     }
 
     return QModelIndex();

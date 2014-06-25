@@ -1,9 +1,7 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#include <QtGlobal>
-
-#ifndef Q_OS_WIN
+#ifdef __clang__
 #define BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS \
     _Pragma("GCC diagnostic push") \
     _Pragma("GCC diagnostic ignored \"-Wc++98-compat-pedantic\"") \
@@ -19,17 +17,24 @@
     _Pragma("GCC diagnostic ignored \"-Wswitch-enum\"") \
     _Pragma("GCC diagnostic ignored \"-Wweak-vtables\"") \
     _Pragma("GCC diagnostic ignored \"-Wdocumentation-unknown-command\"") \
-    _Pragma("GCC diagnostic ignored \"-Wdocumentation\"")
+    _Pragma("GCC diagnostic ignored \"-Wdocumentation\"") \
+    _Pragma("GCC diagnostic ignored \"-Wcovered-switch-default\"") \
+    _Pragma("GCC diagnostic ignored \"-Wdeprecated\"")
 #else
 #define BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #endif
 
-#ifndef Q_OS_WIN
+
+#ifdef __clang__
 #define END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS \
     _Pragma("GCC diagnostic pop")
 #else
 #define END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #endif
+
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QtGlobal>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #define QP_DEFINE_STATIC_LOCAL(type, name) \
     type *name(); \
@@ -46,7 +51,7 @@
 #define QP_FOREACH (variable, container) \
     _Pragma("clang diagnostic push") \
     _Pragma("clang diagnostic ignored \"-Wshadow\"") \
-    Q_FOREACH(variable, container) \
+    foreach(variable, container) \
     _Pragma("clang diagnostic pop") \
 
 #if defined QP_FOR_MYSQL && defined QP_FOR_SQLITE

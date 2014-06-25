@@ -8,7 +8,7 @@ VERSION         = $$QPERSISTENCE_VERSION
 TEMPLATE        = lib
 QT              += sql
 CONFIG          += static c++11
-unix:QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
+macx:QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
 INCLUDEPATH     += $$QPERSISTENCE_INCLUDEPATH
 
 
@@ -52,7 +52,6 @@ SOURCES += \
     metaproperty.cpp \
     objectlistmodel.cpp \
     private.cpp \
-    qpersistence.cpp \
     relationresolver.cpp \
     sortfilterproxyobjectmodel.cpp \
     sqlcondition.cpp \

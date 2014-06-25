@@ -25,7 +25,7 @@ public:
     };
     Q_DECLARE_FLAGS(Permissions, Permission)
 
-    explicit QpUserManagement(QpStorage *storage);
+    explicit QpUserManagement(QpStorage *s);
 
     bool createUser(const QString &username, const QString &password);
     bool deleteUser(const QString &username);

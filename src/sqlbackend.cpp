@@ -25,15 +25,9 @@ QpSqlBackend *QpSqlBackendData::createForDatabase()
     return new QpSqliteBackend(Qp::Private::GlobalGuard());
 #elif defined QP_FOR_MYSQL
     return new QpMySqlBackend(Qp::Private::GlobalGuard());
+#else
+#error This should have 'errored' long before :)
 #endif
-
-
-    Q_ASSERT_X(false, Q_FUNC_INFO,
-               QString("No backend for database '%1'")
-               .arg(database.driverName())
-               .toLatin1());
-
-    return nullptr; // Never reached
 }
 
 QpSqlBackend *QpSqlBackend::forDatabase(const QSqlDatabase &database)

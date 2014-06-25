@@ -8,7 +8,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-const char *PROPERTY_STORAGE = "_Qp_storage";
+static const char *PROPERTY_STORAGE = "_Qp_storage";
 
 class QpStorageData : public QSharedData
 {
@@ -124,7 +124,8 @@ void QpStorage::setLastError(QpError error)
 {
     data->lastError = error;
     qWarning() << qPrintable(error.text());
-    qFatal("Aborting due to SQL errors!");
+    qWarning("Aborting due to SQL errors!");
+    Q_ASSERT(false);
 }
 
 void QpStorage::setSqlDebugEnabled(bool enable)

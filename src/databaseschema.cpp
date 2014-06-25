@@ -146,7 +146,7 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
                 QStringList enumValues;
                 for(; i < count; ++i) {
 
-                    if(isFlag && metaEnum.value(i) != qPow(2, i - offset))
+                    if(isFlag && metaEnum.value(i) != static_cast<int>(qPow(2, i - offset)))
                         break;
 
                     enumValues << QString("'%1'").arg(metaEnum.key(i));
