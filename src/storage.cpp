@@ -26,6 +26,7 @@ public:
     QHash<QSharedPointer<QObject>, QpLock> localLocks;
     QHash<QString, QVariant::Type> additionalLockFields;
     QHash<QString, QpDaoBase *> dataAccessObjects;
+    QList<QpAbstractErrorHandler *> errorHandlers;
 
     static QpStorage *defaultStorage;
 };
@@ -127,13 +128,25 @@ _Pragma("clang diagnostic ignored \"-Wmissing-noreturn\"")
 void QpStorage::setLastError(QpError error)
 {
     data->lastError = error;
-    qWarning() << qPrintable(error.text());
-    qWarning("Aborting due to SQL errors!");
-    Q_ASSERT(false);
+    foreach(QpAbstractErrorHandler *handler, data->errorHandlers) {
+        handler->handleError(error);
+    }
 }
 #ifdef __clang__
 _Pragma("clang diagnostic pop")
 #endif
+
+void QpStorage::addErrorHandler(QpAbstractErrorHandler *handler)
+{
+    data->errorHandlers.append(handler);
+    handler->setParent(this);
+}
+
+void QpStorage::clearErrorHandlers()
+{
+    qDeleteAll(data->errorHandlers);
+    data->errorHandlers.clear();
+}
 
 void QpStorage::setSqlDebugEnabled(bool enable)
 {

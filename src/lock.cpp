@@ -62,7 +62,9 @@ QpLock QpLockData::insertLock(QpStorage *storage, QSharedPointer<QObject> object
     query.prepareInsert();
 
     if (!query.exec() || query.lastError().isValid()) {
-        return QpLock(QpError(query.lastError()));
+        QpLock lock = QpLock(QpError(query.lastError()));
+        storage->setLastError(lock.error());
+        return lock;
     }
 
     QpLock lock;
@@ -83,7 +85,9 @@ QpLock QpLockData::insertLock(QpStorage *storage, QSharedPointer<QObject> object
     query.prepareUpdate();
 
     if (!query.exec() || query.lastError().isValid()) {
-        return QpLock(QpError(query.lastError()));
+        lock = QpLock(QpError(query.lastError()));
+        storage->setLastError(lock.error());
+        return lock;
     }
 
     LOCALLOCKS()->insert(object, lock);
@@ -106,7 +110,9 @@ QpLock QpLockData::selectLock(QpStorage *storage, int id, QSharedPointer<QObject
     if (!query.exec()
         || !query.first()
         || query.lastError().isValid()) {
-        return QpLock(QpError(query.lastError()));
+        QpLock lock = QpLock(QpError(query.lastError()));
+        storage->setLastError(lock.error());
+        return lock;
     }
 
     QpLock lock;

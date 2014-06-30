@@ -11,6 +11,8 @@ QSqlDatabase database();
 bool adjustDatabaseSchema();
 bool createCleanSchema();
 QpError lastError();
+void addErrorHandler(QpAbstractErrorHandler *handler);
+void clearErrorHandlers();
 #ifndef QP_NO_LOCKS
 void enableLocks();
 bool unlockAllLocks();

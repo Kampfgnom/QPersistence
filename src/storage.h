@@ -16,6 +16,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QSqlDatabase;
 class QpError;
+class QpAbstractErrorHandler;
 
 class QpStorageData;
 class QpStorage : public QObject
@@ -35,6 +36,8 @@ public:
 
     QpError lastError() const;
     void setLastError(QpError error);
+    void addErrorHandler(QpAbstractErrorHandler *handler);
+    void clearErrorHandlers();
 
     bool beginTransaction();
     Qp::CommitResult commitOrRollbackTransaction();

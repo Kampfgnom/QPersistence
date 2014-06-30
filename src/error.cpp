@@ -1,6 +1,7 @@
 #include "error.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QCoreApplication>
 #include <QDebug>
 #include <QSqlError>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
@@ -90,4 +91,45 @@ QDebug operator<<(QDebug dbg, const QpError &error)
 {
     dbg.nospace() << "(" << error.type() << ", " << error.text() << ")";
     return dbg.space();
+}
+
+
+QpAbstractErrorHandler::QpAbstractErrorHandler(QObject *parent) :
+    QObject(parent)
+{
+}
+
+QpAbstractErrorHandler::~QpAbstractErrorHandler()
+{
+}
+
+QpPrintError::QpPrintError(QObject *parent) :
+    QpAbstractErrorHandler(parent)
+{
+}
+
+QpPrintError::~QpPrintError()
+{
+}
+
+void QpPrintError::handleError(const QpError &error)
+{
+    qWarning() << qPrintable(error.text());
+}
+
+
+QpQuitOnError::QpQuitOnError(QObject *parent)
+{
+
+}
+
+QpQuitOnError::~QpQuitOnError()
+{
+
+}
+
+void QpQuitOnError::handleError(const QpError &error)
+{
+    Q_UNUSED(error);
+    qApp->exit(-1);
 }
