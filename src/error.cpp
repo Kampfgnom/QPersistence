@@ -118,14 +118,13 @@ void QpPrintError::handleError(const QpError &error)
 }
 
 
-QpQuitOnError::QpQuitOnError(QObject *parent)
+QpQuitOnError::QpQuitOnError(QObject *parent) :
+    QpAbstractErrorHandler(parent)
 {
-
 }
 
 QpQuitOnError::~QpQuitOnError()
 {
-
 }
 
 void QpQuitOnError::handleError(const QpError &error)
