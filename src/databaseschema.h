@@ -32,6 +32,14 @@ public:
     static const char* COLUMN_LOCK;
     static const char* COLUMN_LOCKTIME;
 #endif
+#ifndef QP_NO_SCHEMAVERSIONING
+    static const char* TABLENAME_SCHEMAVERSIONING;
+    static const char* COLUMN_NAME_SCHEMAVERSION_MAJOR;
+    static const char* COLUMN_NAME_SCHEMAVERSION_MINOR;
+    static const char* COLUMN_NAME_SCHEMAVERSION_DOT;
+    static const char* COLUMN_NAME_SCHEMAVERSION_SCRIPT;
+    static const char* COLUMN_NAME_SCHEMAVERSION_DATEAPPLIED;
+#endif
 
     explicit QpDatabaseSchema(QpStorage *storage);
     ~QpDatabaseSchema();
@@ -53,6 +61,10 @@ public:
 
 #ifndef QP_NO_LOCKS
     void createLocksTable();
+#endif
+
+#ifndef QP_NO_SCHEMAVERSIONING
+    void createSchemaVersioningTable();
 #endif
 
     QpError lastError() const;

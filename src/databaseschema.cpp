@@ -34,6 +34,15 @@ const char* QpDatabaseSchema::TABLENAME_LOCKS("_Qp_locks");
 const char* QpDatabaseSchema::COLUMN_LOCK("_Qp_lock");
 #endif
 
+#ifndef QP_NO_SCHEMAVERSIONING
+const char* QpDatabaseSchema::TABLENAME_SCHEMAVERSIONING("_Qp_SchemaVersion");
+const char* QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_MAJOR("major");
+const char* QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_MINOR("minor");
+const char* QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_DOT("dot");
+const char* QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_SCRIPT("script");
+const char* QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_DATEAPPLIED("date_applied");
+#endif
+
 class QpDatabaseSchemaPrivate : public QSharedData
 {
 public:
@@ -473,6 +482,9 @@ void QpDatabaseSchema::adjustSchema()
     if (data->storage->isLocksEnabled())
         createLocksTable();
 #endif
+#ifndef QP_NO_SCHEMAVERSIONING
+    createSchemaVersioningTable();
+#endif
 
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
         createTableIfNotExists(metaObject.metaObject());
@@ -511,6 +523,32 @@ void QpDatabaseSchema::createLocksTable()
 
             QString type = variantTypeToSqlType(data->storage->additionalLockInformationFields().value(field));
             addColumn(QpDatabaseSchema::TABLENAME_LOCKS, field, type);
+        }
+    }
+}
+#endif
+
+#ifndef QP_NO_SCHEMAVERSIONING
+void QpDatabaseSchema::createSchemaVersioningTable()
+{
+    if (!existsTable(QpDatabaseSchema::TABLENAME_SCHEMAVERSIONING)) {
+
+        data->query.clear();
+        data->query.setTable(QpDatabaseSchema::TABLENAME_SCHEMAVERSIONING);
+        data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
+
+        QString intType = variantTypeToSqlType(QVariant::Int);
+        data->query.addField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_MAJOR, intType);
+        data->query.addField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_MINOR, intType);
+        data->query.addField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_DOT, intType);
+        data->query.addField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_SCRIPT, variantTypeToSqlType(QVariant::String));
+        data->query.addField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_DATEAPPLIED, variantTypeToSqlType(QVariant::DateTime));
+
+        data->query.prepareCreateTable();
+
+        if ( !data->query.exec()
+             || data->query.lastError().isValid()) {
+            setLastError(data->query);
         }
     }
 }

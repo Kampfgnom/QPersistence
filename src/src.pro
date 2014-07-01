@@ -40,7 +40,8 @@ HEADERS += \
     usermanagement.h \
     throttledfetchproxymodel.h \
     storage.h \
-    defaultstorage.h
+    defaultstorage.h \
+    schemaversioning.h
 
 SOURCES += \
         cache.cpp \
@@ -66,4 +67,5 @@ SOURCES += \
     usermanagement.cpp \
     throttledfetchproxymodel.cpp \
     storage.cpp \
-    defaultstorage.cpp
+    defaultstorage.cpp \
+    schemaversioning.cpp
