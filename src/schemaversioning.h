@@ -22,12 +22,16 @@ public:
     };
     static const Version NullVersion;
 
-    explicit QpSchemaVersioning(QpStorage *storage, QObject *parent = 0);
+    explicit QpSchemaVersioning(QObject *parent = 0);
+    QpSchemaVersioning(QpStorage *storage, QObject *parent = 0);
     ~QpSchemaVersioning();
 
-    Version currentVersion() const;
-    void registerUpgradeScript(const Version &currentVersion, const QString &script);
-    void upgradeSchema();
+    Version currentDatabaseVersion() const;
+    Version latestVersion() const;
+    void registerUpgradeScript(const Version &version, const QString &script);
+    bool upgradeSchema();
+
+    QpStorage *storage() const;
 
 private:
     QExplicitlySharedDataPointer<QpSchemaVersioningData> data;
@@ -35,6 +39,7 @@ private:
 
 uint qHash(const QpSchemaVersioning::Version &version, uint seed = 0);
 bool operator <(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2);
+bool operator >(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2);
 bool operator ==(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2);
 QDebug operator<<(QDebug dbg, const QpSchemaVersioning::Version &version);
 
