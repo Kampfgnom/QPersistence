@@ -24,6 +24,11 @@ bool operator <(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning:
             || (v1.major == v2.major && v1.minor == v2.minor && v1.dot < v2.dot);
 }
 
+bool operator >(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
+{
+    return !operator <(v1, v2) && !operator ==(v1, v2);
+}
+
 bool operator ==(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
 {
     return v1.major == v2.major
@@ -46,24 +51,29 @@ public:
 
     QpStorage *storage;
     QMap<QpSchemaVersioning::Version, std::function<void()> > upgradeFunctions;
+    QMap<QpSchemaVersioning::Version, QString> descriptions;
 
-    void applyScript(const QpSchemaVersioning::Version &version, const QString &script);
+    void applyScript(const QString &script);
+    void insertVersion(const QpSchemaVersioning::Version &version);
 };
 
-void QpSchemaVersioningData::applyScript(const QpSchemaVersioning::Version &version, const QString &script)
+void QpSchemaVersioningData::applyScript(const QString &script)
 {
     QpSqlQuery query(storage->database());
     if (!query.exec(script) || query.lastError().isValid()) {
         storage->setLastError(QpError(query.lastError()));
         return;
     }
+}
 
-    query.clear();
+void QpSchemaVersioningData::insertVersion(const QpSchemaVersioning::Version &version)
+{
+    QpSqlQuery query(storage->database());
     query.setTable(QpDatabaseSchema::TABLENAME_SCHEMAVERSIONING);
     query.addField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_MAJOR, version.major);
     query.addField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_MINOR, version.minor);
     query.addField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_DOT, version.dot);
-    query.addField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_SCRIPT, script);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_SCRIPT, descriptions.value(version));
     query.addRawField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_DATEAPPLIED, QpSqlBackend::forDatabase(storage->database())->nowTimestamp());
     query.prepareInsert();
 
@@ -71,6 +81,11 @@ void QpSchemaVersioningData::applyScript(const QpSchemaVersioning::Version &vers
         storage->setLastError(QpError(query.lastError()));
         return;
     }
+}
+
+QpSchemaVersioning::QpSchemaVersioning(QObject *parent) :
+    QpSchemaVersioning(QpStorage::defaultStorage(), parent)
+{
 }
 
 QpSchemaVersioning::QpSchemaVersioning(QpStorage *storage, QObject *parent) :
@@ -119,14 +134,15 @@ QpSchemaVersioning::Version QpSchemaVersioning::currentDatabaseVersion() const
 
 void QpSchemaVersioning::registerUpgradeScript(const Version &version, const QString &script)
 {
-    registerUpgradeFunction(version, [=] {
-        data->applyScript(version, script);
+    registerUpgradeFunction(version, script, [=] {
+        data->applyScript(script);
     });
 }
 
-void QpSchemaVersioning::registerUpgradeFunction(const QpSchemaVersioning::Version &version, std::function<void()> function)
+void QpSchemaVersioning::registerUpgradeFunction(const QpSchemaVersioning::Version &version, const QString &description, std::function<void()> function)
 {
     data->upgradeFunctions.insert(version, function);
+    data->descriptions.insert(version, description);
 }
 
 bool QpSchemaVersioning::upgradeSchema()
@@ -157,6 +173,7 @@ bool QpSchemaVersioning::upgradeSchema()
 
         qDebug() << "Applying version " << it.key();
         it.value()();
+        data->insertVersion(it.key());
 
         if(data->storage->lastError().isValid()) {
             qDebug() << "Schema upgrade failed" << data->storage->lastError();
@@ -167,4 +184,9 @@ bool QpSchemaVersioning::upgradeSchema()
     Version upgraded = currentDatabaseVersion();
     qDebug() << "Successfully upgraded to schema version: " << upgraded;
     return true;
+}
+
+QpStorage *QpSchemaVersioning::storage() const
+{
+    return data->storage;
 }

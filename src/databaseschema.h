@@ -58,6 +58,7 @@ public:
     void addColumn(const QString &table, const QString &column, const QString &type);
     bool dropColumns(const QString &table, const QStringList &columns);
 
+    bool enableHistoryTracking();
     bool enableHistoryTracking(const QMetaObject &metaObject);
 
     void cleanSchema();

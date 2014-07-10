@@ -311,7 +311,9 @@ bool QpDaoBase::synchronizeAllObjects()
     foreach(QSharedPointer<QObject> object, readObjectsUpdatedAfterRevision(data->lastSynchronizedRevision)) {
         latest = qMax(latest, object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt());
 
-        foreach(QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
+        QList<QpMetaProperty> rs = QpMetaObject::forObject(object).relationProperties();
+        for(int i = 0, c = rs.size(); i < c; ++i) {
+            QpMetaProperty relation = rs.at(i);
             QpRelationResolver::readRelationFromDatabase(relation, object.data());
         }
 

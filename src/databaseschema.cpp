@@ -425,6 +425,15 @@ bool QpDatabaseSchema::dropColumns(const QString &table, const QStringList &colu
     return true;
 }
 
+bool QpDatabaseSchema::enableHistoryTracking()
+{
+    foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
+        if(!enableHistoryTracking(metaObject.metaObject()))
+            return false;
+    }
+    return true;
+}
+
 bool QpDatabaseSchema::enableHistoryTracking(const QMetaObject &metaObject)
 {
     if (!data->database.transaction()) {
@@ -437,7 +446,7 @@ bool QpDatabaseSchema::enableHistoryTracking(const QMetaObject &metaObject)
     QpSqlQuery query(data->database);
 
     if(!query.exec(QString::fromLatin1(
-                       "CREATE TABLE `%1_Qp_history` ("
+                       "CREATE TABLE IF NOT EXISTS `%1_Qp_history` ("
                        "`revision` INTEGER PRIMARY KEY AUTO_INCREMENT,"
                        "`_Qp_ID` INTEGER NOT NULL, "
                        "`action` ENUM('INSERT', 'UPDATE', 'MARK_AS_DELETE', 'DELETE') DEFAULT 'INSERT',"

@@ -31,7 +31,7 @@ public:
     Version currentDatabaseVersion() const;
     Version latestVersion() const;
     void registerUpgradeScript(const Version &version, const QString &script);
-    void registerUpgradeFunction(const QpSchemaVersioning::Version &version, std::function<void()> function);
+    void registerUpgradeFunction(const QpSchemaVersioning::Version &version, const QString &description, std::function<void()> function);
     bool upgradeSchema();
 
     QpStorage *storage() const;
