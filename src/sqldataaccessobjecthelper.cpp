@@ -21,6 +21,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QStringList>
 #include <QVariant>
 #include <QSqlField>
+#include <QThread>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlDataAccessObjectHelperPrivate : public QSharedData
@@ -136,6 +137,39 @@ QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaO
     return query;
 }
 
+QpSqlQuery QpSqlDataAccessObjectHelper::readObjectsUpdatedAfterRevision(const QpMetaObject &metaObject, int revision)
+{
+    QString table = metaObject.tableName();
+    QString historyTable = QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(table);
+    QString qualifiedRevisionField = QString::fromLatin1("%1.%2")
+            .arg(historyTable)
+            .arg(QpDatabaseSchema::COLUMN_NAME_REVISION);
+
+    QpSqlQuery query(data->storage->database());
+    query.setTable(table);
+    selectFields(metaObject, query);
+    query.addRawField(qualifiedRevisionField);
+    query.addJoin("LEFT",
+                  historyTable,
+                  QString::fromLatin1("%1.%2 = %3.%2")
+                  .arg(QpSqlQuery::escapeField(table))
+                  .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
+                  .arg(historyTable));
+    query.setWhereCondition(QString::fromLatin1("%1 > %2 AND %3 in ('UPDATE', 'MARK_AS_DELETE')")
+                            .arg(qualifiedRevisionField)
+                            .arg(revision)
+                            .arg(QpDatabaseSchema::COLUMN_NAME_ACTION));
+    query.setForwardOnly(true);
+    query.prepareSelect();
+
+    if ( !query.exec()
+         || query.lastError().isValid()) {
+        setLastError(query);
+    }
+
+    return query;
+}
+
 bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, QObject *object)
 {
     Q_ASSERT(object);
@@ -147,7 +181,6 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
 
 #ifndef QP_NO_TIMESTAMPS
     query.addRawField(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME, QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp());
-    query.addRawField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp());
 #endif
 
     // Insert the object itself
@@ -162,7 +195,6 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
 
 #ifndef QP_NO_TIMESTAMPS
     double time = readCreationTime(object);
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, time);
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME, time);
 #endif
 
@@ -217,11 +249,11 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
         }
         else {
             if(property.metaProperty().isEnumType() && !property.metaProperty().isFlagType())
-    #ifdef QP_FOR_MYSQL
+#ifdef QP_FOR_MYSQL
                 value = property.metaProperty().enumerator().valueToKey(value.toInt());
-    #elif QP_FOR_SQLITE
+#elif QP_FOR_SQLITE
                 value = value.toInt();
-    #endif
+#endif
 
             if(property.metaProperty().isFlagType() && value == QVariant(0))
                 value = "NULL";
@@ -720,22 +752,59 @@ bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, Q
 
 bool QpSqlDataAccessObjectHelper::incrementNumericColumn(QObject *object, const QString &fieldName)
 {
-    QpMetaObject mo = QpMetaObject::forObject(object);
-    QpSqlQuery query(data->storage->database());
-    query.setTable(mo.tableName());
-    query.addField(fieldName);
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                           QpSqlCondition::EqualTo,
-                                           Qp::Private::primaryKey(object)));
-    query.prepareincrementNumericColumn();
+    static const int TRY_COUNT_MAX = 100;
+    int tryCount = 0;
+    do {
+        ++tryCount;
+        data->storage->database().transaction();
+        QpMetaObject mo = QpMetaObject::forObject(object);
+        QpSqlQuery query(data->storage->database());
 
-    if (!query.exec()
+        query.setTable(mo.tableName());
+        query.addField(fieldName);
+        query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                               QpSqlCondition::EqualTo,
+                                               Qp::Private::primaryKey(object)));
+        query.prepareincrementNumericColumn();
+
+        if (!query.exec()
+                || query.lastError().isValid()) {
+            data->storage->database().rollback();
+
+            if(tryCount < TRY_COUNT_MAX && query.lastError().nativeErrorCode() == QLatin1String("1213")) {
+                qDebug() << Q_FUNC_INFO << QString::fromLatin1("MySQL found a deadlock. Re-trying transaction (try %1 of %2).")
+                            .arg(tryCount)
+                            .arg(TRY_COUNT_MAX);
+                QThread::usleep(100);
+                continue;
+            }
+
+            setLastError(query);
+            return false;
+        }
+
+        data->storage->database().commit();
+        return true;
+    } while(true);
+}
+
+int QpSqlDataAccessObjectHelper::latestRevision(const QpMetaObject &metaObject) const
+{
+    QpSqlQuery query(data->storage->database());
+    if (!query.exec(QString::fromLatin1(
+                        "SELECT `AUTO_INCREMENT` "
+                        "FROM  INFORMATION_SCHEMA.TABLES "
+                        "WHERE TABLE_SCHEMA = '%1' "
+                        "AND   TABLE_NAME   = '%2';")
+                    .arg(data->storage->database().databaseName())
+                    .arg(QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(metaObject.tableName())))
+            || !query.first()
             || query.lastError().isValid()) {
         setLastError(query);
-        return false;
+        return -1;
     }
 
-    return true;
+    return query.value(0).toInt() - 1;
 }
 
 #ifndef QP_NO_TIMESTAMPS

@@ -1,5 +1,6 @@
 #include "sqlquery.h"
 
+#include "databaseschema.h"
 #include "qpersistence.h"
 #include "sqlcondition.h"
 #include "sqlbackend.h"
@@ -101,7 +102,7 @@ bool QpSqlQuery::exec(const QString &queryString)
         ok = QSqlQuery::exec(queryString);
     }
 
-    if (!ok || data->debugEnabled) {
+    if (data->debugEnabled) {
         query = executedQuery();
         int index = query.indexOf('?');
         int i = 0;
@@ -511,9 +512,12 @@ void QpSqlQuery::prepareincrementNumericColumn()
 
     QString query("UPDATE ");
     query.append(escapeField(data->table)).append(" SET\n\t");
-    query.append(QString("%1 = (SELECT MAX(%1) + 1 FROM (SELECT %1 FROM %2) AS tempTable)")
+    query.append(QString("%1 = (SELECT MAX(%1) + 1 FROM (SELECT %1 FROM %2) AS tempTable),")
                  .arg(escapeField(data->fields.keys().first()))
                  .arg(escapeField(data->table)));
+    query.append(QString::fromLatin1("%1 = %2")
+                 .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
+                 .arg(QpSqlBackend::forDatabase(data->database)->nowTimestamp()));
     query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
 
     QSqlQuery::prepare(query);

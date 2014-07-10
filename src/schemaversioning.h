@@ -3,6 +3,8 @@
 
 #include "defines.h"
 
+#include <functional>
+
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QObject>
 #include <QtCore/QSharedData>

@@ -21,7 +21,8 @@ class QpDaoBaseData : public QSharedData
     public:
         QpDaoBaseData() :
             QSharedData(),
-            lastSync(0.0)
+            lastSynchronizedCreatedId(0),
+            lastSynchronizedRevision(0)
         {
         }
 
@@ -29,7 +30,8 @@ class QpDaoBaseData : public QSharedData
         QpMetaObject metaObject;
         mutable QpError lastError;
         mutable QpCache cache;
-        double lastSync;
+        int lastSynchronizedCreatedId;
+        int lastSynchronizedRevision;
 };
 
 
@@ -120,14 +122,22 @@ QList<int> QpDaoBase::allKeys(int skip, int count) const
 QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, const QpSqlCondition &condition) const
 {
     QpSqlQuery query = data->storage->sqlDataAccessObjectHelper()->readAllObjects(data->metaObject, skip, count, condition);
+    return readAllObjects(query);
+}
 
+QList<QSharedPointer<QObject> > QpDaoBase::readObjectsUpdatedAfterRevision(int revision) const
+{
+    QpSqlQuery query = data->storage->sqlDataAccessObjectHelper()->readObjectsUpdatedAfterRevision(data->metaObject, revision);
+    return readAllObjects(query);
+}
+
+QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) const
+{
     if (data->storage->lastError().isValid()) {
-        setLastError(data->storage->lastError());
         return QList<QSharedPointer<QObject> >();
     }
 
     QList<QSharedPointer<QObject> > result;
-    result.reserve(count);
     QSqlRecord record = query.record();
     int index = record.indexOf(QLatin1String(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
     int updateTimeRecordIndex = -1;
@@ -148,10 +158,10 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, c
             QObject *object = createInstance();
             data->storage->enableStorageFrom(object);
             currentObject = data->cache.insert(key, object);
-            data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query, record, object, index, updateTimeRecordIndex);
             Qp::Private::enableSharedFromThis(currentObject);
         }
 
+        data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query, record, currentObject.data(), index, updateTimeRecordIndex);
         result.append(currentObject);
     }
 
@@ -287,27 +297,36 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
 
 bool QpDaoBase::synchronizeAllObjects()
 {
-#ifndef QP_NO_TIMESTAMPS
-    double currentTime = data->storage->databaseTimeInternal();
+    data->storage->database().transaction();
+    int latest = data->lastSynchronizedRevision;
 
-    if(data->lastSync > 0.0) {
-        QHash<QObject *, bool> createdObjects;
-        foreach(QSharedPointer<QObject> object, createdSince(data->lastSync)) {
-            emit objectCreated(object);
-            createdObjects.insert(object.data(), true);
-        }
-        foreach(QSharedPointer<QObject> object, updatedSince(data->lastSync)) {
-            if(createdObjects.value(object.data(), false))
-                continue;
-
-            sync(object);
-        }
+    foreach(QSharedPointer<QObject> object, readAllObjects(-1, -1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                                                  QpSqlCondition::GreaterThan,
+                                                                                  data->lastSynchronizedCreatedId))) {
+        data->lastSynchronizedCreatedId = qMax(data->lastSynchronizedCreatedId, Qp::Private::primaryKey(object.data()));
+        emit objectCreated(object);
     }
 
-    data->lastSync = currentTime;
+
+    foreach(QSharedPointer<QObject> object, readObjectsUpdatedAfterRevision(data->lastSynchronizedRevision)) {
+        latest = qMax(latest, object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt());
+
+        foreach(QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
+            QpRelationResolver::readRelationFromDatabase(relation, object.data());
+        }
+
+        if(Qp::Private::isDeleted(object.data()))
+            emit objectMarkedAsDeleted(object);
+        else
+            emit objectUpdated(object);
+    }
+
+    data->lastSynchronizedRevision = latest;
+
+    data->storage->database().commit();
+
     if(lastError().isValid())
         return false;
-#endif
 
     return true;
 }
@@ -322,6 +341,11 @@ bool QpDaoBase::incrementNumericColumn(QSharedPointer<QObject> object, const QSt
     return true;
 }
 
+int QpDaoBase::latestRevision() const
+{
+    return data->storage->sqlDataAccessObjectHelper()->latestRevision(data->metaObject);
+}
+
 #ifndef QP_NO_TIMESTAMPS
 QList<QSharedPointer<QObject> > QpDaoBase::createdSince(const QDateTime &time)
 {
@@ -330,9 +354,10 @@ QList<QSharedPointer<QObject> > QpDaoBase::createdSince(const QDateTime &time)
 
 QList<QSharedPointer<QObject> > QpDaoBase::createdSince(double time)
 {
-    return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME,
-                                                QpSqlCondition::GreaterThanOrEqualTo,
-                                                time));
+    return readAllObjects(-1,-1, QString::fromLatin1("%1.%2 >= %3 ORDER BY %1.%2 ASC")
+                          .arg(data->metaObject.tableName())
+                          .arg(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME)
+                          .arg(QString::number(time, 'f', 4)));
 }
 
 QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(const QDateTime &time)
@@ -342,8 +367,9 @@ QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(const QDateTime &time)
 
 QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(double time)
 {
-    return readAllObjects(-1,-1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME,
-                                                QpSqlCondition::GreaterThanOrEqualTo,
-                                                time));
+    return readAllObjects(-1,-1, QString::fromLatin1("%1.%2 >= %3 ORDER BY %1.%2 ASC")
+                          .arg(data->metaObject.tableName())
+                          .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
+                          .arg(QString::number(time, 'f', 4)));
 }
 #endif
