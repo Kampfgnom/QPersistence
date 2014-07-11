@@ -99,6 +99,13 @@ QpSchemaVersioning::~QpSchemaVersioning()
 {
 }
 
+void QpSchemaVersioning::setInitialVersion(const QpSchemaVersioning::Version &version, const QString description)
+{
+    data->upgradeFunctions.insert(version, []{});
+    data->descriptions.insert(version, description);
+    data->insertVersion(version);
+}
+
 QpSchemaVersioning::Version QpSchemaVersioning::latestVersion() const
 {
     if(data->upgradeFunctions.isEmpty())

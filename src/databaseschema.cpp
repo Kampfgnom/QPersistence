@@ -542,6 +542,8 @@ void QpDatabaseSchema::createCleanSchema()
     createLocksTable();
 #endif
 
+    createSchemaVersioningTable();
+
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
         createTable(metaObject.metaObject());
         enableHistoryTracking(metaObject.metaObject());
