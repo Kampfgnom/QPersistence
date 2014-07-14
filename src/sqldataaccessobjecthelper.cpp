@@ -244,8 +244,10 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
     // Add simple properties
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
         QVariant value = property.metaProperty().read(object);
-        if(property.metaProperty().isEnumType() && value == QVariant(0)) {
-            value = "NULL";
+        if(value == QVariant(0)
+           && (property.metaProperty().isEnumType()
+               || property.metaProperty().isFlagType())) {
+            query.addRawField(property.columnName(), "NULL");
         }
         else {
             if(property.metaProperty().isEnumType() && !property.metaProperty().isFlagType())
@@ -255,11 +257,9 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
                 value = value.toInt();
 #endif
 
-            if(property.metaProperty().isFlagType() && value == QVariant(0))
-                value = "NULL";
+            query.addField(property.columnName(), value);
         }
 
-        query.addField(property.columnName(), value);
     }
 }
 
