@@ -35,6 +35,7 @@ public:
     bool removeObject(const QpMetaObject &metaObject, QObject *object);
     bool incrementNumericColumn(QObject *object, const QString &fieldName);
     int latestRevision(const QpMetaObject &metaObject) const;
+    int maxPrimaryKey(const QpMetaObject &metaObject) const;
 
 #ifndef QP_NO_TIMESTAMPS
     double readUpdateTime(QObject *object);

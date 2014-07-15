@@ -58,6 +58,14 @@ QpCache QpDaoBase::cache() const
     return data->cache;
 }
 
+void QpDaoBase::resetLastKnownSynchronization()
+{
+    data->storage->database().transaction();
+    data->lastSynchronizedCreatedId = data->storage->sqlDataAccessObjectHelper()->maxPrimaryKey(data->metaObject);
+    data->lastSynchronizedRevision = data->storage->sqlDataAccessObjectHelper()->latestRevision(data->metaObject);
+    data->storage->database().commit();
+}
+
 void QpDaoBase::setLastError(const QpError &error) const
 {
     data->lastError = error;
@@ -298,7 +306,6 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
 bool QpDaoBase::synchronizeAllObjects()
 {
     data->storage->database().transaction();
-    int latest = data->lastSynchronizedRevision;
 
     foreach(QSharedPointer<QObject> object, readAllObjects(-1, -1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                                                                   QpSqlCondition::GreaterThan,
@@ -309,7 +316,7 @@ bool QpDaoBase::synchronizeAllObjects()
 
 
     foreach(QSharedPointer<QObject> object, readObjectsUpdatedAfterRevision(data->lastSynchronizedRevision)) {
-        latest = qMax(latest, object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt());
+        data->lastSynchronizedRevision = qMax(data->lastSynchronizedRevision, object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt());
 
         QList<QpMetaProperty> rs = QpMetaObject::forObject(object).relationProperties();
         for(int i = 0, c = rs.size(); i < c; ++i) {
@@ -322,8 +329,6 @@ bool QpDaoBase::synchronizeAllObjects()
         else
             emit objectUpdated(object);
     }
-
-    data->lastSynchronizedRevision = latest;
 
     data->storage->database().commit();
 
