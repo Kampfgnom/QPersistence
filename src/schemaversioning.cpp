@@ -29,6 +29,11 @@ bool operator >(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning:
     return !operator <(v1, v2) && !operator ==(v1, v2);
 }
 
+bool operator <=(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
+{
+    return operator <(v1, v2) || operator ==(v1, v2);
+}
+
 bool operator ==(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
 {
     return v1.major == v2.major
@@ -166,7 +171,7 @@ bool QpSchemaVersioning::upgradeSchema()
     while(it.hasNext()) {
         it.next();
 
-        if(it.key() < current) {
+        if(it.key() <= current) {
             qDebug() << "Version" << it.key() << "already installed.";
             continue;
         }
