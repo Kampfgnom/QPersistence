@@ -142,10 +142,15 @@ QString QpSqlCondition::toWhereClause() const
     if(data->bindValues)
         value = data->value.toString();
 
+    if(!data->table.isEmpty())
+        return comparisonOperator()
+                .prepend(QString("%1.%2")
+                         .arg(QpSqlQuery::escapeField(data->table))
+                         .arg(QpSqlQuery::escapeField(data->field)))
+                .append(value);
+
     return comparisonOperator()
-            .prepend(QString("%1.%2")
-                     .arg(QpSqlQuery::escapeField(data->table))
-                     .arg(QpSqlQuery::escapeField(data->field)))
+            .prepend(QpSqlQuery::escapeField(data->field))
             .append(value);
 }
 

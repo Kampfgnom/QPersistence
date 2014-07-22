@@ -510,9 +510,9 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToManyRelatio
                                             "\n\t\tON %2.%3 = tableToUpdate.%4 "
                                             "\n\tSET tableToUpdate.%5 = %6 "
                                             "\n\tWHERE %7")
-            .arg(relation.metaObject().tableName())
-            .arg(relation.tableName())
-            .arg(relation.columnName())
+            .arg(QpSqlQuery::escapeField(relation.metaObject().tableName()))
+            .arg(QpSqlQuery::escapeField(relation.tableName()))
+            .arg(QpSqlQuery::escapeField(relation.columnName()))
             .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
             .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
             .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
@@ -673,8 +673,8 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
                                                              "\n\tSET tableToUpdate.%5 = %6 "
                                                              "\n\tWHERE %7")
             .arg(QpSqlQuery::escapeField(relation.reverseRelation().metaObject().tableName()))
-            .arg(relation.tableName())
-            .arg(relation.reverseRelation().columnName())
+            .arg(QpSqlQuery::escapeField(relation.tableName()))
+            .arg(QpSqlQuery::escapeField(relation.reverseRelation().columnName()))
             .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
             .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
             .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
@@ -703,10 +703,10 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
             .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
             .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
             .arg(relatedObjectsWhereClause2.toWhereClause())
-            .arg(relation.tableName())
-            .arg(relation.reverseRelation().columnName())
+            .arg(QpSqlQuery::escapeField(relation.tableName()))
+            .arg(QpSqlQuery::escapeField(relation.reverseRelation().columnName()))
             .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
-            .arg(relation.columnName())
+            .arg(QpSqlQuery::escapeField(relation.columnName()))
             .arg(primaryKey.toString());
 
     QpSqlQuery setUpdateTimeOnRelatedObjectsQuery(data->storage->database());
