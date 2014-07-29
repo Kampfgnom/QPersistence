@@ -144,11 +144,13 @@ int QpLockData::selectLockId(QpStorage *storage, QSharedPointer<QObject> object,
     query.prepareSelect();
 
     if (!query.exec()
-        || !query.first()
         || query.lastError().isValid()) {
         storage->setLastError(QpError(query.lastError()));
-        return 0;
+        return -1;
     }
+
+    if(!query.first())
+        return 0;
 
     return query.value(0).toInt();
 }
