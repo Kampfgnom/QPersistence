@@ -66,6 +66,8 @@ public:
     QpError lastError() const;
     QpCache cache() const;
 
+    void resetLastKnownSynchronization();
+
 public slots:
     bool synchronizeAllObjects();
 

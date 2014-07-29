@@ -814,6 +814,23 @@ int QpSqlDataAccessObjectHelper::latestRevision(const QpMetaObject &metaObject) 
     return query.value(0).toInt() - 1;
 }
 
+int QpSqlDataAccessObjectHelper::maxPrimaryKey(const QpMetaObject &metaObject) const
+{
+    QpSqlQuery query(data->storage->database());
+    if (!query.exec(QString::fromLatin1(
+                        "SELECT MAX(%1) "
+                        "FROM  %2")
+                    .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
+                    .arg(metaObject.tableName()))
+            || !query.first()
+            || query.lastError().isValid()) {
+        setLastError(query);
+        return -1;
+    }
+
+    return query.value(0).toInt() - 1;
+}
+
 #ifndef QP_NO_TIMESTAMPS
 double QpSqlDataAccessObjectHelper::readUpdateTime(QObject *object)
 {

@@ -45,6 +45,7 @@ uint qHash(const QpSchemaVersioning::Version &version, uint seed = 0);
 bool operator <(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2);
 bool operator >(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2);
 bool operator ==(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2);
+bool operator <=(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2);
 QDebug operator<<(QDebug dbg, const QpSchemaVersioning::Version &version);
 
 #endif // SCHEMAVERSIONING_H
