@@ -37,7 +37,7 @@ public:
 
     QpMetaObject qpMetaObject() const;
 
-    int count() const;
+    int count(const QpSqlCondition &condition = QpSqlCondition()) const;
     QList<int> allKeys(int skip = -1, int count = -1) const;
     QList<QSharedPointer<QObject> > readAllObjects(int skip = -1,
                                                    int count = -1,

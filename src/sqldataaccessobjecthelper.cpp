@@ -45,11 +45,18 @@ QpSqlDataAccessObjectHelper::~QpSqlDataAccessObjectHelper()
 {
 }
 
-int QpSqlDataAccessObjectHelper::count(const QpMetaObject &metaObject) const
+int QpSqlDataAccessObjectHelper::count(const QpMetaObject &metaObject, const QpSqlCondition &condition) const
 {
     QpSqlQuery query(data->storage->database());
-    query.prepare(QString("SELECT COUNT(*) FROM %1")
-                  .arg(QpSqlQuery::escapeField(metaObject.tableName())));
+    QString q = QString("SELECT COUNT(*) FROM %1")
+                .arg(QpSqlQuery::escapeField(metaObject.tableName()));
+
+    QpSqlCondition c = condition;
+    c.setBindValuesAsString(true);
+    if(c.isValid())
+        q.append(QString(" WHERE %1").arg(c.toWhereClause()));
+
+    query.prepare(q);
 
     if (!query.exec()
             || !query.first()

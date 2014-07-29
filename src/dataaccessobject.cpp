@@ -104,9 +104,9 @@ QpMetaObject QpDaoBase::qpMetaObject() const
     return data->metaObject;
 }
 
-int QpDaoBase::count() const
+int QpDaoBase::count(const QpSqlCondition &condition) const
 {
-    return data->storage->sqlDataAccessObjectHelper()->count(data->metaObject);
+    return data->storage->sqlDataAccessObjectHelper()->count(data->metaObject, condition);
 }
 
 QList<int> QpDaoBase::allKeys(int skip, int count) const
