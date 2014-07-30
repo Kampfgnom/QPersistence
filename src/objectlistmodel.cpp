@@ -14,6 +14,7 @@ public:
     QList<QSharedPointer<QObject> > objects;
     QpDaoBase *dao;
     bool objectsFromDao;
+    QpSqlCondition condition;
 };
 
 QpObjectListModelBase::QpObjectListModelBase(QpDaoBase *dao, QObject *parent) :
@@ -46,6 +47,13 @@ QpDaoBase *QpObjectListModelBase::dataAccessObject() const
     return d->dao;
 }
 
+void QpObjectListModelBase::setCondition(const QpSqlCondition &condition)
+{
+    beginResetModel();
+    d->condition = condition;
+    endResetModel();
+}
+
 int QpObjectListModelBase::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
@@ -69,7 +77,7 @@ bool QpObjectListModelBase::canFetchMore(const QModelIndex &) const
     if(!d->objectsFromDao)
         return false;
 
-    return (d->objects.size() < d->dao->count());
+    return (d->objects.size() < d->dao->count(d->condition));
 }
 
 void QpObjectListModelBase::fetchMore(const QModelIndex &/*parent*/)
@@ -78,12 +86,12 @@ void QpObjectListModelBase::fetchMore(const QModelIndex &/*parent*/)
         return;
 
     int begin = d->objects.size();
-    int remainder = d->dao->count() - begin;
+    int remainder = d->dao->count(d->condition) - begin;
     int itemsToFetch = qMin(d->fetchCount, remainder);
 
     beginInsertRows(QModelIndex(), begin, begin+itemsToFetch-1);
 
-    d->objects.append(d->dao->readAllObjects(begin, itemsToFetch));
+    d->objects.append(d->dao->readAllObjects(begin, itemsToFetch, d->condition));
     for(int i = begin; i < begin + itemsToFetch; ++i) {
         d->rows.insert(d->objects.at(i), i);
     }
