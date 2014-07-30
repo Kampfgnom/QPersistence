@@ -65,4 +65,6 @@ private:
     QExplicitlySharedDataPointer<QpMetaObjectPrivate> data;
 };
 
+bool operator==(const QpMetaObject &a1, const QpMetaObject &a2);
+
 #endif // QPERSISTENCE_METAOBJECT_H

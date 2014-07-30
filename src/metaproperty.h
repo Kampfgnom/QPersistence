@@ -77,4 +77,7 @@ private:
     QExplicitlySharedDataPointer<QpMetaPropertyPrivate> data;
 };
 
+uint qHash(const QpMetaProperty &t, uint seed);
+bool operator==(const QpMetaProperty &a1, const QpMetaProperty &a2);
+
 #endif // QPERSISTENCE_METAPROPERTY_H

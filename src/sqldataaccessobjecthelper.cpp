@@ -32,6 +32,7 @@ public:
     {}
 
     QpStorage *storage;
+    QHash<QpMetaProperty, QpSqlQuery> queriesForRelation;
 };
 
 QpSqlDataAccessObjectHelper::QpSqlDataAccessObjectHelper(QpStorage *storage) :
@@ -45,11 +46,18 @@ QpSqlDataAccessObjectHelper::~QpSqlDataAccessObjectHelper()
 {
 }
 
-int QpSqlDataAccessObjectHelper::count(const QpMetaObject &metaObject) const
+int QpSqlDataAccessObjectHelper::count(const QpMetaObject &metaObject, const QpSqlCondition &condition) const
 {
     QpSqlQuery query(data->storage->database());
-    query.prepare(QString("SELECT COUNT(*) FROM %1")
-                  .arg(QpSqlQuery::escapeField(metaObject.tableName())));
+    QString q = QString("SELECT COUNT(*) FROM %1")
+                .arg(QpSqlQuery::escapeField(metaObject.tableName()));
+
+    QpSqlCondition c = condition;
+    c.setBindValuesAsString(true);
+    if(c.isValid())
+        q.append(QString(" WHERE %1").arg(c.toWhereClause()));
+
+    query.prepare(q);
 
     if (!query.exec()
             || !query.first()
@@ -244,8 +252,10 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
     // Add simple properties
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
         QVariant value = property.metaProperty().read(object);
-        if(property.metaProperty().isEnumType() && value == QVariant(0)) {
-            value = "NULL";
+        if(value == QVariant(0)
+           && (property.metaProperty().isEnumType()
+               || property.metaProperty().isFlagType())) {
+            query.addRawField(property.columnName(), "NULL");
         }
         else {
             if(property.metaProperty().isEnumType() && !property.metaProperty().isFlagType())
@@ -255,11 +265,9 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
                 value = value.toInt();
 #endif
 
-            if(property.metaProperty().isFlagType() && value == QVariant(0))
-                value = "NULL";
+            query.addField(property.columnName(), value);
         }
 
-        query.addField(property.columnName(), value);
     }
 }
 
@@ -304,24 +312,15 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
 
 void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
                                                       const QSqlRecord record,
-                                                      QObject *object,
-                                                      int primaryKeyRecordIndex,
-                                                      int updateTimeRecordIndex,
-                                                      int deletedFlagRecordIndex)
+                                                      QObject *object)
 {
-#ifdef QP_NO_TIMESTAMPS
-    Q_UNUSED(updateTimeRecordIndex);
-#endif
-
-    if(primaryKeyRecordIndex < 0)
-        primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
-
     int fieldCount = record.count();
     for (int i = 0; i < fieldCount; ++i) {
-
+        QString fieldName = record.fieldName(i);
         QMetaProperty property = query.propertyForIndex(record, object->metaObject(), i);
         if(!property.isValid()) {
-            object->setProperty(record.fieldName(i).toLatin1(), query.value(i));
+            if(fieldName.startsWith("_Qp_"))
+                object->setProperty(fieldName.toLatin1(), query.value(i));
             continue;
         }
 
@@ -344,30 +343,6 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
 
         property.write(object, value);
     }
-
-
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, query.value(primaryKeyRecordIndex));
-
-    if(deletedFlagRecordIndex < 0)
-        deletedFlagRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG);
-
-    bool deleted = query.value(deletedFlagRecordIndex).toBool();
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG, deleted);
-
-#ifndef QP_NO_TIMESTAMPS
-    if(updateTimeRecordIndex < 0)
-        updateTimeRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
-
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, query.value(updateTimeRecordIndex));
-
-    int creationTimeRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME);
-
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME, query.value(creationTimeRecordIndex));
-#endif
-#ifndef QP_NO_LOCKS
-    int lockRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_LOCK);
-    object->setProperty(QpDatabaseSchema::COLUMN_LOCK, query.value(lockRecordIndex));
-#endif
 }
 
 bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object)
@@ -510,9 +485,9 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToManyRelatio
                                             "\n\t\tON %2.%3 = tableToUpdate.%4 "
                                             "\n\tSET tableToUpdate.%5 = %6 "
                                             "\n\tWHERE %7")
-            .arg(relation.metaObject().tableName())
-            .arg(relation.tableName())
-            .arg(relation.columnName())
+            .arg(QpSqlQuery::escapeField(relation.metaObject().tableName()))
+            .arg(QpSqlQuery::escapeField(relation.tableName()))
+            .arg(QpSqlQuery::escapeField(relation.columnName()))
             .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
             .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
             .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
@@ -673,8 +648,8 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
                                                              "\n\tSET tableToUpdate.%5 = %6 "
                                                              "\n\tWHERE %7")
             .arg(QpSqlQuery::escapeField(relation.reverseRelation().metaObject().tableName()))
-            .arg(relation.tableName())
-            .arg(relation.reverseRelation().columnName())
+            .arg(QpSqlQuery::escapeField(relation.tableName()))
+            .arg(QpSqlQuery::escapeField(relation.reverseRelation().columnName()))
             .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
             .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
             .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
@@ -703,10 +678,10 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
             .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
             .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
             .arg(relatedObjectsWhereClause2.toWhereClause())
-            .arg(relation.tableName())
-            .arg(relation.reverseRelation().columnName())
+            .arg(QpSqlQuery::escapeField(relation.tableName()))
+            .arg(QpSqlQuery::escapeField(relation.reverseRelation().columnName()))
             .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
-            .arg(relation.columnName())
+            .arg(QpSqlQuery::escapeField(relation.columnName()))
             .arg(primaryKey.toString());
 
     QpSqlQuery setUpdateTimeOnRelatedObjectsQuery(data->storage->database());
@@ -887,12 +862,14 @@ int QpSqlDataAccessObjectHelper::foreignKey(const QpMetaProperty relation, QObje
     return keys.first();
 }
 
-QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relation, QObject *object)
+QpSqlQuery QpSqlDataAccessObjectHelper::queryForForeignKeys(const QpMetaProperty &relation)
 {
+    if(data->queriesForRelation.contains(relation))
+        return data->queriesForRelation.value(relation);
+
     QString foreignColumn;
     QString keyColumn;
     QString sortColumn;
-    int key = Qp::Private::primaryKey(object);
 
     QpMetaProperty::Cardinality cardinality = relation.cardinality();
 
@@ -922,15 +899,25 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
 
     QpSqlQuery query(data->storage->database());
     query.setTable(relation.tableName());
-    query.setWhereCondition(QpSqlCondition(keyColumn,
-                                           QpSqlCondition::EqualTo,
-                                           key));
     query.addField(foreignColumn);
     query.setForwardOnly(true);
+    QpSqlCondition c(keyColumn, QpSqlCondition::EqualTo, ":keyColumn");
+    c.setBindValuesAsString(true);
+    query.setWhereCondition(c);
     query.addOrder(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
     if (!sortColumn.isEmpty())
         query.addOrder(sortColumn);
     query.prepareSelect();
+    data->queriesForRelation.insert(relation, query);
+    return query;
+}
+
+QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relation, QObject *object)
+{
+    QpSqlQuery query = queryForForeignKeys(relation);
+
+    int pk = Qp::Private::primaryKey(object);
+    query.bindValue(QString(":keyColumn"), QVariant(pk));
 
     if (!query.exec()
             || query.lastError().isValid()) {
@@ -940,7 +927,7 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
 
     bool ok = true;
     QList<int> keys;
-    keys.reserve(query.size());
+
     while (query.next()) {
         int currentKey = query.value(0).toInt(&ok);
         if (ok)

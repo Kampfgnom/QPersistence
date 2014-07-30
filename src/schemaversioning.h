@@ -28,6 +28,7 @@ public:
     QpSchemaVersioning(QpStorage *storage, QObject *parent = 0);
     ~QpSchemaVersioning();
 
+    void setInitialVersion(const QpSchemaVersioning::Version &version, const QString description);
     Version currentDatabaseVersion() const;
     Version latestVersion() const;
     void registerUpgradeScript(const Version &version, const QString &script);

@@ -32,7 +32,7 @@ template<class T, class... Superclasses> void registerClass() { return QpStorage
 template<class T> QpDao<T> *dataAccessObject() { return QpStorage::defaultStorage()->dataAccessObject<T>(); }
 template<class T> QSharedPointer<T> read(int id) { return QpStorage::defaultStorage()->read<T>(id); }
 template<class T> QList<QSharedPointer<T> > readAll() { return QpStorage::defaultStorage()->readAll<T>(); }
-template<class T> int count() { return QpStorage::defaultStorage()->count<T>(); }
+template<class T> int count(const QpSqlCondition &condition = QpSqlCondition()) { return QpStorage::defaultStorage()->count<T>(condition); }
 template<class T> QSharedPointer<T> create() { return QpStorage::defaultStorage()->create<T>(); }
 template<class T> UpdateResult update(QSharedPointer<T> object) { return QpStorage::defaultStorage()->update(object); }
 template<class T> bool remove(QSharedPointer<T> object) { return QpStorage::defaultStorage()->remove(object); }

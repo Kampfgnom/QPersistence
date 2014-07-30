@@ -7,6 +7,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "objectlistmodel.h"
+#include "throttledfetchproxymodel.h"
 
 class QpSortFilterProxyObjectModelBase : public QSortFilterProxyModel
 {
@@ -22,6 +23,7 @@ public:
     void setIncludeDeletedObjects(bool includeDeletedObjects);
 
     QModelIndex indexForObject(QSharedPointer<QObject> object) const;
+    QSharedPointer<QObject> objectByIndex(const QModelIndex &index) const;
 
 private:
     bool m_includeDeletedObjects;
@@ -45,6 +47,12 @@ protected:
     bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const Q_DECL_OVERRIDE;
     virtual bool filterAcceptsObject(QSharedPointer<T> object) const;
 };
+
+template<class T>
+QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QObject *parent) :
+    QpSortFilterProxyObjectModelBase(parent)
+{
+}
 
 template<class T>
 QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QpObjectListModel<T> *sourceModel, QObject *parent) :
@@ -71,12 +79,6 @@ QList<QSharedPointer<T> > QpSortFilterProxyObjectModel<T>::objects() const
 }
 
 template<class T>
-QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QObject *parent) :
-    QpSortFilterProxyObjectModelBase(parent)
-{
-}
-
-template<class T>
 QpObjectListModel<T> *QpSortFilterProxyObjectModel<T>::sourceModel() const
 {
     QAbstractItemModel *source = QSortFilterProxyModel::sourceModel();
@@ -89,8 +91,7 @@ QpObjectListModel<T> *QpSortFilterProxyObjectModel<T>::sourceModel() const
 template<class T>
 QSharedPointer<T> QpSortFilterProxyObjectModel<T>::objectByIndex(const QModelIndex &index) const
 {
-    QModelIndex i = mapToSource(index);
-    return sourceModel()->objectByIndex(i);
+    return qSharedPointerCast<T>(QpSortFilterProxyObjectModelBase::objectByIndex(index));
 }
 
 template<class T>

@@ -37,6 +37,11 @@ QpHasOneBase::~QpHasOneBase()
 {
 }
 
+QSharedPointer<QObject> QpHasOneBase::objectWithoutResolving() const
+{
+    return data->object;
+}
+
 QSharedPointer<QObject> QpHasOneBase::object() const
 {
     if(Qp::Private::primaryKey(data->parent) == 0)

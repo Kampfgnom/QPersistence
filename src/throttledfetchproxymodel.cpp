@@ -50,3 +50,20 @@ QModelIndex QpThrottledFetchProxyModel::indexForObject(QSharedPointer<QObject> o
 
     return QModelIndex();
 }
+
+QSharedPointer<QObject> QpThrottledFetchProxyModel::objectByIndex(const QModelIndex &index) const
+{
+    QModelIndex i = mapToSource(index);
+    QAbstractItemModel *source = QIdentityProxyModel::sourceModel();
+    if(QpSortFilterProxyObjectModelBase *model = qobject_cast<QpSortFilterProxyObjectModelBase *>(source)) {
+        return model->objectByIndex(i);
+    }
+    else if(QpObjectListModelBase *model2 = qobject_cast<QpObjectListModelBase *>(source)) {
+        return model2->objectByIndex(i);
+    }
+    else if(QpThrottledFetchProxyModel *model3 = qobject_cast<QpThrottledFetchProxyModel *>(source)) {
+        return model3->objectByIndex(i);
+    }
+
+    return QSharedPointer<QObject>();
+}
