@@ -22,6 +22,9 @@ class QpDatabaseSchema : public QObject
 public:
     static const char* COLUMN_NAME_DELETEDFLAG;
     static const char* COLUMN_NAME_PRIMARY_KEY;
+    static const char* COLUMN_NAME_REVISION;
+    static const char* COLUMN_NAME_ACTION;
+    static const char* TABLE_NAME_TEMPLATE_HISTORY;
     static const char* ONDELETE_CASCADE;
 #ifndef QP_NO_TIMESTAMPS
     static const char* COLUMN_NAME_CREATION_TIME;
@@ -54,6 +57,9 @@ public:
     void addColumn(const QpMetaProperty &metaProperty);
     void addColumn(const QString &table, const QString &column, const QString &type);
     bool dropColumns(const QString &table, const QStringList &columns);
+
+    bool enableHistoryTracking();
+    bool enableHistoryTracking(const QMetaObject &metaObject);
 
     void cleanSchema();
     void createCleanSchema();

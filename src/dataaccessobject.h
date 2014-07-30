@@ -39,7 +39,11 @@ public:
 
     int count() const;
     QList<int> allKeys(int skip = -1, int count = -1) const;
-    QList<QSharedPointer<QObject> > readAllObjects(int skip = -1, int count = -1, const QpSqlCondition &condition = QpSqlCondition()) const;
+    QList<QSharedPointer<QObject> > readAllObjects(int skip = -1,
+                                                   int count = -1,
+                                                   const QpSqlCondition &condition = QpSqlCondition()) const;
+    QList<QSharedPointer<QObject> > readObjectsUpdatedAfterRevision(int revision) const;
+    QList<QSharedPointer<QObject> > readAllObjects(QpSqlQuery &query) const;
     QSharedPointer<QObject> readObject(int id) const;
     QSharedPointer<QObject> createObject();
     Qp::UpdateResult updateObject(QSharedPointer<QObject> object);
@@ -48,8 +52,9 @@ public:
     bool undelete(QSharedPointer<QObject> object);
     enum SynchronizeMode { NormalMode, IgnoreTimes };
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode = NormalMode);
-    bool synchronizeAllObjects();
     bool incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName);
+
+    int latestRevision() const;
 
 #ifndef QP_NO_TIMESTAMPS
     QList<QSharedPointer<QObject>> createdSince(const QDateTime &time);
@@ -60,6 +65,9 @@ public:
 
     QpError lastError() const;
     QpCache cache() const;
+
+public slots:
+    bool synchronizeAllObjects();
 
 Q_SIGNALS:
     void objectCreated(QSharedPointer<QObject>);

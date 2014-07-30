@@ -25,6 +25,9 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 const char* QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG("_Qp_deleted");
 const char* QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
 const char* QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
+const char* QpDatabaseSchema::COLUMN_NAME_REVISION("revision");
+const char* QpDatabaseSchema::COLUMN_NAME_ACTION("`action`");
+const char* QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY("%1_Qp_history");
 #ifndef QP_NO_TIMESTAMPS
 const char* QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
 const char* QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME("_Qp_updateTime");
@@ -146,7 +149,7 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
 
                 bool isFlag = metaProperty.metaProperty().isFlagType();
 
-                 // Start at 1 because first value corresponds to MySQL empty string
+                // Start at 1 because first value corresponds to MySQL empty string
                 if(metaEnum.value(0) == 0) {
                     i = 1;
                     offset = 1;
@@ -422,6 +425,78 @@ bool QpDatabaseSchema::dropColumns(const QString &table, const QStringList &colu
     return true;
 }
 
+bool QpDatabaseSchema::enableHistoryTracking()
+{
+    foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
+        if(!enableHistoryTracking(metaObject.metaObject()))
+            return false;
+    }
+    return true;
+}
+
+bool QpDatabaseSchema::enableHistoryTracking(const QMetaObject &metaObject)
+{
+    if (!data->database.transaction()) {
+        data->storage->setLastError(QpError(data->database.lastError()));
+        return false;
+    }
+
+    QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
+    QString table = meta.tableName();
+    QpSqlQuery query(data->database);
+
+    if(!query.exec(QString::fromLatin1(
+                       "CREATE TABLE IF NOT EXISTS `%1_Qp_history` ("
+                       "`revision` INTEGER PRIMARY KEY AUTO_INCREMENT,"
+                       "`_Qp_ID` INTEGER NOT NULL, "
+                       "`action` ENUM('INSERT', 'UPDATE', 'MARK_AS_DELETE', 'DELETE') DEFAULT 'INSERT',"
+                       "`datetime` DOUBLE NOT NULL,"
+                       "`user` VARCHAR(100) NOT NULL,"
+                       "UNIQUE KEY (`_Qp_ID`, `revision`));")
+                   .arg(table))
+            || !query.exec(QString::fromLatin1(
+                               "CREATE TRIGGER `%1_Qp_history_INSERT` AFTER INSERT ON `%1` FOR EACH ROW "
+                               "INSERT INTO `%1_Qp_history` VALUES ("
+                               "NULL, "
+                               "NEW.`_Qp_ID`,"
+                               "'INSERT', "
+                               "NOW(6) + 0,"
+                               "CURRENT_USER()"
+                               ");")
+                           .arg(table))
+            || !query.exec(QString::fromLatin1(
+                               "CREATE TRIGGER `%1_Qp_history_UPDATE` AFTER UPDATE ON `%1` FOR EACH ROW "
+                               "INSERT INTO `%1_Qp_history` VALUES ("
+                               "NULL, "
+                               "NEW.`_Qp_ID`,"
+                               "CASE WHEN NEW.`_Qp_deleted` = 0 THEN 'UPDATE' ELSE 'MARK_AS_DELETE' END, "
+                               "NOW(6) + 0,"
+                               "CURRENT_USER()"
+                               ");")
+                           .arg(table))
+            || !query.exec(QString::fromLatin1(
+                               "CREATE TRIGGER `%1_Qp_history_DELETE` BEFORE DELETE ON `%1` FOR EACH ROW "
+                               "INSERT INTO `%1_Qp_history` VALUES ("
+                               "NULL, "
+                               "OLD.`_Qp_ID`,"
+                               "'DELETE', "
+                               "NOW(6) + 0,"
+                               "CURRENT_USER()"
+                               ");")
+                           .arg(table))) {
+        data->storage->setLastError(QpError(query.lastError()));
+        data->database.rollback();
+        return false;
+    }
+
+    if (!data->database.commit()) {
+        data->storage->setLastError(QpError(data->database.lastError()));
+        return false;
+    }
+
+    return true;
+}
+
 void QpDatabaseSchema::cleanSchema()
 {
 #ifdef QP_FOR_SQLITE
@@ -469,6 +544,7 @@ void QpDatabaseSchema::createCleanSchema()
 
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
         createTable(metaObject.metaObject());
+        enableHistoryTracking(metaObject.metaObject());
     }
 
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
