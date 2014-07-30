@@ -17,6 +17,7 @@ public:
     explicit QpHasOneBase(const QString &name, QObject *parent);
     virtual ~QpHasOneBase();
 
+    QSharedPointer<QObject> objectWithoutResolving() const;
     QSharedPointer<QObject> object() const;
     void setObject(const QSharedPointer<QObject> object) const;
 
@@ -34,6 +35,8 @@ public:
 
     operator QSharedPointer<T> () const { return qSharedPointerCast<T>(object()); }
     QpHasOne &operator=(const QSharedPointer<T> object) { setObject(qSharedPointerCast<QObject>(object)); return *this; }
+    bool operator==(QSharedPointer<T> object) { return objectWithoutResolving() == object; }
+    bool operator!=(QSharedPointer<T> object) { return !operator ==(object); }
 };
 
 #ifndef QpRelation
