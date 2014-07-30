@@ -27,10 +27,17 @@ public:
     QpMetaObject metaObject;
     mutable QHash<QString, QString> attributes;
     mutable QString columnName;
+
+    static QSharedDataPointer<QpMetaPropertyPrivate> shared_null();
 };
 
+QSharedDataPointer<QpMetaPropertyPrivate> QpMetaPropertyPrivate::shared_null() {
+    static QSharedDataPointer<QpMetaPropertyPrivate>& shared_null = *new QSharedDataPointer<QpMetaPropertyPrivate>(new QpMetaPropertyPrivate);
+    return shared_null;
+}
+
 QpMetaProperty::QpMetaProperty() :
-    data(new QpMetaPropertyPrivate)
+    data(QpMetaPropertyPrivate::shared_null())
 {
 }
 
