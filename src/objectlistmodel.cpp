@@ -39,7 +39,10 @@ int QpObjectListModelBase::fetchCount() const
 
 void QpObjectListModelBase::setFetchCount(int fetchCount)
 {
-    d->fetchCount = fetchCount;
+    if(fetchCount < 0)
+        d->fetchCount = std::numeric_limits<int>::max();
+    else
+        d->fetchCount = fetchCount;
 }
 
 QpDaoBase *QpObjectListModelBase::dataAccessObject() const
