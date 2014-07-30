@@ -414,3 +414,14 @@ QString QpMetaProperty::typeName() const
 {
     return data->typeName;
 }
+
+
+uint qHash(const QpMetaProperty &t, uint seed)
+{
+    return qHash(t.metaObject().className(), seed) ^ qHash(t.metaProperty().name(), seed);
+}
+
+bool operator==(const QpMetaProperty &a1, const QpMetaProperty &a2)
+{
+    return a1.name() == a2.name() && a1.metaObject() == a2.metaObject();
+}

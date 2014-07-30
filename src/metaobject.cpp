@@ -289,3 +289,9 @@ QString QpMetaObject::removeNamespaces(const QString &classNameWithNamespaces)
         className = className.mid(namespaceIndex + 2);
     return className;
 }
+
+
+bool operator==(const QpMetaObject &a1, const QpMetaObject &a2)
+{
+    return a1.className() == a2.className();
+}
