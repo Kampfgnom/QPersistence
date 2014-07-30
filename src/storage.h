@@ -52,7 +52,7 @@ public:
     template<class T> QpDao<T> *dataAccessObject();
     template<class T> int primaryKey(QSharedPointer<T> object);
     template<class T> QSharedPointer<T> read(int id);
-    template<class T> QList<QSharedPointer<T> > readAll();
+    template<class T> QList<QSharedPointer<T> > readAll(const QpSqlCondition &condition = QpSqlCondition());
     template<class T> int count(const QpSqlCondition &condition = QpSqlCondition());
     template<class T> QSharedPointer<T> create();
     template<class T> Qp::UpdateResult update(QSharedPointer<T> object);
@@ -133,9 +133,9 @@ template<class T> QSharedPointer<T> QpStorage::read(int id)
 }
 
 template<class T>
-QList<QSharedPointer<T> > QpStorage::readAll()
+QList<QSharedPointer<T> > QpStorage::readAll(const QpSqlCondition &condition)
 {
-    return dataAccessObject<T>()->readAllObjects();
+    return dataAccessObject<T>()->readAllObjects(-1, -1, condition);
 }
 
 template<class T>

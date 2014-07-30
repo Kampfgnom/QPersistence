@@ -105,9 +105,9 @@ class QpDao : public QpDaoBase
 {
 public:
     QSharedPointer<T> read(int id) { return qSharedPointerCast<T>(readObject(id)); }
-    QList<QSharedPointer<T> > readAllObjects(int skip = -1, int count = -1) const
+    QList<QSharedPointer<T> > readAllObjects(int skip = -1, int count = -1, const QpSqlCondition &condition = QpSqlCondition()) const
     {
-        return Qp::castList<T>(QpDaoBase::readAllObjects(skip, count));
+        return Qp::castList<T>(QpDaoBase::readAllObjects(skip, count, condition));
     }
 
 protected:
