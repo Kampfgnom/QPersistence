@@ -305,27 +305,15 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
 
 void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
                                                       const QSqlRecord record,
-                                                      QObject *object,
-                                                      int primaryKeyRecordIndex,
-                                                      int deletedFlagRecordIndex,
-                                                      int lockRecordIndex)
+                                                      QObject *object)
 {
     int fieldCount = record.count();
     for (int i = 0; i < fieldCount; ++i) {
-        if(i == primaryKeyRecordIndex
-           || i == deletedFlagRecordIndex
-           || i == lockRecordIndex)
-            continue;
-
         QString fieldName = record.fieldName(i);
-        if(fieldName.startsWith("_Qp_")
-           && !(QChar(fieldName[4]) == QLatin1Char('F'))
-           && !(QChar(fieldName[5]) == QLatin1Char('K')))
-            continue;
-
         QMetaProperty property = query.propertyForIndex(record, object->metaObject(), i);
         if(!property.isValid()) {
-            object->setProperty(fieldName.toLatin1(), query.value(i));
+            if(fieldName.startsWith("_Qp_"))
+                object->setProperty(fieldName.toLatin1(), query.value(i));
             continue;
         }
 
@@ -348,23 +336,6 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
 
         property.write(object, value);
     }
-
-    if(primaryKeyRecordIndex < 0)
-        primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, query.value(primaryKeyRecordIndex));
-
-    if(deletedFlagRecordIndex < 0)
-        deletedFlagRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG);
-
-    QVariant deleted = query.value(deletedFlagRecordIndex);
-    if(deleted.toBool())
-        object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG, deleted);
-
-#ifndef QP_NO_LOCKS
-    if(lockRecordIndex < 0)
-        lockRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_LOCK);
-    object->setProperty(QpDatabaseSchema::COLUMN_LOCK, query.value(lockRecordIndex));
-#endif
 }
 
 bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object)

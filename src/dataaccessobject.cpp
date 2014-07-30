@@ -148,8 +148,6 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
     QList<QSharedPointer<QObject> > result;
     QSqlRecord record = query.record();
     int primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
-    int deletedFlagRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG);
-    int lockRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_LOCK);
 
     while(query.next()) {
         int key = query.value(primaryKeyRecordIndex).toInt();
@@ -168,10 +166,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
 
         data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query,
                                                                         record,
-                                                                        currentObject.data(),
-                                                                        primaryKeyRecordIndex,
-                                                                        deletedFlagRecordIndex,
-                                                                        lockRecordIndex);
+                                                                        currentObject.data());
         result.append(currentObject);
     }
 

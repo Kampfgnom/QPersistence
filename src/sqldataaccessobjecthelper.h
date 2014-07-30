@@ -42,8 +42,7 @@ public:
     double readCreationTime(QObject *object);
 #endif
 
-    void readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record,
-                             QObject *object, int primaryKeyRecordIndex = -1, int deletedFlagRecordIndex = -1, int lockRecordIndex = -1);
+    void readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record, QObject *object);
 
     int foreignKey(const QpMetaProperty relation, QObject *object);
     QList<int> foreignKeys(const QpMetaProperty relation, QObject *object);
