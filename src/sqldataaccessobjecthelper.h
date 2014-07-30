@@ -63,6 +63,8 @@ private:
 
     bool adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object);
 
+    QpSqlQuery queryForForeignKeys(const QpMetaProperty &relation);
+
     QList<QpSqlQuery> queriesThatAdjustOneToManyRelation(const QpMetaProperty &relation, QObject *object);
     QList<QpSqlQuery> queriesThatAdjustOneToOneRelation(const QpMetaProperty &relation, QObject *object);
     QList<QpSqlQuery> queriesThatAdjustToOneRelation(const QpMetaProperty &relation, QObject *object);
