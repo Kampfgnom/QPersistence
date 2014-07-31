@@ -180,7 +180,11 @@ void QpObjectListModelBase::objectInserted(QSharedPointer<QObject> object)
 
 void QpObjectListModelBase::objectUpdated(QSharedPointer<QObject> object)
 {
-    QModelIndex i = indexForObject(object);
+    QModelIndex i;
+    while(!(i = indexForObject(object)).isValid() && canFetchMore()) {
+        fetchMore();
+    }
+
     if(i.isValid())
         emit dataChanged(i, i);
 }
