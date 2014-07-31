@@ -27,10 +27,17 @@ public:
     QpMetaObject metaObject;
     mutable QHash<QString, QString> attributes;
     mutable QString columnName;
+
+    static QSharedDataPointer<QpMetaPropertyPrivate> shared_null();
 };
 
+QSharedDataPointer<QpMetaPropertyPrivate> QpMetaPropertyPrivate::shared_null() {
+    static QSharedDataPointer<QpMetaPropertyPrivate>& shared_null = *new QSharedDataPointer<QpMetaPropertyPrivate>(new QpMetaPropertyPrivate);
+    return shared_null;
+}
+
 QpMetaProperty::QpMetaProperty() :
-    data(new QpMetaPropertyPrivate)
+    data(QpMetaPropertyPrivate::shared_null())
 {
 }
 
@@ -413,4 +420,15 @@ QString QpMetaProperty::name() const
 QString QpMetaProperty::typeName() const
 {
     return data->typeName;
+}
+
+
+uint qHash(const QpMetaProperty &t, uint seed)
+{
+    return qHash(t.metaObject().className(), seed) ^ qHash(t.metaProperty().name(), seed);
+}
+
+bool operator==(const QpMetaProperty &a1, const QpMetaProperty &a2)
+{
+    return a1.name() == a2.name() && a1.metaObject() == a2.metaObject();
 }

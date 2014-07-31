@@ -147,15 +147,10 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
 
     QList<QSharedPointer<QObject> > result;
     QSqlRecord record = query.record();
-    int index = record.indexOf(QLatin1String(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
-    int updateTimeRecordIndex = -1;
-
-#ifndef QP_NO_TIMESTAMPS
-    updateTimeRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
-#endif
+    int primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
 
     while(query.next()) {
-        int key = query.value(index).toInt();
+        int key = query.value(primaryKeyRecordIndex).toInt();
 
         QSharedPointer<QObject> currentObject;
         if (data->cache.contains(key)) {
@@ -169,7 +164,9 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
             Qp::Private::enableSharedFromThis(currentObject);
         }
 
-        data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query, record, currentObject.data(), index, updateTimeRecordIndex);
+        data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query,
+                                                                        record,
+                                                                        currentObject.data());
         result.append(currentObject);
     }
 

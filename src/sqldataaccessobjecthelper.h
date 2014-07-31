@@ -42,8 +42,7 @@ public:
     double readCreationTime(QObject *object);
 #endif
 
-    void readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record,
-                             QObject *object, int primaryKeyRecordIndex = -1, int updateTimeRecordIndex = -1, int deletedFlagRecordIndex = -1);
+    void readQueryIntoObject(const QpSqlQuery &query, const QSqlRecord record, QObject *object);
 
     int foreignKey(const QpMetaProperty relation, QObject *object);
     QList<int> foreignKeys(const QpMetaProperty relation, QObject *object);
@@ -62,6 +61,8 @@ private:
                       QpSqlQuery &query);
 
     bool adjustRelationsInDatabase(const QpMetaObject &metaObject, QObject *object);
+
+    QpSqlQuery queryForForeignKeys(const QpMetaProperty &relation);
 
     QList<QpSqlQuery> queriesThatAdjustOneToManyRelation(const QpMetaProperty &relation, QObject *object);
     QList<QpSqlQuery> queriesThatAdjustOneToOneRelation(const QpMetaProperty &relation, QObject *object);

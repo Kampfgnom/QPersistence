@@ -27,7 +27,14 @@ public:
     mutable QHash<QString, QpMetaProperty> metaPropertiesByName;
 
     static QHash<QString, QpMetaObject> metaObjectForName;
+
+    static QSharedDataPointer<QpMetaObjectPrivate> shared_null();
 };
+
+QSharedDataPointer<QpMetaObjectPrivate> QpMetaObjectPrivate::shared_null() {
+    static QSharedDataPointer<QpMetaObjectPrivate>& shared_null = *new QSharedDataPointer<QpMetaObjectPrivate>(new QpMetaObjectPrivate);
+    return shared_null;
+}
 
 typedef QHash<QString, QpMetaObject> HashStringToMetaObject;
 QP_DEFINE_STATIC_LOCAL(HashStringToMetaObject, MetaObjectsForName)
@@ -84,7 +91,7 @@ QList<QpMetaObject> QpMetaObject::registeredMetaObjects()
 }
 
 QpMetaObject::QpMetaObject() :
-    data(new QpMetaObjectPrivate)
+    data(QpMetaObjectPrivate::shared_null())
 {
 }
 
@@ -288,4 +295,10 @@ QString QpMetaObject::removeNamespaces(const QString &classNameWithNamespaces)
     if(namespaceIndex > 0)
         className = className.mid(namespaceIndex + 2);
     return className;
+}
+
+
+bool operator==(const QpMetaObject &a1, const QpMetaObject &a2)
+{
+    return a1.className() == a2.className();
 }
