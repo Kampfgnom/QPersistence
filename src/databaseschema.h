@@ -60,6 +60,7 @@ public:
 
     bool enableHistoryTracking();
     bool enableHistoryTracking(const QMetaObject &metaObject);
+    bool enableHistoryTracking(const QString &table);
 
     void cleanSchema();
     void createCleanSchema();
