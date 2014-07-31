@@ -12,6 +12,7 @@
 #include "../src/relation_hasone.h"
 #include "../src/schemaversioning.h"
 #include "../src/sortfilterproxyobjectmodel.h"
+#include "../src/sqlquery.h"
 #include "../src/storage.h"
 #include "../src/throttledfetchproxymodel.h"
 #include "../src/usermanagement.h"
