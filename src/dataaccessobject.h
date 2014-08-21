@@ -50,7 +50,7 @@ public:
     bool removeObject(QSharedPointer<QObject> object);
     bool markAsDeleted(QSharedPointer<QObject> object);
     bool undelete(QSharedPointer<QObject> object);
-    enum SynchronizeMode { NormalMode, IgnoreTimes };
+    enum SynchronizeMode { NormalMode, IgnoreRevision };
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode = NormalMode);
     bool incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName);
 

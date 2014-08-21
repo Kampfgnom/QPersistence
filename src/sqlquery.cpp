@@ -47,6 +47,7 @@ public:
     QList<QStringList> foreignKeys;
     QHash<QString, QStringList> keys;
     QHash<int, int> propertyIndexes;
+    QStringList groups;
     int skip;
     bool ignore;
     bool forUpdate;
@@ -262,6 +263,11 @@ void QpSqlQuery::addJoin(const QString &direction, const QString &table, const Q
     data->joins.append(join);
 }
 
+void QpSqlQuery::addGroupBy(const QString &groupBy)
+{
+    data->groups.append(groupBy);
+}
+
 void QpSqlQuery::prepareCreateTable()
 {
     QString query("CREATE TABLE ");
@@ -365,6 +371,11 @@ void QpSqlQuery::prepareSelect()
 
     if (data->whereCondition.isValid()) {
         query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
+    }
+
+    if(!data->groups.isEmpty()) {
+        query.append("\n\tGROUP BY ");
+        query.append(data->groups.join(','));
     }
 
     if (!data->orderBy.isEmpty()) {

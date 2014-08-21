@@ -48,6 +48,7 @@ public:
     void addOrder(const QString &field, Order order = Ascending);
     void setForUpdate(bool forUpdate);
     void addJoin(const QString &direction, const QString &table, const QString &on);
+    void addGroupBy(const QString &groupBy);
 
     void prepareCreateTable();
     void prepareDropTable();

@@ -219,25 +219,16 @@ QSharedPointer<QObject> QpDaoBase::createObject()
     return obj;
 }
 
-#ifndef QP_NO_TIMESTAMPS
-Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2) Q_REQUIRED_RESULT;
-Q_DECL_CONSTEXPR static inline bool qpFuzzyCompare(double p1, double p2)
-{
-    return (qAbs(p1 - p2) * 10000000000000000. <= qMin(qAbs(p1), qAbs(p2)));
-}
-#endif
-
 Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 {
-#ifndef QP_NO_TIMESTAMPS
-    double databaseTime = data->storage->updateTimeInDatabase(object.data());
-    double objectTime = data->storage->updateTimeInObject(object.data());
+    QObject *obj = object.data();
+    int localRevision = data->storage->revisionInObject(obj);
+    int remoteRevision = data->storage->revisionInDatabase(obj);
 
-    if(databaseTime > objectTime)
+    if(localRevision < remoteRevision)
         return Qp::UpdateConflict;
 
-    Q_ASSERT(qpFuzzyCompare(databaseTime, objectTime));
-#endif
+    Q_ASSERT(localRevision == remoteRevision);
 
     if (!data->storage->sqlDataAccessObjectHelper()->updateObject(data->metaObject, object.data())) {
         setLastError(data->storage->lastError());
@@ -285,17 +276,17 @@ bool QpDaoBase::undelete(QSharedPointer<QObject> object)
 
 Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode)
 {
-    if(mode == IgnoreTimes)
+    if(mode == IgnoreRevision)
         return sync(object);
 
-#ifndef QP_NO_TIMESTAMPS
     QObject *obj = object.data();
-    double localTime = data->storage->updateTimeInObject(obj);
-    double remoteTime = data->storage->updateTimeInDatabase(obj);
+    int localRevision = data->storage->revisionInObject(obj);
+    int remoteRevision = data->storage->revisionInDatabase(obj);
 
-    if(qpFuzzyCompare(localTime, remoteTime))
+    if(localRevision == remoteRevision)
         return Qp::Unchanged;
-#endif
+
+    Q_ASSERT(localRevision < remoteRevision);
 
     return sync(object);
 }
@@ -313,7 +304,7 @@ bool QpDaoBase::synchronizeAllObjects()
 
 
     foreach(QSharedPointer<QObject> object, readObjectsUpdatedAfterRevision(data->lastSynchronizedRevision)) {
-        data->lastSynchronizedRevision = qMax(data->lastSynchronizedRevision, object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt());
+        data->lastSynchronizedRevision = qMax(data->lastSynchronizedRevision, data->storage->revisionInObject(object.data()));
 
         QList<QpMetaProperty> rs = QpMetaObject::forObject(object).relationProperties();
         for(int i = 0, c = rs.size(); i < c; ++i) {

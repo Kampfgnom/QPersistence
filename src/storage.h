@@ -94,6 +94,9 @@ public:
     void enableStorageFrom(QObject *object);
     static QpStorage *forObject(const QObject *object);
 
+    int revisionInDatabase(QObject *object);
+    int revisionInObject(QObject *object);
+
 private:
     void registerDataAccessObject(QpDaoBase *dao, const QMetaObject *metaObject);
     QExplicitlySharedDataPointer<QpStorageData> data;
@@ -163,7 +166,7 @@ bool QpStorage::incrementNumericColumn(QSharedPointer<T> object, const QString &
     if(!dao->incrementNumericColumn(object, fieldName))
         return false;
 
-    return dao->synchronizeObject(object, QpDao<T>::IgnoreTimes) == Qp::Updated;
+    return dao->synchronizeObject(object, QpDao<T>::IgnoreRevision) == Qp::Updated;
 }
 
 
