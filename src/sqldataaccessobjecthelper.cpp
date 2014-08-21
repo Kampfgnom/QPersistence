@@ -156,13 +156,6 @@ QpSqlQuery QpSqlDataAccessObjectHelper::readObjectsUpdatedAfterRevision(const Qp
     QpSqlQuery query(data->storage->database());
     query.setTable(table);
     selectFields(metaObject, query);
-    query.addRawField(qualifiedRevisionField);
-    query.addJoin("LEFT",
-                  historyTable,
-                  QString::fromLatin1("%1.%2 = %3.%2")
-                  .arg(QpSqlQuery::escapeField(table))
-                  .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
-                  .arg(historyTable));
     query.setWhereCondition(QString::fromLatin1("%1 > %2 AND %3 in ('UPDATE', 'MARK_AS_DELETE')")
                             .arg(qualifiedRevisionField)
                             .arg(revision)
