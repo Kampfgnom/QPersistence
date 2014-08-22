@@ -195,10 +195,8 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
 
     Qp::Private::setPrimaryKey(object, query.lastInsertId().toInt());
 
-#ifndef QP_NO_TIMESTAMPS
-    double time = readCreationTime(object);
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME, time);
-#endif
+    int revision = objectRevision(object);
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_REVISION, revision);
 
     return true;
 }
@@ -232,9 +230,8 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
     // Update related objects
     bool result = adjustRelationsInDatabase(metaObject, object);
 
-#ifndef QP_NO_TIMESTAMPS
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, readUpdateTime(object));
-#endif
+    int revision = objectRevision(object);
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_REVISION, revision);
 
     return result;
 }
