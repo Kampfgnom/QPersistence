@@ -166,7 +166,7 @@ void QpSqlQuery::setDebugEnabled(bool value)
 
 QString QpSqlQuery::escapedQualifiedField(const QString &field) const
 {
-    if(data->table.isEmpty())
+    if(data->table.isEmpty() || field.contains('.'))
         return escapeField(field);
 
     return QString("%1.%2")
