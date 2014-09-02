@@ -108,7 +108,6 @@ void QpSchemaVersioning::setInitialVersion(const QpSchemaVersioning::Version &ve
 {
     data->upgradeFunctions.insert(version, []{});
     data->descriptions.insert(version, description);
-    data->insertVersion(version);
 }
 
 QpSchemaVersioning::Version QpSchemaVersioning::latestVersion() const
