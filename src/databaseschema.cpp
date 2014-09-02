@@ -536,6 +536,7 @@ void QpDatabaseSchema::cleanSchema()
 
 void QpDatabaseSchema::createCleanSchema()
 {
+    setForeignKeyChecks(false);
     cleanSchema();
 
 #ifndef QP_NO_LOCKS
@@ -552,10 +553,12 @@ void QpDatabaseSchema::createCleanSchema()
     foreach (const QpMetaObject &metaObject, QpMetaObject::registeredMetaObjects()) {
         createManyToManyRelationTables(metaObject.metaObject());
     }
+    setForeignKeyChecks(true);
 }
 
 void QpDatabaseSchema::adjustSchema()
 {
+    setForeignKeyChecks(false);
 #ifndef QP_NO_LOCKS
     if (data->storage->isLocksEnabled())
         createLocksTable();
@@ -568,6 +571,30 @@ void QpDatabaseSchema::adjustSchema()
         createTableIfNotExists(metaObject.metaObject());
         createManyToManyRelationTables(metaObject.metaObject());
         addMissingColumns(metaObject.metaObject());
+    }
+    setForeignKeyChecks(true);
+}
+
+void QpDatabaseSchema::setForeignKeyChecks(bool check)
+{
+    QpSqlQuery query(data->storage->database());
+    QString q;
+
+#ifdef QP_FOR_MYSQL
+    if(check)
+        q = QString::fromLatin1("SET foreign_key_checks = 1");
+    else
+        q = QString::fromLatin1("SET foreign_key_checks = 0");
+#elif defined QP_FOR_SQLITE
+    if(check)
+        q = QString::fromLatin1("PRAGMA foreign_keys = ON");
+    else
+        q = QString::fromLatin1("PRAGMA foreign_keys = OFF");
+#endif
+
+    if(!query.exec(q)
+                   || query.lastError().isValid()) {
+        setLastError(query);
     }
 }
 

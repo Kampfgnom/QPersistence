@@ -65,6 +65,8 @@ public:
     void createCleanSchema();
     void adjustSchema();
 
+    void setForeignKeyChecks(bool check);
+
 #ifndef QP_NO_LOCKS
     void createLocksTable();
 #endif
