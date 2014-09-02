@@ -50,7 +50,7 @@ public:
     bool removeObject(QSharedPointer<QObject> object);
     bool markAsDeleted(QSharedPointer<QObject> object);
     bool undelete(QSharedPointer<QObject> object);
-    enum SynchronizeMode { NormalMode, IgnoreTimes };
+    enum SynchronizeMode { NormalMode, IgnoreRevision };
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode = NormalMode);
     bool incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName);
 
@@ -105,9 +105,9 @@ class QpDao : public QpDaoBase
 {
 public:
     QSharedPointer<T> read(int id) { return qSharedPointerCast<T>(readObject(id)); }
-    QList<QSharedPointer<T> > readAllObjects(int skip = -1, int count = -1) const
+    QList<QSharedPointer<T> > readAllObjects(int skip = -1, int count = -1, const QpSqlCondition &condition = QpSqlCondition()) const
     {
-        return Qp::castList<T>(QpDaoBase::readAllObjects(skip, count));
+        return Qp::castList<T>(QpDaoBase::readAllObjects(skip, count, condition));
     }
 
 protected:

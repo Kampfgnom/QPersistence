@@ -40,6 +40,8 @@ public:
 
     QpDaoBase *dataAccessObject() const;
 
+    void setCondition(const QpSqlCondition &condition);
+
 protected slots:
     void objectInserted(QSharedPointer<QObject>);
     void objectUpdated(QSharedPointer<QObject>);

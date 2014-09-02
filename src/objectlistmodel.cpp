@@ -14,6 +14,7 @@ public:
     QList<QSharedPointer<QObject> > objects;
     QpDaoBase *dao;
     bool objectsFromDao;
+    QpSqlCondition condition;
 };
 
 QpObjectListModelBase::QpObjectListModelBase(QpDaoBase *dao, QObject *parent) :
@@ -38,12 +39,22 @@ int QpObjectListModelBase::fetchCount() const
 
 void QpObjectListModelBase::setFetchCount(int fetchCount)
 {
-    d->fetchCount = fetchCount;
+    if(fetchCount < 0)
+        d->fetchCount = std::numeric_limits<int>::max();
+    else
+        d->fetchCount = fetchCount;
 }
 
 QpDaoBase *QpObjectListModelBase::dataAccessObject() const
 {
     return d->dao;
+}
+
+void QpObjectListModelBase::setCondition(const QpSqlCondition &condition)
+{
+    beginResetModel();
+    d->condition = condition;
+    endResetModel();
 }
 
 int QpObjectListModelBase::columnCount(const QModelIndex &parent) const
@@ -69,7 +80,7 @@ bool QpObjectListModelBase::canFetchMore(const QModelIndex &) const
     if(!d->objectsFromDao)
         return false;
 
-    return (d->objects.size() < d->dao->count());
+    return (d->objects.size() < d->dao->count(d->condition));
 }
 
 void QpObjectListModelBase::fetchMore(const QModelIndex &/*parent*/)
@@ -78,12 +89,12 @@ void QpObjectListModelBase::fetchMore(const QModelIndex &/*parent*/)
         return;
 
     int begin = d->objects.size();
-    int remainder = d->dao->count() - begin;
+    int remainder = d->dao->count(d->condition) - begin;
     int itemsToFetch = qMin(d->fetchCount, remainder);
 
     beginInsertRows(QModelIndex(), begin, begin+itemsToFetch-1);
 
-    d->objects.append(d->dao->readAllObjects(begin, itemsToFetch));
+    d->objects.append(d->dao->readAllObjects(begin, itemsToFetch, d->condition));
     for(int i = begin; i < begin + itemsToFetch; ++i) {
         d->rows.insert(d->objects.at(i), i);
     }
@@ -169,7 +180,11 @@ void QpObjectListModelBase::objectInserted(QSharedPointer<QObject> object)
 
 void QpObjectListModelBase::objectUpdated(QSharedPointer<QObject> object)
 {
-    QModelIndex i = indexForObject(object);
+    QModelIndex i;
+    while(!(i = indexForObject(object)).isValid() && canFetchMore()) {
+        fetchMore();
+    }
+
     if(i.isValid())
         emit dataChanged(i, i);
 }

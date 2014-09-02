@@ -60,10 +60,13 @@ public:
 
     bool enableHistoryTracking();
     bool enableHistoryTracking(const QMetaObject &metaObject);
+    bool enableHistoryTracking(const QString &table);
 
     void cleanSchema();
     void createCleanSchema();
     void adjustSchema();
+
+    void setForeignKeyChecks(bool check);
 
 #ifndef QP_NO_LOCKS
     void createLocksTable();

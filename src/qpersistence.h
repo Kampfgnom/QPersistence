@@ -54,6 +54,16 @@ template<class T> QVariant variant(QSharedPointer<T> object)
     return QVariant::fromValue<QSharedPointer<T> >(object);
 }
 
+template<class T> int variantUserType(QSharedPointer<T>)
+{
+    return QVariant::fromValue<QSharedPointer<T> >(QSharedPointer<T>()).userType();
+}
+
+template<class T> int variantUserType()
+{
+    return QVariant::fromValue<QSharedPointer<T> >(QSharedPointer<T>()).userType();
+}
+
 
 
 /*******************************************************

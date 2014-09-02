@@ -156,17 +156,11 @@ QpSqlQuery QpSqlDataAccessObjectHelper::readObjectsUpdatedAfterRevision(const Qp
     QpSqlQuery query(data->storage->database());
     query.setTable(table);
     selectFields(metaObject, query);
-    query.addRawField(qualifiedRevisionField);
-    query.addJoin("LEFT",
-                  historyTable,
-                  QString::fromLatin1("%1.%2 = %3.%2")
-                  .arg(QpSqlQuery::escapeField(table))
-                  .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
-                  .arg(historyTable));
     query.setWhereCondition(QString::fromLatin1("%1 > %2 AND %3 in ('UPDATE', 'MARK_AS_DELETE')")
                             .arg(qualifiedRevisionField)
                             .arg(revision)
                             .arg(QpDatabaseSchema::COLUMN_NAME_ACTION));
+    query.addOrder(qualifiedRevisionField, QpSqlQuery::Ascending);
     query.setForwardOnly(true);
     query.prepareSelect();
 
@@ -201,10 +195,8 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
 
     Qp::Private::setPrimaryKey(object, query.lastInsertId().toInt());
 
-#ifndef QP_NO_TIMESTAMPS
-    double time = readCreationTime(object);
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME, time);
-#endif
+    int revision = objectRevision(object);
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_REVISION, revision);
 
     return true;
 }
@@ -238,9 +230,8 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
     // Update related objects
     bool result = adjustRelationsInDatabase(metaObject, object);
 
-#ifndef QP_NO_TIMESTAMPS
-    object->setProperty(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME, readUpdateTime(object));
-#endif
+    int revision = objectRevision(object);
+    object->setProperty(QpDatabaseSchema::COLUMN_NAME_REVISION, revision);
 
     return result;
 }
@@ -308,6 +299,24 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
     if (data->storage->isLocksEnabled())
         query.addField(QpDatabaseSchema::COLUMN_LOCK);
 #endif
+
+    QString historyTable = QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(metaObject.tableName());
+    QString qualifiedRevisionField = QString::fromLatin1("%1.%2")
+            .arg(historyTable)
+            .arg(QpDatabaseSchema::COLUMN_NAME_REVISION);
+
+    query.addRawField(QString::fromLatin1("MAX(%1) AS %2")
+                      .arg(qualifiedRevisionField)
+                      .arg(QpDatabaseSchema::COLUMN_NAME_REVISION));
+    query.addJoin("LEFT",
+                  historyTable,
+                  QString::fromLatin1("%1 = %2.%3")
+                  .arg(query.escapedQualifiedField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY))
+                  .arg(historyTable)
+                  .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
+    query.addGroupBy(query.escapedQualifiedField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
+    query.setForwardOnly(true);
+    query.prepareSelect();
 }
 
 void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
@@ -319,7 +328,8 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
         QString fieldName = record.fieldName(i);
         QMetaProperty property = query.propertyForIndex(record, object->metaObject(), i);
         if(!property.isValid()) {
-            if(fieldName.startsWith("_Qp_"))
+            if(fieldName.startsWith("_Qp_")
+               || fieldName == QLatin1String("revision"))
                 object->setProperty(fieldName.toLatin1(), query.value(i));
             continue;
         }
@@ -780,6 +790,32 @@ int QpSqlDataAccessObjectHelper::latestRevision(const QpMetaObject &metaObject) 
     }
 
     return query.value(0).toInt() - 1;
+}
+
+int QpSqlDataAccessObjectHelper::objectRevision(QObject *object) const
+{
+    Q_ASSERT(object);
+
+    QpSqlQuery query(data->storage->database());
+    QString historyTable = QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(QpMetaObject::forObject(object).tableName());
+    query.setTable(historyTable);
+    query.setCount(1);
+    query.addRawField(QString::fromLatin1("MAX(%1) AS %1").arg(QpDatabaseSchema::COLUMN_NAME_REVISION));
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpSqlCondition::EqualTo,
+                                           Qp::Private::primaryKey(object)));
+    query.prepareSelect();
+
+    if (!query.exec()
+            || query.lastError().isValid()) {
+        setLastError(query);
+        return -1;
+    }
+
+    if(!query.first())
+        return -1;
+
+    return query.value(0).toInt();
 }
 
 int QpSqlDataAccessObjectHelper::maxPrimaryKey(const QpMetaObject &metaObject) const

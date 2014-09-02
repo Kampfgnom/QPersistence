@@ -248,6 +248,16 @@ void QpStorage::enableLocks()
 }
 #endif
 
+int QpStorage::revisionInObject(QObject *object)
+{
+    return object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt();
+}
+
+int QpStorage::revisionInDatabase(QObject *object)
+{
+    return sqlDataAccessObjectHelper()->objectRevision(object);
+}
+
 #ifndef QP_NO_TIMESTAMPS
 double QpStorage::databaseTimeInternal()
 {

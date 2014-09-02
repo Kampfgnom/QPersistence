@@ -29,13 +29,15 @@ public:
     QList<int> allKeys(const QpMetaObject &metaObject, int skip, int count) const;
     bool readObject(const QpMetaObject &metaObject, const QVariant &key, QObject *object);
     QpSqlQuery readAllObjects(const QpMetaObject &metaObject, int skip, int count, const QpSqlCondition &condition);
-    QpSqlQuery readObjectsUpdatedAfterRevision(const QpMetaObject &metaObject, int revision);
+    QpSqlQuery readObjectsUpdatedAfterRevision(const QpMetaObject &metaObject, int objectRevision);
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
     bool removeObject(const QpMetaObject &metaObject, QObject *object);
     bool incrementNumericColumn(QObject *object, const QString &fieldName);
     int latestRevision(const QpMetaObject &metaObject) const;
     int maxPrimaryKey(const QpMetaObject &metaObject) const;
+
+    int objectRevision(QObject *object) const;
 
 #ifndef QP_NO_TIMESTAMPS
     double readUpdateTime(QObject *object);
