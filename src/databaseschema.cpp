@@ -436,13 +436,18 @@ bool QpDatabaseSchema::enableHistoryTracking()
 
 bool QpDatabaseSchema::enableHistoryTracking(const QMetaObject &metaObject)
 {
+    QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
+    QString table = meta.tableName();
+    return enableHistoryTracking(table);
+}
+
+bool QpDatabaseSchema::enableHistoryTracking(const QString &table)
+{
     if (!data->database.transaction()) {
         data->storage->setLastError(QpError(data->database.lastError()));
         return false;
     }
 
-    QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
-    QString table = meta.tableName();
     QpSqlQuery query(data->database);
 
     if(!query.exec(QString::fromLatin1(

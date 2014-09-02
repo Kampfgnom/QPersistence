@@ -130,5 +130,6 @@ QpQuitOnError::~QpQuitOnError()
 void QpQuitOnError::handleError(const QpError &error)
 {
     Q_UNUSED(error);
+    Q_ASSERT(false);
     qApp->exit(-1);
 }
