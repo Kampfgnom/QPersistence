@@ -22,6 +22,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QVariant>
 #include <QSqlField>
 #include <QThread>
+#include <QPixmap>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlDataAccessObjectHelperPrivate : public QSharedData
@@ -266,6 +267,9 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
 {
 
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
+        if(property.isLazy())
+            continue;
+
         QString columnName = property.columnName();
 #ifdef QP_FOR_MYSQL
         if(property.metaProperty().isEnumType())
@@ -833,6 +837,29 @@ int QpSqlDataAccessObjectHelper::maxPrimaryKey(const QpMetaObject &metaObject) c
     }
 
     return query.value(0).toInt() - 1;
+}
+
+QPixmap QpSqlDataAccessObjectHelper::readPixmap(QObject *object, const QString &propertyName)
+{
+    QpSqlQuery query(data->storage->database());
+    QpMetaObject mo = QpMetaObject::forObject(object);
+    query.setTable(mo.tableName());
+    query.setCount(1);
+    query.addField(propertyName);
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpSqlCondition::EqualTo,
+                                           Qp::Private::primaryKey(object)));
+    query.prepareSelect();
+
+    if (!query.exec()
+            || !query.first()
+            || query.lastError().isValid()) {
+        setLastError(query);
+        return QPixmap();
+    }
+
+    QMetaType::Type type = static_cast<QMetaType::Type>(mo.metaProperty(propertyName).metaProperty().userType());
+    return QpSqlQuery::variantFromSqlStorableVariant(query.value(0), type).value<QPixmap>();
 }
 
 #ifndef QP_NO_TIMESTAMPS

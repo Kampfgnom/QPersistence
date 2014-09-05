@@ -38,6 +38,7 @@ public:
 
     bool isStored() const;
     bool isValid() const;
+    bool isLazy() const;
     QVariant::Type type() const;
 
     QHash<QString, QString> attributes() const;

@@ -7,6 +7,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QMetaClassInfo>
 #include <QRegularExpression>
 #include <QStringList>
+#include <QDebug>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 static const char* TOMANYRELATIONREGEXP("QList\\<(QSharedPointer|QWeakPointer)\\<(.+)\\> \\>");
@@ -154,6 +155,14 @@ bool QpMetaProperty::isStored() const
 bool QpMetaProperty::isValid() const
 {
     return data->metaProperty.isValid();
+}
+
+bool QpMetaProperty::isLazy() const
+{
+    if (data->attributes.isEmpty())
+        parseAttributes();
+
+    return QVariant(data->attributes.value("lazy", "false")).toBool();
 }
 
 QVariant::Type QpMetaProperty::type() const
