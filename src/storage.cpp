@@ -84,7 +84,6 @@ void QpStorage::setDatabase(const QSqlDatabase &database)
     }
 
     data->database = database;
-    data->database.setConnectOptions("MYSQL_OPT_RECONNECT=1");
 
 #ifdef QP_FOR_SQLITE
     QpSqlQuery query(database);
