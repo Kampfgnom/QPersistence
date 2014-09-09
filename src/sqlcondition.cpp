@@ -1,5 +1,6 @@
 #include "sqlcondition.h"
 
+#include "databaseschema.h"
 #include "sqlquery.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
@@ -24,6 +25,19 @@ public:
     QList<QpSqlCondition> conditions;
     QString table;
 };
+
+QpSqlCondition QpSqlCondition::notDeletedAnd(const QpSqlCondition &additionalConditions)
+{
+    QpSqlCondition notDeleted = QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG, NotEqualTo, "1");
+    if(!additionalConditions.isValid())
+        return notDeleted;
+
+    QpSqlCondition cond = QpSqlCondition(And, QList<QpSqlCondition>()
+                          << notDeleted
+                          << additionalConditions);
+    cond.setBindValuesAsString(additionalConditions.data->bindValues);
+    return cond;
+}
 
 QpSqlCondition::QpSqlCondition() :
     data(new QpSqlConditionData)
@@ -77,6 +91,11 @@ void QpSqlCondition::setBindValuesAsString(bool bindValues)
     for(int i = 0; i < data->conditions.size(); ++i) {
         data->conditions[i].setBindValuesAsString(bindValues);
     }
+}
+
+bool QpSqlCondition::bindValuesAsString() const
+{
+    return data->bindValues;
 }
 
 QpSqlCondition::QpSqlCondition(const QpSqlCondition &rhs) :
@@ -142,12 +161,14 @@ QString QpSqlCondition::toWhereClause() const
     if(data->bindValues)
         value = data->value.toString();
 
-    if(!data->table.isEmpty())
+    if(!data->table.isEmpty()
+       && !data->field.contains('.')) {
         return comparisonOperator()
                 .prepend(QString("%1.%2")
                          .arg(QpSqlQuery::escapeField(data->table))
                          .arg(QpSqlQuery::escapeField(data->field)))
                 .append(value);
+    }
 
     return comparisonOperator()
             .prepend(QpSqlQuery::escapeField(data->field))
@@ -212,5 +233,12 @@ QString QpSqlCondition::comparisonOperator() const
 
 void QpSqlCondition::setTable(const QString &table)
 {
+    QList<QpSqlCondition> newData;
+    foreach(QpSqlCondition c, data->conditions) {
+        c.setTable(table);
+        newData << c;
+    }
+
+    data->conditions = newData;
     data->table = table;
 }

@@ -29,6 +29,7 @@ public:
         NotEqualTo
     };
 
+    static QpSqlCondition notDeletedAnd(const QpSqlCondition &additionalConditions = QpSqlCondition());
     QpSqlCondition();
     QpSqlCondition(const QString &rawString);
     QpSqlCondition(const QString &field, ComparisonOperator op, const QVariant &value);
@@ -38,6 +39,7 @@ public:
     bool isValid() const;
 
     void setBindValuesAsString(bool bindValues);
+    bool bindValuesAsString() const;
 
     QpSqlCondition(const QpSqlCondition &);
     QpSqlCondition &operator=(const QpSqlCondition &);
