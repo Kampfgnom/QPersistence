@@ -54,6 +54,9 @@ public:
     QList<Join> joins;
 
     static bool debugEnabled;
+
+    QString constructSelectQuery() const;
+    QString escapedQualifiedField(const QString &field) const;
 };
 
 bool QpSqlQueryPrivate::debugEnabled = false;
@@ -164,18 +167,26 @@ void QpSqlQuery::setDebugEnabled(bool value)
     QpSqlQueryPrivate::debugEnabled = value;
 }
 
-QString QpSqlQuery::escapedQualifiedField(const QString &field) const
+QString QpSqlQueryPrivate::escapedQualifiedField(const QString &field) const
 {
-    if(data->table.isEmpty() || field.contains('.'))
-        return escapeField(field);
+    if(table.isEmpty() || field.contains('.'))
+        return QpSqlQuery::escapeField(field);
 
     return QString("%1.%2")
-            .arg(escapeField(data->table))
-            .arg(escapeField(field));
+            .arg(QpSqlQuery::escapeField(table))
+            .arg(QpSqlQuery::escapeField(field));
+}
+
+QString QpSqlQuery::escapedQualifiedField(const QString &field) const
+{
+    return data->escapedQualifiedField(field);
 }
 
 QString QpSqlQuery::escapeField(const QString &field)
 {
+    if(field.startsWith('('))
+        return field;
+
     QStringList fields = field.split(".");
     QStringList escaped;
     foreach(QString f, fields) {
@@ -263,6 +274,16 @@ void QpSqlQuery::addJoin(const QString &direction, const QString &table, const Q
     data->joins.append(join);
 }
 
+void QpSqlQuery::addJoin(const QString &direction, const QpSqlQuery &subSelect, const QString &on)
+{
+    addJoin(direction,
+            QString::fromLatin1("(%1) as sub_select_%2").arg(subSelect.data->constructSelectQuery()).arg(data->joins.size()),
+            on);
+    foreach(QVariant bindValue, subSelect.boundValues()) {
+        addBindValue(bindValue);
+    }
+}
+
 void QpSqlQuery::addGroupBy(const QString &groupBy)
 {
     data->groups.append(groupBy);
@@ -341,48 +362,48 @@ void QpSqlQuery::prepareAlterTable()
                        .arg(data->fields.values().first().toString()));
 }
 
-void QpSqlQuery::prepareSelect()
+QString QpSqlQueryPrivate::constructSelectQuery() const
 {
     QString query("SELECT ");
 
-    if (data->fields.isEmpty() && data->rawFields.isEmpty()) {
+    if (fields.isEmpty() && rawFields.isEmpty()) {
         query.append("*");
     }
     else {
-        QStringList fields;
-        foreach (const QString &field, data->fields.keys()) {
-            fields.append(QString("%1").arg(escapedQualifiedField(field)));
+        QStringList localFields;
+        foreach (const QString &field, fields.keys()) {
+            localFields.append(QString("%1").arg(escapedQualifiedField(field)));
         }
-        foreach(QString field, data->rawFields.keys()) {
-            fields.append(field);
+        foreach(QString field, rawFields.keys()) {
+            localFields.append(field);
         }
 
-        query.append(fields.join(", "));
+        query.append(localFields.join(", "));
     }
 
-    query.append(" FROM ").append(escapeField(data->table)).append("");
+    query.append(" FROM ").append(QpSqlQuery::escapeField(table)).append("");
 
-    foreach(QpSqlQueryPrivate::Join join, data->joins) {
+    foreach(QpSqlQueryPrivate::Join join, joins) {
         query.append(QString("\n%1 JOIN %2 ON %3")
                 .arg(join.direction)
-                .arg(escapeField(join.table))
+                .arg(QpSqlQuery::escapeField(join.table))
                 .arg(join.on));
     }
 
-    if (data->whereCondition.isValid()) {
-        query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
+    if (whereCondition.isValid()) {
+        query.append("\n\tWHERE ").append(whereCondition.toWhereClause());
     }
 
-    if(!data->groups.isEmpty()) {
+    if(!groups.isEmpty()) {
         query.append("\n\tGROUP BY ");
-        query.append(data->groups.join(','));
+        query.append(groups.join(','));
     }
 
-    if (!data->orderBy.isEmpty()) {
+    if (!orderBy.isEmpty()) {
         query.append("\n\tORDER BY ");
         QStringList orderClauses;
         typedef QPair<QString, QpSqlQuery::Order> OrderPair;
-        foreach (OrderPair order, data->orderBy) {
+        foreach (OrderPair order, orderBy) {
             QString orderClause = escapedQualifiedField(order.first).prepend("\n\t\t");
             if (order.second == QpSqlQuery::Descending)
                 orderClause.append(" DESC");
@@ -393,20 +414,24 @@ void QpSqlQuery::prepareSelect()
         query.append(orderClauses.join(','));
     }
 
-    if (data->count >= 0) {
+    if (count >= 0) {
         query.append(QString("\n\tLIMIT "));
-        if (data->skip >= 0) {
-            query.append(QString("%1, ").arg(data->skip));
+        if (skip >= 0) {
+            query.append(QString("%1, ").arg(skip));
         }
-        query.append(QString("%1").arg(data->count));
+        query.append(QString("%1").arg(count));
     }
 
-    if(data->forUpdate) {
+    if(forUpdate) {
         query.append(" FOR UPDATE ");
     }
 
-    query.append(';');
-    QSqlQuery::prepare(query);
+    return query;
+}
+
+void QpSqlQuery::prepareSelect()
+{
+    QSqlQuery::prepare(data->constructSelectQuery());
 
     foreach (const QVariant value, data->whereCondition.bindValues()) {
         addBindValue(value);
