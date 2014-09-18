@@ -123,11 +123,23 @@ QpSqlCondition QpSqlCondition::operator !()
 
 QpSqlCondition QpSqlCondition::operator ||(const QpSqlCondition &rhs)
 {
+    if(!isValid())
+        return rhs;
+
+    if(!rhs.isValid())
+        return *this;
+
     return QpSqlCondition(QpSqlCondition::Or, QList<QpSqlCondition>() << *this << rhs);
 }
 
 QpSqlCondition QpSqlCondition::operator &&(const QpSqlCondition &rhs)
 {
+    if(!isValid())
+        return rhs;
+
+    if(!rhs.isValid())
+        return *this;
+
     return QpSqlCondition(QpSqlCondition::And, QList<QpSqlCondition>() << *this << rhs);
 }
 

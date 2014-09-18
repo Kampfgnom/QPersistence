@@ -22,6 +22,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QVariant>
 #include <QSqlField>
 #include <QThread>
+#include <QPixmap>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlDataAccessObjectHelperPrivate : public QSharedData
@@ -272,6 +273,9 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
 {
 
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
+        if(property.isLazy())
+            continue;
+
         QString columnName = property.columnName();
 #ifdef QP_FOR_MYSQL
         if(property.metaProperty().isEnumType())
@@ -279,6 +283,37 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
 #endif
         query.addField(columnName);
     }
+
+    // We select the revision as a subquery, because the needed GROUP BY does not work well with the relations' LEFT JOINs.
+    // BTW: Other RDBMS wouldn't have allowed this error ;)
+    // Me:          Who wants some MySQL specifics??
+    // Also me:     HERE ME! MYSQL IS GREAT!!!1!!11elf!
+    // Me again:    -.-
+    QpSqlQuery revisionSubQuery(data->storage->database());
+    QString historyTable = QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(metaObject.tableName());
+    QString qualifiedRevisionField = QString::fromLatin1("%1.%2")
+            .arg(historyTable)
+            .arg(QpDatabaseSchema::COLUMN_NAME_REVISION);
+
+    revisionSubQuery.setTable(historyTable);
+    revisionSubQuery.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    revisionSubQuery.addRawField(QString::fromLatin1("MAX(%1) AS %2")
+                      .arg(qualifiedRevisionField)
+                      .arg(QpDatabaseSchema::COLUMN_NAME_REVISION));
+    revisionSubQuery.addGroupBy(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+
+    query.addJoin("LEFT",
+                  revisionSubQuery,
+                  QString::fromLatin1("%1 = %2.%3")
+                  .arg(query.escapedQualifiedField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY))
+
+
+                  // Hard-coding this is not the best solution, but at this point I am too lazy
+                  .arg("sub_select_0")
+
+
+                  .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
+    query.addRawField(QpSqlQuery::escapeField(QpDatabaseSchema::COLUMN_NAME_REVISION));
 
     foreach(const QpMetaProperty relation, metaObject.relationProperties()) {
         if(relation.hasTableForeignKey()) {
@@ -306,21 +341,7 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
         query.addField(QpDatabaseSchema::COLUMN_LOCK);
 #endif
 
-    QString historyTable = QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(metaObject.tableName());
-    QString qualifiedRevisionField = QString::fromLatin1("%1.%2")
-            .arg(historyTable)
-            .arg(QpDatabaseSchema::COLUMN_NAME_REVISION);
 
-    query.addRawField(QString::fromLatin1("MAX(%1) AS %2")
-                      .arg(qualifiedRevisionField)
-                      .arg(QpDatabaseSchema::COLUMN_NAME_REVISION));
-    query.addJoin("LEFT",
-                  historyTable,
-                  QString::fromLatin1("%1 = %2.%3")
-                  .arg(query.escapedQualifiedField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY))
-                  .arg(historyTable)
-                  .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
-    query.addGroupBy(query.escapedQualifiedField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
     query.setForwardOnly(true);
 }
 
@@ -837,6 +858,29 @@ int QpSqlDataAccessObjectHelper::maxPrimaryKey(const QpMetaObject &metaObject) c
     }
 
     return query.value(0).toInt() - 1;
+}
+
+QPixmap QpSqlDataAccessObjectHelper::readPixmap(QObject *object, const QString &propertyName)
+{
+    QpSqlQuery query(data->storage->database());
+    QpMetaObject mo = QpMetaObject::forObject(object);
+    query.setTable(mo.tableName());
+    query.setCount(1);
+    query.addField(propertyName);
+    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpSqlCondition::EqualTo,
+                                           Qp::Private::primaryKey(object)));
+    query.prepareSelect();
+
+    if (!query.exec()
+            || !query.first()
+            || query.lastError().isValid()) {
+        setLastError(query);
+        return QPixmap();
+    }
+
+    QMetaType::Type type = static_cast<QMetaType::Type>(mo.metaProperty(propertyName).metaProperty().userType());
+    return QpSqlQuery::variantFromSqlStorableVariant(query.value(0), type).value<QPixmap>();
 }
 
 #ifndef QP_NO_TIMESTAMPS
