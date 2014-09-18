@@ -177,7 +177,9 @@ Qp::UpdateResult QpStorage::update(QSharedPointer<T> object)
     Qp::UpdateResult result = dataAccessObject<T>()->updateObject(object);
     if(result == Qp::UpdateConflict) {
         qWarning() << "Update conflict for " << T::staticMetaObject.className() << primaryKey(object);
+#ifdef QT_DEBUG
         qFatal("Aborting");
+#endif
         database().rollback();
         return Qp::UpdateConflict;
     }

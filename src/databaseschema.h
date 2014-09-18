@@ -68,6 +68,8 @@ public:
 
     void setForeignKeyChecks(bool check);
 
+    void createManyToManyRelationTables(const QMetaObject &metaObject);
+
 #ifndef QP_NO_LOCKS
     void createLocksTable();
 #endif
@@ -90,7 +92,6 @@ private:
     void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;
 
-    void createManyToManyRelationTables(const QMetaObject &metaObject);
 
     QString metaPropertyToColumnDefinition(const QpMetaProperty &metaProperty);
 };

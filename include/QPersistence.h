@@ -3,6 +3,7 @@
 #include "../src/defaultstorage.h"
 #include "../src/defines.h"
 #include "../src/error.h"
+#include "../src/lazyPixmap.h"
 #include "../src/lock.h"
 #include "../src/objectlistmodel.h"
 #include "../src/qpersistence.h"

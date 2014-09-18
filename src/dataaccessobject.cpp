@@ -162,11 +162,11 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
             data->storage->enableStorageFrom(object);
             currentObject = data->cache.insert(key, object);
             Qp::Private::enableSharedFromThis(currentObject);
+            data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query,
+                                                                            record,
+                                                                            currentObject.data());
         }
 
-        data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query,
-                                                                        record,
-                                                                        currentObject.data());
         result.append(currentObject);
     }
 

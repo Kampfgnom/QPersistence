@@ -41,7 +41,8 @@ HEADERS += \
     throttledfetchproxymodel.h \
     storage.h \
     defaultstorage.h \
-    schemaversioning.h
+    schemaversioning.h \
+    lazyPixmap.h
 
 SOURCES += \
         cache.cpp \
@@ -68,4 +69,5 @@ SOURCES += \
     throttledfetchproxymodel.cpp \
     storage.cpp \
     defaultstorage.cpp \
-    schemaversioning.cpp
+    schemaversioning.cpp \
+    lazyPixmap.cpp
