@@ -129,7 +129,7 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
     return object;
 }
 
-QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject, int skip, int count, const QpSqlCondition &condition)
+QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject, int skip, int count, const QpSqlCondition &condition, QList<QpSqlQuery::OrderField> orders)
 {
     QpSqlQuery query(data->storage->database());
     query.setTable(metaObject.tableName());
@@ -138,6 +138,9 @@ QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaO
     query.setCount(count);
     query.setSkip(skip);
     query.setForwardOnly(true);
+    foreach(QpSqlQuery::OrderField orderField, orders) {
+        query.addOrder(orderField.field, orderField.order);
+    }
     query.prepareSelect();
 
     if ( !query.exec()

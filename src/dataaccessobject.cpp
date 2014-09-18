@@ -127,9 +127,9 @@ QList<int> QpDaoBase::allKeys(int skip, int count) const
     return result;
 }
 
-QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, const QpSqlCondition &condition) const
+QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, const QpSqlCondition &condition, QList<QpSqlQuery::OrderField> orders) const
 {
-    QpSqlQuery query = data->storage->sqlDataAccessObjectHelper()->readAllObjects(data->metaObject, skip, count, condition);
+    QpSqlQuery query = data->storage->sqlDataAccessObjectHelper()->readAllObjects(data->metaObject, skip, count, condition, orders);
     return readAllObjects(query);
 }
 

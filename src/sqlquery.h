@@ -19,6 +19,11 @@ public:
         Descending
     };
 
+    struct OrderField {
+            QString field;
+            Order order;
+    };
+
     QpSqlQuery();
     QpSqlQuery(const QSqlDatabase &database);
     QpSqlQuery(const QpSqlQuery &);
