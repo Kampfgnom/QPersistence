@@ -8,6 +8,8 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtSql/QSqlDatabase>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
+#include "sqlquery.h"
+
 class QSqlQuery;
 class QpError;
 class QpMetaObject;
@@ -28,7 +30,7 @@ public:
     int count(const QpMetaObject &metaObject, const QpSqlCondition &condition) const;
     QList<int> allKeys(const QpMetaObject &metaObject, int skip, int count) const;
     bool readObject(const QpMetaObject &metaObject, const QVariant &key, QObject *object);
-    QpSqlQuery readAllObjects(const QpMetaObject &metaObject, int skip, int count, const QpSqlCondition &condition);
+    QpSqlQuery readAllObjects(const QpMetaObject &metaObject, int skip, int count, const QpSqlCondition &condition, QList<QpSqlQuery::OrderField> orders);
     QpSqlQuery readObjectsUpdatedAfterRevision(const QpMetaObject &metaObject, int objectRevision);
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);

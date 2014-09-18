@@ -54,7 +54,9 @@ int QpSqlDataAccessObjectHelper::count(const QpMetaObject &metaObject, const QpS
                 .arg(QpSqlQuery::escapeField(metaObject.tableName()));
 
     QpSqlCondition c = condition;
+    c = QpSqlCondition::notDeletedAnd(c);
     c.setBindValuesAsString(true);
+
     if(c.isValid())
         q.append(QString(" WHERE %1").arg(c.toWhereClause()));
 
@@ -78,6 +80,7 @@ QList<int> QpSqlDataAccessObjectHelper::allKeys(const QpMetaObject &metaObject, 
     query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
     query.setCount(count);
     query.setSkip(skip);
+    query.setWhereCondition(QpSqlCondition::notDeletedAnd());
     query.prepareSelect();
 
     QString filter = metaObject.sqlFilter();
@@ -127,15 +130,18 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
     return object;
 }
 
-QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject, int skip, int count, const QpSqlCondition &condition)
+QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaObject, int skip, int count, const QpSqlCondition &condition, QList<QpSqlQuery::OrderField> orders)
 {
     QpSqlQuery query(data->storage->database());
     query.setTable(metaObject.tableName());
     selectFields(metaObject, query);
-    query.setWhereCondition(condition);
+    query.setWhereCondition(QpSqlCondition::notDeletedAnd(condition));
     query.setCount(count);
     query.setSkip(skip);
     query.setForwardOnly(true);
+    foreach(QpSqlQuery::OrderField orderField, orders) {
+        query.addOrder(orderField.field, orderField.order);
+    }
     query.prepareSelect();
 
     if ( !query.exec()
@@ -337,7 +343,6 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
 
 
     query.setForwardOnly(true);
-    query.prepareSelect();
 }
 
 void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
@@ -646,9 +651,7 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
     QList<QpSqlCondition> relatedObjectsWhereClauses;
     QList<QpSqlCondition> relatedObjectsWhereClauses2;
     foreach (QSharedPointer<QObject> relatedObject, relatedObjects) {
-        relatedObjectsWhereClauses.append(QpSqlCondition(QString("%1.%2")
-                                                         .arg(relation.tableName())
-                                                         .arg(relation.reverseRelation().columnName()),
+        relatedObjectsWhereClauses.append(QpSqlCondition(relation.reverseRelation().columnName(),
                                                          QpSqlCondition::EqualTo,
                                                          Qp::Private::primaryKey(relatedObject.data())));
         relatedObjectsWhereClauses2.append(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
@@ -665,6 +668,7 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
     QpSqlCondition resetCondition = QpSqlCondition(relation.columnName(),
                                                    QpSqlCondition::EqualTo,
                                                    primaryKey);
+    resetCondition.setTable(relation.tableName());
     if(!relatedObjects.isEmpty()) {
         resetCondition = resetCondition && !relatedObjectsWhereClause;
     }
@@ -983,6 +987,10 @@ QpSqlQuery QpSqlDataAccessObjectHelper::queryForForeignKeys(const QpMetaProperty
     query.setForwardOnly(true);
     QpSqlCondition c(keyColumn, QpSqlCondition::EqualTo, ":keyColumn");
     c.setBindValuesAsString(true);
+
+    if(cardinality != QpMetaProperty::ManyToManyCardinality)
+        c = QpSqlCondition::notDeletedAnd(c);
+
     query.setWhereCondition(c);
     query.addOrder(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
     if (!sortColumn.isEmpty())

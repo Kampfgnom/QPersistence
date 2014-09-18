@@ -101,6 +101,7 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveToManyRelation(const 
     relatedObjects.reserve(foreignKeys.size());
     foreach (int key, foreignKeys) {
         QSharedPointer<QObject> relatedObject = dao->readObject(key);
+
         Q_ASSERT_X(relatedObject,
                    Q_FUNC_INFO,
                    QString("It appears, that there is no '%1' object with the ID '%2',"
@@ -110,6 +111,12 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveToManyRelation(const 
                    .arg(relation.name())
                    .arg(metaObject.className())
                    .toLatin1());
+
+        // here we explicitly check for deleted objects, because for many-to-many relations,
+        // we cannot use the mysql server for filtering the related objects
+        if(Qp::Private::isDeleted(relatedObject.data()))
+            continue;
+
         relatedObjects.append(relatedObject);
     }
 

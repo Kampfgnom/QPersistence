@@ -13,6 +13,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include "conversion.h"
 #include "metaobject.h"
 #include "sqlcondition.h"
+#include "sqlquery.h"
 
 class QSqlQuery;
 class QpCache;
@@ -41,7 +42,8 @@ public:
     QList<int> allKeys(int skip = -1, int count = -1) const;
     QList<QSharedPointer<QObject> > readAllObjects(int skip = -1,
                                                    int count = -1,
-                                                   const QpSqlCondition &condition = QpSqlCondition()) const;
+                                                   const QpSqlCondition &condition = QpSqlCondition(),
+                                                   QList<QpSqlQuery::OrderField> orders = QList<QpSqlQuery::OrderField>()) const;
     QList<QSharedPointer<QObject> > readObjectsUpdatedAfterRevision(int revision) const;
     QList<QSharedPointer<QObject> > readAllObjects(QpSqlQuery &query) const;
     QSharedPointer<QObject> readObject(int id) const;
@@ -105,9 +107,12 @@ class QpDao : public QpDaoBase
 {
 public:
     QSharedPointer<T> read(int id) { return qSharedPointerCast<T>(readObject(id)); }
-    QList<QSharedPointer<T> > readAllObjects(int skip = -1, int count = -1, const QpSqlCondition &condition = QpSqlCondition()) const
+    QList<QSharedPointer<T> > readAllObjects(int skip = -1,
+                                             int count = -1,
+                                             const QpSqlCondition &condition = QpSqlCondition(),
+                                             QList<QpSqlQuery::OrderField> orders = QList<QpSqlQuery::OrderField>()) const
     {
-        return Qp::castList<T>(QpDaoBase::readAllObjects(skip, count, condition));
+        return Qp::castList<T>(QpDaoBase::readAllObjects(skip, count, condition, orders));
     }
 
 protected:
