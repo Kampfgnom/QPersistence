@@ -192,9 +192,11 @@ QString QpSqlQuery::escapeField(const QString &field)
     foreach(QString f, fields) {
         QStringList split = f.split('+');
         if(split.size() == 2)
-            escaped << QString("`%1`+%2").arg(split.at(0)).arg(split.at(1));
-        else
+            escaped << QString("%1+%2").arg(escapeField(split.at(0))).arg(split.at(1));
+        else if(!f.contains('`'))
             escaped << QString("`%1`").arg(f);
+        else
+            escaped << f;
     }
 
     return escaped.join(".");

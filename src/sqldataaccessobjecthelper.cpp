@@ -155,10 +155,9 @@ QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaO
 QpSqlQuery QpSqlDataAccessObjectHelper::readObjectsUpdatedAfterRevision(const QpMetaObject &metaObject, int revision)
 {
     QString table = metaObject.tableName();
-    QString historyTable = QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(table);
     QString qualifiedRevisionField = QString::fromLatin1("%1.%2")
-            .arg(historyTable)
-            .arg(QpDatabaseSchema::COLUMN_NAME_REVISION);
+                                     .arg(QpSqlQuery::escapeField("sub_select_0"))
+                                     .arg(QpSqlQuery::escapeField(QpDatabaseSchema::COLUMN_NAME_REVISION));
 
     QpSqlQuery query(data->storage->database());
     query.setTable(table);
@@ -300,6 +299,8 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
     revisionSubQuery.addRawField(QString::fromLatin1("MAX(%1) AS %2")
                       .arg(qualifiedRevisionField)
                       .arg(QpDatabaseSchema::COLUMN_NAME_REVISION));
+    revisionSubQuery.addRawField(QString::fromLatin1("%1 as %1")
+                      .arg(QpDatabaseSchema::COLUMN_NAME_ACTION));
     revisionSubQuery.addGroupBy(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
 
     query.addJoin("LEFT",
