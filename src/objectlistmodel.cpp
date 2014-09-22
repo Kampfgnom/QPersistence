@@ -209,5 +209,8 @@ void QpObjectListModelBase::objectRemoved(QSharedPointer<QObject> object)
 void QpObjectListModelBase::objectMarkedAsDeleted(QSharedPointer<QObject> object)
 {
     objectUpdated(object);
+
+    if(Qp::isDeleted(object))
+        objectRemoved(object);
 }
 
