@@ -66,6 +66,11 @@ QpStorage *QpStorage::forObject(const QObject *object)
     return object->property(PROPERTY_STORAGE).value<QpStorage *>();
 }
 
+int QpStorage::revisionInDatabase(QObject *object)
+{
+    return sqlDataAccessObjectHelper()->objectRevision(object);
+}
+
 void QpStorage::registerDataAccessObject(QpDaoBase *dao, const QMetaObject *objectInClassHierarchy)
 {
     do {
@@ -253,9 +258,70 @@ int QpStorage::revisionInObject(QObject *object)
     return object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt();
 }
 
-int QpStorage::revisionInDatabase(QObject *object)
+QpDaoBase *QpStorage::dataAccessObject(QSharedPointer<QObject> object) const
 {
-    return sqlDataAccessObjectHelper()->objectRevision(object);
+    return dataAccessObject(*object->metaObject());
+}
+
+bool QpStorage::incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName)
+{
+    QpDaoBase *dao = dataAccessObject(object);
+    if(!dao->incrementNumericColumn(object, fieldName))
+        return false;
+
+    return dao->synchronizeObject(object, QpDaoBase::IgnoreRevision) == Qp::Updated;
+}
+
+Qp::UpdateResult QpStorage::update(QSharedPointer<QObject> object)
+{
+    beginTransaction();
+    Qp::UpdateResult result = dataAccessObject(object)->updateObject(object);
+    if(result == Qp::UpdateConflict) {
+        qWarning() << "Update conflict for " << object->metaObject()->className() << primaryKey(object);
+        database().rollback();
+#ifdef QT_DEBUG
+        qFatal("Aborting");
+#endif
+        return Qp::UpdateConflict;
+    }
+
+    Qp::CommitResult commitResult = commitOrRollbackTransaction();
+    if(commitResult == Qp::CommitSuccessful)
+        return result;
+
+    return Qp::UpdateError;
+}
+
+Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<QObject> object)
+{
+    return dataAccessObject(object)->synchronizeObject(object);
+}
+
+bool QpStorage::remove(QSharedPointer<QObject> object)
+{
+    beginTransaction();
+    dataAccessObject(object)->removeObject(object);
+    return commitOrRollbackTransaction() == Qp::CommitSuccessful;
+}
+
+int QpStorage::primaryKey(QSharedPointer<QObject> object)
+{
+    return Qp::Private::primaryKey(object.data());
+}
+
+bool QpStorage::isDeleted(QSharedPointer<QObject> object)
+{
+    return Qp::Private::isDeleted(object.data());
+}
+
+bool QpStorage::markAsDeleted(QSharedPointer<QObject> object)
+{
+    return dataAccessObject(object)->markAsDeleted(object);
+}
+
+bool QpStorage::undelete(QSharedPointer<QObject> object)
+{
+    return dataAccessObject(object)->undelete(object);
 }
 
 #ifndef QP_NO_TIMESTAMPS
