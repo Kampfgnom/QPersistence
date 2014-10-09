@@ -180,6 +180,8 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
 
 QSharedPointer<QObject> QpDaoBase::readObject(int id) const
 {
+    Q_ASSERT(id > 0);
+
     QSharedPointer<QObject> p = data->cache.get(id);
 
     if (p)
