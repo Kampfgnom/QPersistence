@@ -25,9 +25,7 @@ void QpLazyPixmapData::load()
 
     QpStorage *storage = QpStorage::forObject(parent);
     QpSqlDataAccessObjectHelper *helper = storage->sqlDataAccessObjectHelper();
-    storage->setSqlDebugEnabled(true);
     pixmap = helper->readPixmap(parent, name);
-    storage->setSqlDebugEnabled(false);
 }
 
 QpLazyPixmap::QpLazyPixmap(const QString &name, QObject *parent) :
