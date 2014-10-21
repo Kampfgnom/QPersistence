@@ -305,7 +305,12 @@ double QpStorage::updateTimeInObject(QObject *object)
 QDateTime dateFromDouble(double value)
 {
     QString string = QString("%1").arg(value, 17, 'f', 3);
-    return QDateTime::fromString(string, "yyyyMMddHHmmss.zzz");
+    QDateTime time = QDateTime::fromString(string, "yyyyMMddHHmmss.zzz");
+
+    // TODO: Query the DB's timezone
+
+    time.setTimeSpec(Qt::UTC);
+    return time.toLocalTime();
 }
 
 QDateTime QpStorage::databaseTime()
