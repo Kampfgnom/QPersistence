@@ -271,6 +271,17 @@ double QpStorage::databaseTimeInternal()
     return query.value(0).toDouble();
 }
 
+double QpStorage::creationTime(QObject *object)
+{
+    double time = creationTimeInInObject(object);
+    _Pragma("GCC diagnostic push")
+    _Pragma("GCC diagnostic ignored \"-Wused-but-marked-unused\"")
+    if(qFuzzyCompare(0.0, time))
+        return creationTimeInDatabase(object);
+    _Pragma("GCC diagnostic pop")
+    return time;
+}
+
 double QpStorage::creationTimeInDatabase(QObject *object)
 {
     return sqlDataAccessObjectHelper()->readCreationTime(object);

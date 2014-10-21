@@ -67,10 +67,12 @@ public:
     double databaseTimeInternal();
     template<class T> QList<QSharedPointer<T>> createdSince(const QDateTime &time);
     template<class T> QList<QSharedPointer<T>> updatedSince(const QDateTime &time);
+    template<class T> QDateTime creationTime(QSharedPointer<T> object);
     template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object);
     template<class T> QDateTime creationTimeInInObject(QSharedPointer<T> object);
     template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object);
     template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object);
+    double creationTime(QObject *object);
     double creationTimeInDatabase(QObject *object);
     double creationTimeInInObject(QObject *object);
     double updateTimeInDatabase(QObject *object);
@@ -242,6 +244,11 @@ template<class T>
 QList<QSharedPointer<T> > QpStorage::updatedSince(const QDateTime &time)
 {
     return Qp::castList<T>(dataAccessObject<T>()->updatedSince(time));
+}
+
+template<class T> QDateTime QpStorage::creationTime(QSharedPointer<T> object)
+{
+    return dateFromDouble(creationTime(object.data()));
 }
 
 template<class T> QDateTime QpStorage::creationTimeInDatabase(QSharedPointer<T> object)
