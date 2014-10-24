@@ -37,6 +37,11 @@ QpHasOneBase::~QpHasOneBase()
 {
 }
 
+bool QpHasOneBase::operator ==(const QSharedPointer<QObject> &object) const
+{
+    return data->object == object;
+}
+
 QSharedPointer<QObject> QpHasOneBase::objectWithoutResolving() const
 {
     return data->object;

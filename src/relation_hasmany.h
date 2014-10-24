@@ -23,6 +23,8 @@ public:
     void remove(QSharedPointer<QObject> object);
     void setObjects(const QList<QSharedPointer<QObject> > objects) const;
 
+    bool operator ==(const QList<QSharedPointer<QObject> > &objects) const;
+
 private:
     QExplicitlySharedDataPointer<QpHasManyData> data;
     Q_DISABLE_COPY(QpHasManyBase)
@@ -40,6 +42,7 @@ public:
 
     operator QList<QSharedPointer<T> > () const { return Qp::castList<T>(QpHasManyBase::objects()); }
     QpHasMany &operator=(const QList<QSharedPointer<T> > objects) { QpHasManyBase::setObjects(Qp::castList<QObject>(objects)); return *this; }
+    bool operator ==(const QList<QSharedPointer<T> > &objects) const { return QpHasManyBase::operator ==(Qp::castList<QObject>(objects)); }
 };
 
 #endif // QPERSISTENCE_RELATION_HASMANY_H

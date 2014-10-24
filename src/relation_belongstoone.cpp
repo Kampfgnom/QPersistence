@@ -37,6 +37,11 @@ QpBelongsToOneBase::~QpBelongsToOneBase()
 {
 }
 
+bool QpBelongsToOneBase::operator ==(const QSharedPointer<QObject> &object) const
+{
+    return data->object == object;
+}
+
 QSharedPointer<QObject> QpBelongsToOneBase::object() const
 {
     if(Qp::Private::primaryKey(data->parent) == 0)

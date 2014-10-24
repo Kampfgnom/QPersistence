@@ -38,6 +38,11 @@ QpBelongsToManyBase::~QpBelongsToManyBase()
 {
 }
 
+bool QpBelongsToManyBase::operator ==(const QList<QSharedPointer<QObject> > &objects) const
+{
+    return Qp::Private::makeListStrong(data->objects) == objects;
+}
+
 QList<QSharedPointer<QObject> > QpBelongsToManyBase::objects() const
 {
     if(Qp::Private::primaryKey(data->parent) == 0)
@@ -139,7 +144,7 @@ void QpBelongsToManyBase::remove(QSharedPointer<QObject> object)
     }
 }
 
-void QpBelongsToManyBase::setObjects(const QList<QSharedPointer<QObject>> objects) const
+void QpBelongsToManyBase::setObjects(const QList<QSharedPointer<QObject> > &objects) const
 {
     data->objects = Qp::Private::makeListWeak(objects);
     data->resolved = true;

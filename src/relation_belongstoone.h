@@ -19,6 +19,8 @@ public:
     QSharedPointer<QObject> object() const;
     void setObject(const QSharedPointer<QObject> object) const;
 
+    bool operator ==(const QSharedPointer<QObject> &object) const;
+
 private:
     QExplicitlySharedDataPointer<QpBelongsToOneData> data;
 };
@@ -32,6 +34,7 @@ public:
 
     operator QSharedPointer<T> () const { return qSharedPointerCast<T>(object()); }
     QpBelongsToOne &operator=(const QSharedPointer<T> object) { setObject(qSharedPointerCast<QObject>(object)); return *this; }
+    bool operator ==(const QSharedPointer<T> &object) const { return QpBelongsToOneBase::operator ==(object); }
 };
 
 #endif // QPERSISTENCE_RELATION_BELONGSTOONE_H
