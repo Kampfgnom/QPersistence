@@ -186,7 +186,7 @@ void QpObjectListModelBase::objectUpdated(QSharedPointer<QObject> object)
     }
 
     if(i.isValid())
-        emit dataChanged(i, i);
+        emit dataChanged(i, index(i.row(), columnCount(QModelIndex()) - 1));
 }
 
 void QpObjectListModelBase::objectRemoved(QSharedPointer<QObject> object)
