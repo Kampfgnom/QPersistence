@@ -292,9 +292,9 @@ Qp::UpdateResult QpStorage::update(QSharedPointer<QObject> object)
     return Qp::UpdateError;
 }
 
-Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<QObject> object)
+Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<QObject> object, QpDaoBase::SynchronizeMode mode)
 {
-    return dataAccessObject(object)->synchronizeObject(object);
+    return dataAccessObject(object)->synchronizeObject(object, mode);
 }
 
 bool QpStorage::remove(QSharedPointer<QObject> object)

@@ -47,7 +47,7 @@ public:
 
     QList<QpDaoBase *> dataAccessObjects();
     QpDaoBase *dataAccessObject(const QMetaObject metaObject) const;
-    Qp::SynchronizeResult synchronize(QSharedPointer<QObject> object);
+    Qp::SynchronizeResult synchronize(QSharedPointer<QObject> object, QpDaoBase::SynchronizeMode mode);
     Qp::UpdateResult update(QSharedPointer<QObject> object);
     bool incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName);
     bool remove(QSharedPointer<QObject> object);
