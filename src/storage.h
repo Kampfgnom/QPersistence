@@ -178,6 +178,8 @@ void registerMetaType() {
     Qp::Private::registerConverter<QSharedPointer<T> >(converter);
 }
 
+template<typename... Args> void unpackTemplateParameters(Args...) {}
+
 template<class T, class... Superclasses>
 void QpStorage::registerClass()
 {
@@ -185,9 +187,9 @@ void QpStorage::registerClass()
     registerDataAccessObject(dao, &T::staticMetaObject);
 
     registerMetaType<T>();
-    int _[] = {0, (registerMetaType<Superclasses>(), 0)...}; // I AM CRAAAAZY
+
     // http://stackoverflow.com/questions/12515616/expression-contains-unexpanded-parameter-packs/12515637#12515637
-    Q_UNUSED(_)
+    unpackTemplateParameters((registerMetaType<Superclasses>(), 0)...);
 }
 
 template<class T> QSharedPointer<T> QpStorage::read(int id)

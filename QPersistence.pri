@@ -6,7 +6,10 @@ QPERSISTENCE_TARGET          = qpersistence
 QPERSISTENCE_VERSION         = 0.0.0
 QPERSISTENCE_INCLUDEPATH     = $$PWD/include
 
-unix:QPERSISTENCE_LIBPATH = $$QPERSISTENCE_PATH/src
+unix: {
+    QPERSISTENCE_LIBPATH = $$QPERSISTENCE_PATH/src
+    QPERSISTENCE_LIB = lib$${QPERSISTENCE_TARGET}.a
+}
 win32 {
     CONFIG(debug, release | debug) {
         QPERSISTENCE_LIBPATH = $$QPERSISTENCE_PATH/src/debug
@@ -14,10 +17,16 @@ win32 {
     CONFIG(release, release | debug) {
         QPERSISTENCE_LIBPATH = $$QPERSISTENCE_PATH/src/release
     }
+    win32-msvc*: {
+        QPERSISTENCE_LIB = $${QPERSISTENCE_TARGET}.lib
+    }
+    win32-g++ {
+        QPERSISTENCE_LIB = lib$${QPERSISTENCE_TARGET}.a
+    }
 }
 
 QPERSISTENCE_LIBS            = -L$$QPERSISTENCE_LIBPATH -l$$QPERSISTENCE_TARGET
-QPERSISTENCE_POST_TARGETDEPS = $$OUT_PWD/$$QPERSISTENCE_LIBPATH/lib$${QPERSISTENCE_TARGET}.a
+QPERSISTENCE_POST_TARGETDEPS = $$OUT_PWD/$$QPERSISTENCE_LIBPATH/$$QPERSISTENCE_LIB
 macx:QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Weverything \
                                           -Wno-c++98-compat \
                                           -Wno-c++98-compat-pedantic \

@@ -281,12 +281,16 @@ Qp::UpdateResult QpStorage::update(QSharedPointer<QObject> object)
         database().rollback();
 #ifdef QT_DEBUG
         qFatal("Aborting");
-        _Pragma("GCC diagnostic push") \
-        _Pragma("GCC diagnostic ignored \"-Wunreachable-code-return\"")
+#   ifndef Q_OS_WIN
+        _Pragma("GCC diagnostic push");
+        _Pragma("GCC diagnostic ignored \"-Wunreachable-code-return\"");
+#   endif
 #endif
         return Qp::UpdateConflict;
 #ifdef QT_DEBUG
-        _Pragma("GCC diagnostic pop")
+#   ifndef Q_OS_WIN
+        _Pragma("GCC diagnostic pop");
+#   endif
 #endif
     }
 
