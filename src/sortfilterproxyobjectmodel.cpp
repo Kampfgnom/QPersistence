@@ -72,3 +72,53 @@ QSharedPointer<QObject> QpSortFilterProxyObjectModelBase::objectByIndex(const QM
 
     return QSharedPointer<QObject>();
 }
+
+QList<QSharedPointer<QObject> > QpSortFilterProxyObjectModelBase::objects() const
+{
+    QList<QSharedPointer<QObject> > result;
+    for(int i = 0, c = rowCount(); i < c; ++i) {
+        result << objectByIndex(index(i, 0));
+    }
+    return result;
+}
+
+QpObjectListModelBase *QpSortFilterProxyObjectModelBase::sourceModel() const
+{
+    QAbstractItemModel *source = QSortFilterProxyModel::sourceModel();
+    while(QAbstractProxyModel *proxy = qobject_cast<QAbstractProxyModel *>(source))
+        source = proxy->sourceModel();
+
+    return static_cast<QpObjectListModelBase *>(source);
+}
+
+bool QpSortFilterProxyObjectModelBase::lessThan(const QModelIndex &left, const QModelIndex &right) const
+{
+    if(!left.isValid())
+        return true;
+    if(!right.isValid())
+        return false;
+
+    QSharedPointer<QObject> o1 = sourceModel()->objectByIndex(left);
+    QSharedPointer<QObject> o2 = sourceModel()->objectByIndex(right);
+
+    return lessThan(o1, o2);
+}
+
+bool QpSortFilterProxyObjectModelBase::lessThan(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const
+{
+    return Qp::Private::primaryKey(left.data()) < Qp::Private::primaryKey(right.data());
+}
+
+bool QpSortFilterProxyObjectModelBase::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
+{
+    QSharedPointer<QObject> o = sourceModel()->objectByIndex(sourceModel()->index(source_row, 0, source_parent));
+
+    if(!includeDeletedObjects()
+       && Qp::Private::isDeleted(o.data()))
+        return false;
+
+    if(!filterAcceptsObjectBase(o))
+        return false;
+
+    return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
+}

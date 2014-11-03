@@ -24,6 +24,15 @@ public:
 
     QModelIndex indexForObject(QSharedPointer<QObject> object) const;
     QSharedPointer<QObject> objectByIndex(const QModelIndex &index) const;
+    QList<QSharedPointer<QObject> > objects() const;
+
+    QpObjectListModelBase *sourceModel() const;
+
+protected:
+    bool lessThan(const QModelIndex &left, const QModelIndex &right) const Q_DECL_OVERRIDE;
+    bool lessThan(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const;
+    bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const Q_DECL_OVERRIDE;
+    virtual bool filterAcceptsObjectBase(QSharedPointer<QObject> object) const = 0;
 
 private:
     bool m_includeDeletedObjects;
@@ -33,8 +42,8 @@ template<class T>
 class QpSortFilterProxyObjectModel : public QpSortFilterProxyObjectModelBase
 {
 public:
-    explicit QpSortFilterProxyObjectModel(QpObjectListModel<T> *sourceModel, QObject *parent = 0);
     explicit QpSortFilterProxyObjectModel(QObject *parent = 0);
+    QpSortFilterProxyObjectModel(QpObjectListModelBase *sourceModel, QObject *parent = 0);
 
     QpObjectListModel<T> *sourceModel() const;
     QSharedPointer<T> objectByIndex(const QModelIndex &index) const;
@@ -42,10 +51,8 @@ public:
     QList<QSharedPointer<T> > objects() const;
 
 protected:
-    bool lessThan(const QModelIndex &left, const QModelIndex &right) const Q_DECL_OVERRIDE;
-    virtual bool lessThan(QSharedPointer<T> left, QSharedPointer<T> right) const;
-    bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const Q_DECL_OVERRIDE;
-    virtual bool filterAcceptsObject(QSharedPointer<T> object) const;
+    bool filterAcceptsObjectBase(QSharedPointer<QObject> object) const;
+    virtual bool filterAcceptsObject(QSharedPointer<T>) const;
 };
 
 template<class T>
@@ -55,10 +62,16 @@ QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QObject *parent) :
 }
 
 template<class T>
-QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QpObjectListModel<T> *sourceModel, QObject *parent) :
+QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QpObjectListModelBase *sourceModel, QObject *parent) :
     QpSortFilterProxyObjectModelBase(parent)
 {
     setSourceModel(sourceModel);
+}
+
+template<class T>
+QpObjectListModel<T> *QpSortFilterProxyObjectModel<T>::sourceModel() const
+{
+    return static_cast<QpObjectListModel<T> *>(QpSortFilterProxyObjectModelBase::sourceModel());
 }
 
 template<class T>
@@ -70,22 +83,7 @@ QModelIndex QpSortFilterProxyObjectModel<T>::indexForObject(QSharedPointer<T> ob
 template<class T>
 QList<QSharedPointer<T> > QpSortFilterProxyObjectModel<T>::objects() const
 {
-    QList<QSharedPointer<T> > result;
-    foreach(QSharedPointer<T> object, sourceModel()->objects()) {
-        if(filterAcceptsObject(object))
-            result << object;
-    }
-    return result;
-}
-
-template<class T>
-QpObjectListModel<T> *QpSortFilterProxyObjectModel<T>::sourceModel() const
-{
-    QAbstractItemModel *source = QSortFilterProxyModel::sourceModel();
-    while(QAbstractProxyModel *proxy = qobject_cast<QAbstractProxyModel *>(source))
-        source = proxy->sourceModel();
-
-    return static_cast<QpObjectListModel<T> *>(source);
+    return Qp::castList<T>(QpSortFilterProxyObjectModelBase::objects());
 }
 
 template<class T>
@@ -95,38 +93,9 @@ QSharedPointer<T> QpSortFilterProxyObjectModel<T>::objectByIndex(const QModelInd
 }
 
 template<class T>
-bool QpSortFilterProxyObjectModel<T>::lessThan(const QModelIndex &left, const QModelIndex &right) const
+bool QpSortFilterProxyObjectModel<T>::filterAcceptsObjectBase(QSharedPointer<QObject> object) const
 {
-    if(!left.isValid())
-        return true;
-    if(!right.isValid())
-        return false;
-
-    QSharedPointer<T> o1 = sourceModel()->objectByIndex(left);
-    QSharedPointer<T> o2 = sourceModel()->objectByIndex(right);
-
-    return lessThan(o1, o2);
-}
-
-template<class T>
-bool QpSortFilterProxyObjectModel<T>::lessThan(QSharedPointer<T> left, QSharedPointer<T> right) const
-{
-    return Qp::Private::primaryKey(left.data()) < Qp::Private::primaryKey(right.data());
-}
-
-template<class T>
-bool QpSortFilterProxyObjectModel<T>::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
-{
-    QSharedPointer<T> o = sourceModel()->objectByIndex(sourceModel()->index(source_row, 0, source_parent));
-
-    if(!includeDeletedObjects()
-       && Qp::Private::isDeleted(o.data()))
-        return false;
-
-    if(!filterAcceptsObject(o))
-        return false;
-
-    return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
+    return filterAcceptsObject(qSharedPointerCast<T>(object));
 }
 
 template<class T>
