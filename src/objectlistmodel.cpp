@@ -108,7 +108,7 @@ QVariant QpObjectListModelBase::data(const QModelIndex &index, int role) const
         return QVariant();
 
     if (role == Qt::DisplayRole) {
-        QSharedPointer<QObject> object = QpObjectListModelBase::objectByIndex(index);
+        QSharedPointer<QObject> object = QpObjectListModelBase::objectByIndexBase(index);
         const QMetaObject *mo = object->metaObject();
         return mo->property(index.column()).read(object.data());
     }
@@ -129,7 +129,7 @@ QVariant QpObjectListModelBase::headerData(int section, Qt::Orientation orientat
     return QVariant();
 }
 
-QModelIndex QpObjectListModelBase::indexForObject(QSharedPointer<QObject> object) const
+QModelIndex QpObjectListModelBase::indexForObjectBase(QSharedPointer<QObject> object) const
 {
     if(!d->rows.contains(object))
         return QModelIndex();
@@ -138,14 +138,14 @@ QModelIndex QpObjectListModelBase::indexForObject(QSharedPointer<QObject> object
     return index(row);
 }
 
-QSharedPointer<QObject> QpObjectListModelBase::objectByIndex(const QModelIndex &index) const
+QSharedPointer<QObject> QpObjectListModelBase::objectByIndexBase(const QModelIndex &index) const
 {
     Q_ASSERT(index.row() < d->objects.size());
     Q_ASSERT(index.isValid());
     return d->objects.at(index.row());
 }
 
-QList<QSharedPointer<QObject> > QpObjectListModelBase::objects() const
+QList<QSharedPointer<QObject> > QpObjectListModelBase::objectsBase() const
 {
     return d->objects;
 }
@@ -181,7 +181,7 @@ void QpObjectListModelBase::objectInserted(QSharedPointer<QObject> object)
 void QpObjectListModelBase::objectUpdated(QSharedPointer<QObject> object)
 {
     QModelIndex i;
-    while(!(i = indexForObject(object)).isValid() && canFetchMore()) {
+    while(!(i = indexForObjectBase(object)).isValid() && canFetchMore()) {
         fetchMore();
     }
 

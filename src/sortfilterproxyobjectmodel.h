@@ -6,10 +6,11 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QSortFilterProxyModel>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
+#include "model.h"
 #include "objectlistmodel.h"
 #include "throttledfetchproxymodel.h"
 
-class QpSortFilterProxyObjectModelBase : public QSortFilterProxyModel
+class QpSortFilterProxyObjectModelBase : public QSortFilterProxyModel, public QpModelBase
 {
     Q_OBJECT
 public:
@@ -22,11 +23,7 @@ public:
     bool includeDeletedObjects() const;
     void setIncludeDeletedObjects(bool includeDeletedObjects);
 
-    QModelIndex indexForObject(QSharedPointer<QObject> object) const;
-    QSharedPointer<QObject> objectByIndex(const QModelIndex &index) const;
-    QList<QSharedPointer<QObject> > objects() const;
-
-    QpObjectListModelBase *sourceModel() const;
+    QList<QSharedPointer<QObject> > objectsBase() const Q_DECL_OVERRIDE;
 
 protected:
     bool lessThan(const QModelIndex &left, const QModelIndex &right) const Q_DECL_OVERRIDE;
@@ -39,16 +36,13 @@ private:
 };
 
 template<class T>
-class QpSortFilterProxyObjectModel : public QpSortFilterProxyObjectModelBase
+class QpSortFilterProxyObjectModel : public QpSortFilterProxyObjectModelBase, public QpModel<QpSortFilterProxyObjectModel<T>, T>
 {
 public:
     explicit QpSortFilterProxyObjectModel(QObject *parent = 0);
     QpSortFilterProxyObjectModel(QpObjectListModelBase *sourceModel, QObject *parent = 0);
 
     QpObjectListModel<T> *sourceModel() const;
-    QSharedPointer<T> objectByIndex(const QModelIndex &index) const;
-    QModelIndex indexForObject(QSharedPointer<T> object) const;
-    QList<QSharedPointer<T> > objects() const;
 
 protected:
     bool filterAcceptsObjectBase(QSharedPointer<QObject> object) const;
@@ -65,31 +59,13 @@ template<class T>
 QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QpObjectListModelBase *sourceModel, QObject *parent) :
     QpSortFilterProxyObjectModelBase(parent)
 {
-    setSourceModel(sourceModel);
+    QAbstractProxyModel::setSourceModel(sourceModel);
 }
 
 template<class T>
 QpObjectListModel<T> *QpSortFilterProxyObjectModel<T>::sourceModel() const
 {
-    return static_cast<QpObjectListModel<T> *>(QpSortFilterProxyObjectModelBase::sourceModel());
-}
-
-template<class T>
-QModelIndex QpSortFilterProxyObjectModel<T>::indexForObject(QSharedPointer<T> object) const
-{
-    return QpSortFilterProxyObjectModelBase::indexForObject(qSharedPointerCast<QObject>(object));
-}
-
-template<class T>
-QList<QSharedPointer<T> > QpSortFilterProxyObjectModel<T>::objects() const
-{
-    return Qp::castList<T>(QpSortFilterProxyObjectModelBase::objects());
-}
-
-template<class T>
-QSharedPointer<T> QpSortFilterProxyObjectModel<T>::objectByIndex(const QModelIndex &index) const
-{
-    return qSharedPointerCast<T>(QpSortFilterProxyObjectModelBase::objectByIndex(index));
+    return static_cast<QpObjectListModel<T> *>(QAbstractProxyModel::sourceModel());
 }
 
 template<class T>

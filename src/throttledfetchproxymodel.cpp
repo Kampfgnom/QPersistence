@@ -32,38 +32,6 @@ bool QpThrottledFetchProxyModel::canFetchMore(const QModelIndex &parent) const
     if(isThrottled())
         return false;
 
-    return sourceModel()->canFetchMore(mapToSource(parent));
+    return QIdentityProxyModel::sourceModel()->canFetchMore(QIdentityProxyModel::mapToSource(parent));
 }
 
-QModelIndex QpThrottledFetchProxyModel::indexForObject(QSharedPointer<QObject> object) const
-{
-    QAbstractItemModel *source = QIdentityProxyModel::sourceModel();
-    if(QpSortFilterProxyObjectModelBase *model = qobject_cast<QpSortFilterProxyObjectModelBase *>(source)) {
-        return mapFromSource(model->indexForObject(object));
-    }
-    else if(QpObjectListModelBase *model2 = qobject_cast<QpObjectListModelBase *>(source)) {
-        return mapFromSource(model2->indexForObject(object));
-    }
-    else if(QpThrottledFetchProxyModel *model3 = qobject_cast<QpThrottledFetchProxyModel *>(source)) {
-        return mapFromSource(model3->indexForObject(object));
-    }
-
-    return QModelIndex();
-}
-
-QSharedPointer<QObject> QpThrottledFetchProxyModel::objectByIndex(const QModelIndex &index) const
-{
-    QModelIndex i = mapToSource(index);
-    QAbstractItemModel *source = QIdentityProxyModel::sourceModel();
-    if(QpSortFilterProxyObjectModelBase *model = qobject_cast<QpSortFilterProxyObjectModelBase *>(source)) {
-        return model->objectByIndex(i);
-    }
-    else if(QpObjectListModelBase *model2 = qobject_cast<QpObjectListModelBase *>(source)) {
-        return model2->objectByIndex(i);
-    }
-    else if(QpThrottledFetchProxyModel *model3 = qobject_cast<QpThrottledFetchProxyModel *>(source)) {
-        return model3->objectByIndex(i);
-    }
-
-    return QSharedPointer<QObject>();
-}

@@ -42,7 +42,8 @@ HEADERS += \
     storage.h \
     defaultstorage.h \
     schemaversioning.h \
-    lazyPixmap.h
+    lazyPixmap.h \
+    model.h
 
 SOURCES += \
         cache.cpp \
@@ -70,4 +71,5 @@ SOURCES += \
     storage.cpp \
     defaultstorage.cpp \
     schemaversioning.cpp \
-    lazyPixmap.cpp
+    lazyPixmap.cpp \
+    model.cpp
