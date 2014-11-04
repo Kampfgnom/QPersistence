@@ -37,6 +37,15 @@ QSharedDataPointer<QpMetaPropertyPrivate> QpMetaPropertyPrivate::shared_null() {
     return shared_null;
 }
 
+QString QpMetaProperty::nameFromMaybeQualifiedName(const QString &maybeQualifiedName)
+{
+    int classNameEndIndex = maybeQualifiedName.lastIndexOf("::");
+    QString n = maybeQualifiedName;
+    if(classNameEndIndex >= 0)
+        n = maybeQualifiedName.mid(classNameEndIndex + 2);
+    return n;
+}
+
 QpMetaProperty::QpMetaProperty() :
     data(QpMetaPropertyPrivate::shared_null())
 {

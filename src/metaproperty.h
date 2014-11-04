@@ -22,6 +22,8 @@ public:
         ManyToManyCardinality
     };
 
+    static QString nameFromMaybeQualifiedName(const QString &maybeQualifiedName);
+
     QpMetaProperty();
     virtual ~QpMetaProperty();
     QpMetaProperty(const QpMetaProperty &other);
