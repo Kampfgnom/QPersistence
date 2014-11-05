@@ -59,11 +59,17 @@ template<class T> int variantUserType(QSharedPointer<T>)
     return QVariant::fromValue<QSharedPointer<T> >(QSharedPointer<T>()).userType();
 }
 
-template<class T> int variantUserType()
+template<class T>
+typename std::enable_if<std::is_base_of<QObject, T>::value, int>::type variantUserType()
 {
     return QVariant::fromValue<QSharedPointer<T> >(QSharedPointer<T>()).userType();
 }
 
+template<class T>
+typename std::enable_if<std::is_enum<T>::value, int>::type variantUserType()
+{
+    return QVariant::fromValue<T>(static_cast<T>(0)).userType();
+}
 
 
 /*******************************************************
