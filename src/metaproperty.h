@@ -59,6 +59,11 @@ public:
 
     QString tableName() const;
 
+    void remove(QSharedPointer<QObject> object, QSharedPointer<QObject> related);
+    void add(QSharedPointer<QObject> object, QSharedPointer<QObject> related);
+
+    bool isRelated(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const;
+
     // Maps
     bool isMappingProperty() const;
     QString mappingFromTypeName() const;

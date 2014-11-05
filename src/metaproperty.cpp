@@ -378,6 +378,61 @@ QString QpMetaProperty::tableName() const
     return shortName(result);
 }
 
+void QpMetaProperty::remove(QSharedPointer<QObject> object, QSharedPointer<QObject> related)
+{
+    if(isToOneRelationProperty()) {
+        data->metaProperty.write(object.data(), Qp::Private::variantCast(QSharedPointer<QObject>(), reverseClassName()));
+    }
+    else {
+        QVariant wrapper = Qp::Private::variantCast(related, reverseClassName());
+
+        QMetaMethod method = data->metaObject.removeObjectMethod(*this);
+        bool result = method.invoke(object.data(), Qt::DirectConnection,
+                                    QGenericArgument(data->metaProperty.typeName(), wrapper.data()));
+        Q_ASSERT(result);
+        Q_UNUSED(result);
+    }
+}
+
+void QpMetaProperty::add(QSharedPointer<QObject> object, QSharedPointer<QObject> related)
+{
+    if(isToOneRelationProperty()) {
+        data->metaProperty.write(object.data(), Qp::Private::variantCast(related, reverseClassName()));
+    }
+    else {
+        QVariant wrapper = Qp::Private::variantCast(related, reverseClassName());
+
+        QMetaMethod method = data->metaObject.addObjectMethod(*this);
+        bool result = method.invoke(object.data(), Qt::DirectConnection,
+                                    QGenericArgument(data->metaProperty.typeName(), wrapper.data()));
+        Q_ASSERT(result);
+        Q_UNUSED(result);
+    }
+}
+
+bool QpMetaProperty::isRelated(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const
+{
+    QVariant value = data->metaProperty.read(left.data());
+
+    switch(cardinality()) {
+        case QpMetaProperty::UnknownCardinality:
+            return false;
+
+        case QpMetaProperty::OneToOneCardinality:
+        case QpMetaProperty::ManyToOneCardinality: {
+            QSharedPointer<QObject> related = Qp::Private::objectCast(value);
+            return related == right;
+        }
+        case QpMetaProperty::OneToManyCardinality:
+        case QpMetaProperty::ManyToManyCardinality: {
+            QList<QSharedPointer<QObject > > objects = Qp::Private::objectListCast(value);
+            return objects.contains(right);
+        }
+    }
+
+    return false;
+}
+
 bool QpMetaProperty::isMappingProperty() const
 {
     return QString(typeName()).startsWith("QMap");

@@ -46,4 +46,9 @@ public:
     "" #Address, this
 #endif
 
+#ifndef QpRelationName
+#define QpRelationName(Address) \
+    "" #Address
+#endif
+
 #endif // QPERSISTENCE_RELATION_HASONE_H
