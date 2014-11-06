@@ -410,6 +410,22 @@ void QpMetaProperty::add(QSharedPointer<QObject> object, QSharedPointer<QObject>
     }
 }
 
+QList<QSharedPointer<QObject> > QpMetaProperty::read(QSharedPointer<QObject> object)
+{
+    switch(cardinality()) {
+        case QpMetaProperty::OneToOneCardinality:
+        case QpMetaProperty::ManyToOneCardinality:
+            return { Qp::Private::objectCast(data->metaProperty.read(object.data())) };
+
+        case QpMetaProperty::OneToManyCardinality:
+        case QpMetaProperty::ManyToManyCardinality:
+            return Qp::Private::objectListCast(data->metaProperty.read(object.data()));
+
+        case QpMetaProperty::UnknownCardinality:
+            return {};
+    }
+}
+
 bool QpMetaProperty::isRelated(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const
 {
     QVariant value = data->metaProperty.read(left.data());
