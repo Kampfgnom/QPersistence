@@ -16,7 +16,6 @@ public:
     virtual QModelIndex indexForObjectBase(QSharedPointer<QObject> object) const;
     virtual QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const;
     virtual QList<QSharedPointer<QObject> > objectsBase() const;
-
 };
 
 template<class M, class T>

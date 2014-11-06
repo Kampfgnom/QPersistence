@@ -36,6 +36,7 @@ QSharedPointer<QObject> QpModelBase::objectByIndexBase(const QModelIndex &index)
 
 QList<QSharedPointer<QObject> > QpModelBase::objectsBase() const
 {
-    Q_ASSERT_X(sourceQpModel(), Q_FUNC_INFO, "Every QpModelBase must inherit QAbstractProxyModel, or implement objectsBase");
-    return sourceQpModel()->objectsBase();
+    QpModelBase *source = sourceQpModel();
+    Q_ASSERT_X(source, Q_FUNC_INFO, "Every QpModelBase must inherit QAbstractProxyModel, or implement objectsBase");
+    return source->objectsBase();
 }

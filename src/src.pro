@@ -72,4 +72,5 @@ SOURCES += \
     defaultstorage.cpp \
     schemaversioning.cpp \
     lazyPixmap.cpp \
-    model.cpp
+    model.cpp \
+    qpersistence.cpp
