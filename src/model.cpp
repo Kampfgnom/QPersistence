@@ -40,3 +40,8 @@ QList<QSharedPointer<QObject> > QpModelBase::objectsBase() const
     Q_ASSERT_X(source, Q_FUNC_INFO, "Every QpModelBase must inherit QAbstractProxyModel, or implement objectsBase");
     return source->objectsBase();
 }
+
+QAbstractItemModel *QpModelBase::model() const
+{
+    return const_cast<QAbstractItemModel *>(dynamic_cast<const QAbstractItemModel *>(this));
+}

@@ -16,7 +16,21 @@ public:
     virtual QModelIndex indexForObjectBase(QSharedPointer<QObject> object) const;
     virtual QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const;
     virtual QList<QSharedPointer<QObject> > objectsBase() const;
+    QAbstractItemModel *model() const;
+    template<class T> T *findModelInHierarchy() const;
 };
+
+template<class T>
+T *QpModelBase::findModelInHierarchy() const
+{
+    if(const T *t = dynamic_cast<const T *>(this))
+        return const_cast<T *>(t);
+
+    if(QpModelBase *source = sourceQpModel())
+        return source->findModelInHierarchy<T>();
+
+    return nullptr;
+}
 
 template<class M, class T>
 class QpModel
