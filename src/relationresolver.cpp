@@ -100,6 +100,14 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveToManyRelation(const 
     QList<QSharedPointer<QObject> > relatedObjects;
     relatedObjects.reserve(foreignKeys.size());
     foreach (int key, foreignKeys) {
+        if(key <= 0) {
+            qWarning() << QString("The object of type '%1' with the ID '%2' is related to a NULL object")
+                          .arg(metaObject.className())
+                          .arg(Qp::Private::primaryKey(object));
+            Q_ASSERT_X(false, Q_FUNC_INFO, "invalid relation in db");
+            continue;
+        }
+
         QSharedPointer<QObject> relatedObject = dao->readObject(key);
 
         Q_ASSERT_X(relatedObject,
