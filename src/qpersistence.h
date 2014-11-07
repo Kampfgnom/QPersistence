@@ -50,7 +50,10 @@ QList<Target> castList(const QList<Source>& list);
 template<class T, class O>
 QList<QSharedPointer<T> > castList(const QList<QSharedPointer<O> >& list);
 template<class T> QVariant variant(QSharedPointer<T> object);
-int variantUserType(const QMetaObject &metaObject);
+inline int variantUserType(const QMetaObject &metaObject)
+{
+    return Qp::Private::variantCast(QSharedPointer<QObject>(), metaObject.className()).userType();
+}
 template<class T> int variantUserType(QSharedPointer<T>);
 template<class T>
 typename std::enable_if<std::is_base_of<QObject, T>::value, int>::type variantUserType();
