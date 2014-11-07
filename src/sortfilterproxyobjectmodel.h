@@ -42,8 +42,6 @@ public:
     explicit QpSortFilterProxyObjectModel(QObject *parent = 0);
     QpSortFilterProxyObjectModel(QpObjectListModelBase *sourceModel, QObject *parent = 0);
 
-    QpObjectListModel<T> *sourceModel() const;
-
 protected:
     bool filterAcceptsObjectBase(QSharedPointer<QObject> object) const;
     virtual bool filterAcceptsObject(QSharedPointer<T>) const;
@@ -59,13 +57,7 @@ template<class T>
 QpSortFilterProxyObjectModel<T>::QpSortFilterProxyObjectModel(QpObjectListModelBase *sourceModel, QObject *parent) :
     QpSortFilterProxyObjectModelBase(parent)
 {
-    QAbstractProxyModel::setSourceModel(sourceModel);
-}
-
-template<class T>
-QpObjectListModel<T> *QpSortFilterProxyObjectModel<T>::sourceModel() const
-{
-    return static_cast<QpObjectListModel<T> *>(QAbstractProxyModel::sourceModel());
+    setSourceModel(sourceModel);
 }
 
 template<class T>
