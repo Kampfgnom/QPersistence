@@ -18,7 +18,20 @@ public:
     virtual QList<QSharedPointer<QObject> > objectsBase() const;
     QAbstractItemModel *model() const;
     template<class T> T *findModelInHierarchy() const;
+    template<class T> T *createProxyIfNotExistsInHierarchy();
 };
+
+template<class T>
+T *QpModelBase::createProxyIfNotExistsInHierarchy()
+{
+    T *proxy = findModelInHierarchy<T>();
+    if(proxy)
+        return proxy;
+
+    proxy = new T(model());
+    proxy->setSourceModel(model());
+    return proxy;
+}
 
 template<class T>
 T *QpModelBase::findModelInHierarchy() const
