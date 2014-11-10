@@ -33,7 +33,7 @@ public:
 
     bool grandTable(const QString &table, const QString &username, Permissions permissions);
     bool grandTableColumn(const QString &table, const QString &column, const QString &username, Permissions permissions);
-    bool grandAll(const QString &username);
+    bool grandAll(const QString &username, bool withGrantOption = true);
     bool revokeAll(const QString &username);
 
 private:
