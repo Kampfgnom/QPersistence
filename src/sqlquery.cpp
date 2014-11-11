@@ -601,7 +601,16 @@ const char LISTSEPARATOR = 0x1;
 QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
 {
     QVariant value = val;
-    if (static_cast<QMetaType::Type>(val.type()) == QMetaType::QStringList) {
+
+    if (val.type() == QVariant::DateTime) {
+        QDateTime time = val.toDateTime();
+        return time.toTimeSpec(Qt::UTC);
+    }
+    else if (val.type() == QVariant::Time) {
+        QDateTime time = QDateTime(QDate::currentDate(), val.toTime());
+        return time.toTimeSpec(Qt::UTC).time();
+    }
+    else if (static_cast<QMetaType::Type>(val.type()) == QMetaType::QStringList) {
         return QVariant::fromValue<QString>(val.toStringList().join(LISTSEPARATOR));
     }
     else if (static_cast<QMetaType::Type>(val.type()) == QMetaType::QPixmap) {
@@ -623,6 +632,16 @@ QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
 QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaType::Type type)
 {
     QVariant value = val;
+    if (static_cast<QVariant::Type>(type) == QVariant::DateTime) {
+        QDateTime time = val.toDateTime();
+        time.setTimeSpec(Qt::UTC);
+        return time.toLocalTime();
+    }
+    else if (static_cast<QVariant::Type>(type) == QVariant::Time) {
+        QDateTime time = QDateTime(QDate::currentDate(), val.toTime());
+        time.setTimeSpec(Qt::UTC);
+        return time.toLocalTime();
+    }
     if (type == QMetaType::QStringList) {
         return QVariant::fromValue<QStringList>(val.toString().split(LISTSEPARATOR));
     }
