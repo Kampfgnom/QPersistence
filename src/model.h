@@ -18,9 +18,9 @@ public:
     virtual QList<QSharedPointer<QObject> > objectsBase() const;
     QAbstractItemModel *model() const;
     template<class T> T *findModelInHierarchy() const;
+    template<class T> QList<T *> findModelsInHierarchy() const;
     template<class T> T *createProxyIfNotExistsInHierarchy();
 };
-
 template<class T>
 T *QpModelBase::createProxyIfNotExistsInHierarchy()
 {
@@ -43,6 +43,19 @@ T *QpModelBase::findModelInHierarchy() const
         return source->findModelInHierarchy<T>();
 
     return nullptr;
+}
+
+template<class T>
+QList<T *> QpModelBase::findModelsInHierarchy() const
+{
+    QList<T *> result;
+    if(QpModelBase *source = sourceQpModel())
+        result << source->findModelsInHierarchy<T>();
+
+    if(const T *t = dynamic_cast<const T *>(this))
+        result << const_cast<T *>(t);
+
+    return result;
 }
 
 template<class M, class T>
