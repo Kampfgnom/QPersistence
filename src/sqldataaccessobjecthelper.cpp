@@ -316,16 +316,18 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
                   .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
     query.addRawField(QpSqlQuery::escapeField(QpDatabaseSchema::COLUMN_NAME_REVISION));
 
+    int tableJoin = 0;
     foreach(const QpMetaProperty relation, metaObject.relationProperties()) {
         if(relation.hasTableForeignKey()) {
             query.addField(relation.columnName());
         }
         else if(relation.isToOneRelationProperty()) {
-            query.addRawField(QpSqlQuery::escapeField(relation.tableName()) + "." +
+            QString joinName = QString("join_table_%1").arg(tableJoin++);
+            query.addRawField(joinName + "." +
                               QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY +
                               " AS  _Qp_FK_" + relation.name());
-            query.addJoin("LEFT", relation.tableName(),
-                          QpSqlQuery::escapeField(relation.tableName()) + "." + QpSqlQuery::escapeField(relation.columnName()) +
+            query.addJoin("LEFT", QpSqlQuery::escapeField(relation.tableName()).append(" AS ").append(joinName),
+                          joinName + "." + QpSqlQuery::escapeField(relation.columnName()) +
                           " = " + query.escapedQualifiedField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
         }
     }
