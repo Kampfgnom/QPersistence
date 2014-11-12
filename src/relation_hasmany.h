@@ -23,6 +23,7 @@ public:
     void remove(QSharedPointer<QObject> object);
     void setObjects(const QList<QSharedPointer<QObject> > objects) const;
 
+    bool isResolved() const;
     bool operator ==(const QList<QSharedPointer<QObject> > &objects) const;
 
 private:

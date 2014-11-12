@@ -136,3 +136,8 @@ void QpHasManyBase::setObjects(const QList<QSharedPointer<QObject>> objects) con
     data->objects = objects;
     data->resolved = true;
 }
+
+bool QpHasManyBase::isResolved() const
+{
+    return data->resolved;
+}
