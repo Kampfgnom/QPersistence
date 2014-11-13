@@ -248,6 +248,8 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
         return false;
     }
 
+    unlinkRelations(object);
+
     data->cache.remove(data->storage->primaryKey(object));
     emit objectRemoved(object);
     return true;
@@ -260,8 +262,22 @@ bool QpDaoBase::markAsDeleted(QSharedPointer<QObject> object)
     if(result != Qp::UpdateSuccess)
         return false;
 
+    unlinkRelations(object);
+
     emit objectMarkedAsDeleted(object);
     return true;
+}
+
+void QpDaoBase::unlinkRelations(QSharedPointer<QObject> object) const
+{
+    _Pragma("clang diagnostic push");
+    _Pragma("clang diagnostic ignored \"-Wshadow\"");
+    foreach(QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
+        foreach(QSharedPointer<QObject> related, relation.read(object)) {
+            relation.remove(object, related);
+        }
+    }
+    _Pragma("clang diagnostic pop");
 }
 
 bool QpDaoBase::undelete(QSharedPointer<QObject> object)
