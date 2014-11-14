@@ -643,7 +643,11 @@ QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaTyp
         return time.toLocalTime();
     }
     if (type == QMetaType::QStringList) {
-        return QVariant::fromValue<QStringList>(val.toString().split(LISTSEPARATOR));
+        QString string = val.toString();
+        if(string.isEmpty())
+            return QStringList();
+
+        return QVariant::fromValue<QStringList>(string.split(LISTSEPARATOR));
     }
     else if (type == QMetaType::QPixmap) {
         QByteArray byteArray = val.toByteArray();
