@@ -43,6 +43,9 @@ void registerConverter(int variantType, ConverterBase *converter)
 
 QSharedPointer<QObject> objectCast(const QVariant &variant)
 {
+    if(!variant.isValid() || variant.isNull())
+        return QSharedPointer<QObject>();
+
     Q_ASSERT(ConvertersByUserType()->contains(variant.userType()));
 
     return ConvertersByUserType()->value(variant.userType())->convertObject(variant);
@@ -50,6 +53,9 @@ QSharedPointer<QObject> objectCast(const QVariant &variant)
 
 QList<QSharedPointer<QObject> > objectListCast(const QVariant &variant)
 {
+    if(!variant.isValid() || variant.isNull())
+        return {};
+
     Q_ASSERT(ConvertersByUserType()->contains(variant.userType()));
 
     return ConvertersByUserType()->value(variant.userType())->convertList(variant);
