@@ -386,7 +386,17 @@ void QpMetaProperty::remove(QSharedPointer<QObject> object, QSharedPointer<QObje
     else {
         QVariant wrapper = Qp::Private::variantCast(related, reverseClassName());
 
-        QMetaMethod method = data->metaObject.removeObjectMethod(*this);
+        const QMetaObject *mo = object->metaObject();
+        QByteArray methodName = data->metaObject.removeObjectMethod(*this).methodSignature();
+        int index = mo->indexOfMethod(methodName);
+
+        Q_ASSERT_X(index > 0, Q_FUNC_INFO,
+                   QString("You have to add a public slot with the signature '%1' to your '%2' class!")
+                   .arg(QString::fromLatin1(methodName))
+                   .arg(mo->className())
+                   .toLatin1());
+
+        QMetaMethod method = mo->method(index);
         bool result = method.invoke(object.data(), Qt::DirectConnection,
                                     QGenericArgument(data->metaProperty.typeName(), wrapper.data()));
         Q_ASSERT(result);
@@ -402,7 +412,17 @@ void QpMetaProperty::add(QSharedPointer<QObject> object, QSharedPointer<QObject>
     else {
         QVariant wrapper = Qp::Private::variantCast(related, reverseClassName());
 
-        QMetaMethod method = data->metaObject.addObjectMethod(*this);
+        const QMetaObject *mo = object->metaObject();
+        QByteArray methodName = data->metaObject.addObjectMethod(*this).methodSignature();
+        int index = mo->indexOfMethod(methodName);
+
+        Q_ASSERT_X(index > 0, Q_FUNC_INFO,
+                   QString("You have to add a public slot with the signature '%1' to your '%2' class!")
+                   .arg(QString::fromLatin1(methodName))
+                   .arg(mo->className())
+                   .toLatin1());
+
+        QMetaMethod method = mo->method(index);
         bool result = method.invoke(object.data(), Qt::DirectConnection,
                                     QGenericArgument(data->metaProperty.typeName(), wrapper.data()));
         Q_ASSERT(result);
