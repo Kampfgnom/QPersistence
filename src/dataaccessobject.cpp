@@ -270,14 +270,18 @@ bool QpDaoBase::markAsDeleted(QSharedPointer<QObject> object)
 
 void QpDaoBase::unlinkRelations(QSharedPointer<QObject> object) const
 {
+#ifdef __clang__
     _Pragma("clang diagnostic push");
     _Pragma("clang diagnostic ignored \"-Wshadow\"");
+#endif
     foreach(QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
         foreach(QSharedPointer<QObject> related, relation.read(object)) {
             relation.remove(object, related);
         }
     }
+#ifdef __clang__
     _Pragma("clang diagnostic pop");
+#endif
 }
 
 bool QpDaoBase::undelete(QSharedPointer<QObject> object)
