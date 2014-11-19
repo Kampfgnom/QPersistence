@@ -146,7 +146,11 @@ QpSchemaVersioning::Version QpSchemaVersioning::currentDatabaseVersion() const
 void QpSchemaVersioning::registerUpgradeScript(const Version &version, const QString &script)
 {
     registerUpgradeFunction(version, script, [=] {
-        data->applyScript(script);
+        foreach(QString query, script.split(';')) {
+            if(QString(query).remove(QRegularExpression("[\\s]")).isEmpty())
+                continue;
+            data->applyScript(query);
+        }
     });
 }
 
