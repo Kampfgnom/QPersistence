@@ -444,6 +444,8 @@ QList<QSharedPointer<QObject> > QpMetaProperty::read(QSharedPointer<QObject> obj
         case QpMetaProperty::UnknownCardinality:
             return {};
     }
+
+    return {};
 }
 
 bool QpMetaProperty::isRelated(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const
