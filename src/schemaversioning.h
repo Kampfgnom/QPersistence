@@ -23,6 +23,7 @@ public:
         int dot;
     };
     static const Version NullVersion;
+    static Version parseVersionString(const QString &version);
 
     explicit QpSchemaVersioning(QObject *parent = 0);
     QpSchemaVersioning(QpStorage *storage, QObject *parent = 0);

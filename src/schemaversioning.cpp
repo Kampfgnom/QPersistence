@@ -88,6 +88,30 @@ void QpSchemaVersioningData::insertVersion(const QpSchemaVersioning::Version &ve
     }
 }
 
+QpSchemaVersioning::Version QpSchemaVersioning::parseVersionString(const QString &versionString)
+{
+    QStringList parts = versionString.split('.');
+    if(parts.size() != 3) {
+        qWarning() << "Invalid version string" << versionString;
+        return NullVersion;
+    }
+
+    bool valid = true;
+    bool validation = false;
+    Version version;
+    version.major = parts.at(0).toInt(&validation);
+    valid &= validation;
+    version.minor = parts.at(1).toInt(&validation);
+    valid &= validation;
+    version.dot = parts.at(2).toInt(&validation);
+    valid &= validation;
+    if(!valid) {
+        qWarning() << "Invalid version string" << versionString;
+        return NullVersion;
+    }
+    return version;
+}
+
 QpSchemaVersioning::QpSchemaVersioning(QObject *parent) :
     QpSchemaVersioning(QpStorage::defaultStorage(), parent)
 {
