@@ -12,51 +12,18 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 const QpSchemaVersioning::Version QpSchemaVersioning::NullVersion = {0,0,0};
 
-uint qHash(const QpSchemaVersioning::Version &version, uint seed)
-{
-    return qHash(version.major, seed) ^ qHash(version.minor, seed) ^ qHash(version.dot, seed);
-}
-
-bool operator <(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
-{
-    return v1.major < v2.major
-            || (v1.major == v2.major && v1.minor < v2.minor)
-            || (v1.major == v2.major && v1.minor == v2.minor && v1.dot < v2.dot);
-}
-
-bool operator >(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
-{
-    return !operator <(v1, v2) && !operator ==(v1, v2);
-}
-
-bool operator <=(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
-{
-    return operator <(v1, v2) || operator ==(v1, v2);
-}
-
-bool operator ==(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
-{
-    return v1.major == v2.major
-            && v1.minor == v2.minor
-            && v1.dot == v2.dot;
-}
-
-QDebug operator<<(QDebug dbg, const QpSchemaVersioning::Version &version)
-{
-    dbg.nospace() << version.major << "." << version.minor << "." << version.dot;
-    return dbg.space();
-}
-
 class QpSchemaVersioningData : public QSharedData
 {
 public:
     QpSchemaVersioningData() :
-        QSharedData()
+        QSharedData(),
+        requiredVersion(QpSchemaVersioning::NullVersion)
     {}
 
     QpStorage *storage;
     QMap<QpSchemaVersioning::Version, std::function<void()> > upgradeFunctions;
     QMap<QpSchemaVersioning::Version, QString> descriptions;
+    QpSchemaVersioning::Version requiredVersion;
 
     void applyScript(const QString &script);
     void insertVersion(const QpSchemaVersioning::Version &version);
@@ -231,4 +198,14 @@ bool QpSchemaVersioning::upgradeSchema()
 QpStorage *QpSchemaVersioning::storage() const
 {
     return data->storage;
+}
+
+QpSchemaVersioning::Version QpSchemaVersioning::requiredVersion() const
+{
+    return data->requiredVersion;
+}
+
+void QpSchemaVersioning::setRequiredVersion(const QpSchemaVersioning::Version &value)
+{
+    data->requiredVersion = value;
 }
