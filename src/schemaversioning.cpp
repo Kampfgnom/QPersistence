@@ -183,10 +183,13 @@ bool QpSchemaVersioning::upgradeSchema()
         }
 
         qDebug() << "Applying version " << it.key();
+        data->storage->database().transaction();
         it.value()();
         data->insertVersion(it.key());
 
-        if(data->storage->lastError().isValid()) {
+        if(data->storage->lastError().isValid()
+           || !data->storage->database().commit()) {
+            data->storage->database().rollback();
             qDebug() << "Schema upgrade failed" << data->storage->lastError();
             return false;
         }
