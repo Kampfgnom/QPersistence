@@ -36,5 +36,16 @@ macx:QPERSISTENCE_COMMON_QMAKE_CXXFLAGS = -Weverything \
                                           -Wno-unknown-warning-option \
                                           -Wno-unkown-pragmas
 
-DEFINES += QP_FOR_MYSQL
-
+qpoptions = $$find(CONFIG, "qpmysql") $$find(CONFIG, "qpsqlite")
+count(qpoptions, 0) {
+    CONFIG += qpmysql
+}
+contains(CONFIG, qpmysql) {
+    DEFINES += QP_FOR_MYSQL
+}
+contains(CONFIG, qpsqlite) {
+    DEFINES += QP_FOR_SQLITE
+}
+!contains(QT, gui) {
+    DEFINES += QP_NO_GUI
+}

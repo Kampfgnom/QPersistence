@@ -1,3 +1,8 @@
+COMMON_CONFIGFILE = ../../../common.pri
+exists($$COMMON_CONFIGFILE) {
+    include($$COMMON_CONFIGFILE)
+}
+
 QPERSISTENCE_PATH = ..
 include($$QPERSISTENCE_PATH/QPersistence.pri)
 
