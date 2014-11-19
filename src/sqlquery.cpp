@@ -10,13 +10,15 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QByteArray>
 #include <QDebug>
 #include <QHash>
-#include <QPixmap>
+#include <QMetaProperty>
 #include <QRegularExpressionMatchIterator>
 #include <QSharedData>
-#include <QStringList>
 #include <QSqlDriver>
 #include <QSqlRecord>
-#include <QMetaProperty>
+#include <QStringList>
+#ifndef QP_NO_GUI
+#   include <QPixmap>
+#endif
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlQueryPrivate : public QSharedData {
@@ -614,6 +616,7 @@ QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
         return QVariant::fromValue<QString>(val.toStringList().join(LISTSEPARATOR));
     }
     else if (static_cast<QMetaType::Type>(val.type()) == QMetaType::QPixmap) {
+#ifndef QP_NO_GUI
         QByteArray byteArray;
         QPixmap pixmap = val.value<QPixmap>();
 
@@ -621,6 +624,7 @@ QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
         buffer.open(QIODevice::WriteOnly);
         pixmap.save(&buffer, "png");
         return byteArray;
+#endif
     }
     else if (Qp::Private::canConvertToSqlStorableVariant(val)) {
         return Qp::Private::convertToSqlStorableVariant(val);
@@ -650,10 +654,12 @@ QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaTyp
         return QVariant::fromValue<QStringList>(string.split(LISTSEPARATOR));
     }
     else if (type == QMetaType::QPixmap) {
+#ifndef QP_NO_GUI
         QByteArray byteArray = val.toByteArray();
         QPixmap pixmap;
         pixmap.loadFromData(byteArray, "png");
         return QVariant::fromValue<QPixmap>(pixmap);
+#endif
     }
     else if (Qp::Private::canConvertFromSqlStoredVariant(type)) {
         return Qp::Private::convertFromSqlStoredVariant(val.toString(), type);

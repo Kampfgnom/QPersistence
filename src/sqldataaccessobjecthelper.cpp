@@ -16,13 +16,15 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QMetaProperty>
 #include <QSqlDatabase>
 #include <QSqlError>
+#include <QSqlField>
 #include <QSqlQuery>
 #include <QSqlRecord>
 #include <QStringList>
-#include <QVariant>
-#include <QSqlField>
 #include <QThread>
-#include <QPixmap>
+#include <QVariant>
+#ifndef QP_NO_GUI
+#   include <QPixmap>
+#endif
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlDataAccessObjectHelperPrivate : public QSharedData
@@ -863,6 +865,7 @@ int QpSqlDataAccessObjectHelper::maxPrimaryKey(const QpMetaObject &metaObject) c
     return query.value(0).toInt() - 1;
 }
 
+#ifndef QP_NO_GUI
 QPixmap QpSqlDataAccessObjectHelper::readPixmap(QObject *object, const QString &propertyName)
 {
     QpSqlQuery query(data->storage->database());
@@ -885,6 +888,7 @@ QPixmap QpSqlDataAccessObjectHelper::readPixmap(QObject *object, const QString &
     QMetaType::Type type = static_cast<QMetaType::Type>(mo.metaProperty(propertyName).metaProperty().userType());
     return QpSqlQuery::variantFromSqlStorableVariant(query.value(0), type).value<QPixmap>();
 }
+#endif
 
 #ifndef QP_NO_TIMESTAMPS
 double QpSqlDataAccessObjectHelper::readUpdateTime(QObject *object)

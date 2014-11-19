@@ -1,6 +1,10 @@
 #ifndef LAZYPIXMAP_H
 #define LAZYPIXMAP_H
 
+#ifdef QP_NO_GUI
+void qpunused();
+#else
+
 #include "defines.h"
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QExplicitlySharedDataPointer>
@@ -25,5 +29,7 @@ class QpLazyPixmap
     private:
         QExplicitlySharedDataPointer<QpLazyPixmapData> data;
 };
+
+#endif
 
 #endif // LAZYPIXMAP_H
