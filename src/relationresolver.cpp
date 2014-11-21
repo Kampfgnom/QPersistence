@@ -77,6 +77,8 @@ QSharedPointer<QObject> QpRelationResolver::resolveToOneRelation(const QString &
 
     QpMetaObject foreignMetaObject = relation.reverseMetaObject();
     QSharedPointer<QObject> related = storage->dataAccessObject(foreignMetaObject.metaObject())->readObject(foreignKey);
+    if(Qp::Private::isDeleted(related.data()))
+        return QSharedPointer<QObject>();
 
     if (!related)
         const_cast<QObject*>(object)->setProperty(column, 0);
