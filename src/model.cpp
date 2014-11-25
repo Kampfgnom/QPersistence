@@ -22,6 +22,9 @@ QpModelBase *QpModelBase::sourceQpModel() const
 
 QModelIndex QpModelBase::indexForObjectBase(QSharedPointer<QObject> object) const
 {
+    if(!object) {
+        return QModelIndex();
+    }
     const QAbstractProxyModel *proxyThis = dynamic_cast<const QAbstractProxyModel *>(this);
     Q_ASSERT_X(proxyThis, Q_FUNC_INFO, "Every QpModelBase must inherit QAbstractProxyModel, or implement indexForObjectBase");
     return proxyThis->mapFromSource(sourceQpModel()->indexForObjectBase(object));
@@ -29,6 +32,9 @@ QModelIndex QpModelBase::indexForObjectBase(QSharedPointer<QObject> object) cons
 
 QSharedPointer<QObject> QpModelBase::objectByIndexBase(const QModelIndex &index) const
 {
+    if(!index.isValid()) {
+        return QSharedPointer<QObject>();
+    }
     const QAbstractProxyModel *proxyThis = dynamic_cast<const QAbstractProxyModel *>(this);
     Q_ASSERT_X(proxyThis, Q_FUNC_INFO, "Every QpModelBase must inherit QAbstractProxyModel, or implement objectByIndexBase");
     return sourceQpModel()->objectByIndexBase(proxyThis->mapToSource(index));
