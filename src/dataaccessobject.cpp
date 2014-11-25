@@ -287,7 +287,9 @@ void QpDaoBase::unlinkRelations(QSharedPointer<QObject> object) const
 bool QpDaoBase::undelete(QSharedPointer<QObject> object)
 {
     Qp::Private::undelete(object.data());
+    blockSignals(true); // block object updated signal
     Qp::UpdateResult result = updateObject(object);
+    blockSignals(false);
     if(result != Qp::UpdateSuccess)
         return false;
 
