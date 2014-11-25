@@ -26,6 +26,7 @@ QpObjectListModelBase::QpObjectListModelBase(QpDaoBase *dao, QObject *parent) :
     connect(dao, &QpDaoBase::objectRemoved, this, &QpObjectListModelBase::objectRemoved);
     connect(dao, &QpDaoBase::objectUpdated, this, &QpObjectListModelBase::objectUpdated);
     connect(dao, &QpDaoBase::objectMarkedAsDeleted, this, &QpObjectListModelBase::objectMarkedAsDeleted);
+    connect(dao, &QpDaoBase::objectUndeleted, this, &QpObjectListModelBase::objectUndeleted);
 }
 
 QpObjectListModelBase::~QpObjectListModelBase()
@@ -212,5 +213,23 @@ void QpObjectListModelBase::objectMarkedAsDeleted(QSharedPointer<QObject> object
 
     if(Qp::isDeleted(object))
         objectRemoved(object);
+}
+
+void QpObjectListModelBase::objectUndeleted(QSharedPointer<QObject> object)
+{
+    if(!d->objectsFromDao || d->rows.contains(object))
+        return;
+
+    int index = d->dao->count(d->condition
+                              && QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, QpSqlCondition::LessThan, Qp::primaryKey(object)));
+
+    beginInsertRows(QModelIndex(), index, index);
+
+    d->objects.insert(index, object);
+    for(int i = index, c = d->objects.count(); i < c; ++i) {
+        d->rows.insert(d->objects.at(i), i);
+    }
+
+    endInsertRows();
 }
 
