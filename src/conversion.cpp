@@ -1,5 +1,7 @@
 #include "conversion.h"
 
+#include "qpersistence.h"
+
 namespace Qp {
 
 namespace Private {
@@ -43,10 +45,11 @@ void registerConverter(int variantType, ConverterBase *converter)
 
 QSharedPointer<QObject> objectCast(const QVariant &variant)
 {
-    if(!variant.isValid() || variant.isNull())
+    if(!variant.isValid() || variant.isNull() || !ConvertersByUserType()->contains(variant.userType()))
         return QSharedPointer<QObject>();
 
-    Q_ASSERT(ConvertersByUserType()->contains(variant.userType()));
+    if(Qp::variantUserType<QObject>() == variant.userType())
+        return variant.value<QSharedPointer<QObject> >();
 
     return ConvertersByUserType()->value(variant.userType())->convertObject(variant);
 }
