@@ -59,9 +59,9 @@ public:
 
     QString tableName() const;
 
-    void remove(QSharedPointer<QObject> object, QSharedPointer<QObject> related);
-    void add(QSharedPointer<QObject> object, QSharedPointer<QObject> related);
-    QList<QSharedPointer<QObject > > read(QSharedPointer<QObject> object);
+    void remove(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const;
+    void add(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const;
+    QList<QSharedPointer<QObject > > read(QSharedPointer<QObject> object) const;
 
     bool isRelated(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const;
 
