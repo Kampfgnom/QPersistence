@@ -248,7 +248,7 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
         return false;
     }
 
-    unlinkRelations(object);
+//    unlinkRelations(object);
 
     data->cache.remove(data->storage->primaryKey(object));
     emit objectRemoved(object);
@@ -262,7 +262,7 @@ bool QpDaoBase::markAsDeleted(QSharedPointer<QObject> object)
     if(result != Qp::UpdateSuccess)
         return false;
 
-    unlinkRelations(object);
+//    unlinkRelations(object);
 
     emit objectMarkedAsDeleted(object);
     return true;
