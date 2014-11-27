@@ -40,14 +40,14 @@ QSharedPointer<QObject> QpModelBase::objectByIndexBase(const QModelIndex &index)
     return sourceQpModel()->objectByIndexBase(proxyThis->mapToSource(index));
 }
 
-QList<QSharedPointer<QObject> > QpModelBase::objectsbyIndexes(const QModelIndexList &list) const
+QList<QSharedPointer<QObject> > QpModelBase::objectsByIndexes(const QModelIndexList &list) const
 {
     QList<QSharedPointer<QObject> > result;
     foreach(QModelIndex index, list) {
-        QSharedPointer<QObject> object = objectByIndexBase(index);
-        if(!result.contains(object)) {
-            result.append(object);
-        }
+        if(index.column() != 0)
+            continue;
+
+        result << objectByIndexBase(index);
     }
     return result;
 }
