@@ -15,6 +15,9 @@ QpModelBase *QpModelBase::sourceQpModel() const
     if(!proxyThis)
         return nullptr;
 
+    if(!proxyThis->sourceModel())
+        return nullptr;
+
     QpModelBase *source = dynamic_cast<QpModelBase *>(proxyThis->sourceModel());
     Q_ASSERT_X(source, Q_FUNC_INFO, "The source of a QpModelBase has to be a QpModelBase");
     return source;
