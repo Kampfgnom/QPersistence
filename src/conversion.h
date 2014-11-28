@@ -50,6 +50,8 @@ bool canConvertFromSqlStoredVariant()
     return canConvertFromSqlStoredVariant(static_cast<QMetaType::Type>(v.userType()));
 }
 
+bool isObjectUserType(int userType);
+
 
 class ConverterBase : public QObject
 {
