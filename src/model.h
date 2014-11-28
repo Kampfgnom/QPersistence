@@ -21,6 +21,7 @@ public:
     template<class T> T *findModelInHierarchy() const;
     template<class T> QList<T *> findModelsInHierarchy() const;
     template<class T> T *createProxyIfNotExistsInHierarchy();
+    template<class T> T *createProxyInHierarchy();
 };
 template<class T>
 T *QpModelBase::createProxyIfNotExistsInHierarchy()
@@ -29,7 +30,13 @@ T *QpModelBase::createProxyIfNotExistsInHierarchy()
     if(proxy)
         return proxy;
 
-    proxy = new T(model());
+    return createProxyInHierarchy<T>();
+}
+
+template<class T>
+T *QpModelBase::createProxyInHierarchy()
+{
+    T *proxy = new T(model());
     proxy->setSourceModel(model());
     return proxy;
 }
