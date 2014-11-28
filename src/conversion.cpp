@@ -100,6 +100,15 @@ QString ConverterBase::className() const { return QString(); }
 QString ConverterBase::convertToSqlStorableValue(const QVariant &variant) const { Q_UNUSED(variant) return QString(); }
 QVariant ConverterBase::convertFromSqlStorableValue(const QString &value) const { Q_UNUSED(value) return QVariant(); }
 
+bool isObjectUserType(int userType)
+{
+    if(Qp::variantUserType<QObject>() == userType)
+        return true;
+
+    bool contains = ConvertersByUserType()->contains(userType);
+    return ConvertersByUserType()->contains(userType);
+}
+
 }
 
 }
