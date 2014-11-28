@@ -84,6 +84,14 @@ QVariant variantListCast(QList<QSharedPointer<QObject> > objects, const QString 
     return ConvertersByClassName()->value(className)->convertVariantList(objects);
 }
 
+QString classNameForUserType(int userType)
+{
+    if(!ConvertersByUserType()->contains(userType))
+        return QString();
+
+    return ConvertersByUserType()->value(userType)->className();
+}
+
 QList<QSharedPointer<QObject> > ConverterBase::convertList(const QVariant &variant) const { Q_UNUSED(variant) return QList<QSharedPointer<QObject> >(); }
 QSharedPointer<QObject> ConverterBase::convertObject(const QVariant &variant) const { Q_UNUSED(variant) return QSharedPointer<QObject>(); }
 QVariant ConverterBase::convertVariant(QSharedPointer<QObject> object) const { Q_UNUSED(object) return QVariant(); }

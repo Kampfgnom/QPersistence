@@ -24,6 +24,7 @@ QSharedPointer<QObject> objectCast(const QVariant &variant);
 QList<QSharedPointer<QObject> > objectListCast(const QVariant &variant);
 QVariant variantCast(QSharedPointer<QObject> object, const QString &className = QString());
 QVariant variantListCast(QList<QSharedPointer<QObject> > objects, const QString &className);
+QString classNameForUserType(int userType);
 
 QString convertToSqlStorableVariant(const QVariant &variant);
 bool canConvertToSqlStorableVariant(const QVariant &variant);
