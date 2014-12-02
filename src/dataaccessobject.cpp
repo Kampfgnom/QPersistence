@@ -148,6 +148,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
     QList<QSharedPointer<QObject> > result;
     QSqlRecord record = query.record();
     int primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    int revisionRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_REVISION);
 
     while(query.next()) {
         int key = query.value(primaryKeyRecordIndex).toInt();
@@ -162,6 +163,11 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
             data->storage->enableStorageFrom(object);
             currentObject = data->cache.insert(key, object);
             Qp::Private::enableSharedFromThis(currentObject);
+        }
+
+        int localRevision = data->storage->revisionInObject(currentObject.data());
+        int remoteRevision = query.value(revisionRecordIndex).toInt();
+        if(localRevision < remoteRevision) {
             data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query,
                                                                             record,
                                                                             currentObject.data());
