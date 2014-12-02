@@ -41,6 +41,7 @@ public:
     QSqlDatabase database;
     QpSqlBackend *backend;
     QString table;
+    QString tableName;
     QHash<QString, QVariant> fields;
     // inserted directly into query instead of using bindValue
     QHash<QString, QString> rawFields;
@@ -171,11 +172,12 @@ void QpSqlQuery::setDebugEnabled(bool value)
 
 QString QpSqlQueryPrivate::escapedQualifiedField(const QString &field) const
 {
-    if(table.isEmpty() || field.contains('.'))
+    QString t = tableName.isEmpty() ? table : tableName;
+    if(t.isEmpty() || field.contains('.'))
         return QpSqlQuery::escapeField(field);
 
     return QString("%1.%2")
-            .arg(QpSqlQuery::escapeField(table))
+            .arg(QpSqlQuery::escapeField(t))
             .arg(QpSqlQuery::escapeField(field));
 }
 
@@ -207,6 +209,15 @@ QString QpSqlQuery::escapeField(const QString &field)
 void QpSqlQuery::setTable(const QString &table)
 {
     data->table = table;
+    if(data->whereCondition.isValid())
+        data->whereCondition.setTable(data->tableName.isEmpty() ? data->table : data->tableName);
+}
+
+void QpSqlQuery::setTableName(const QString &tableName)
+{
+    data->tableName = tableName;
+    if(data->whereCondition.isValid())
+        data->whereCondition.setTable(data->tableName.isEmpty() ? data->table : data->tableName);
 }
 
 void QpSqlQuery::addPrimaryKey(const QString &name)
@@ -256,7 +267,7 @@ void QpSqlQuery::setSkip(int skip)
 void QpSqlQuery::setWhereCondition(const QpSqlCondition &condition)
 {
     data->whereCondition = condition;
-    data->whereCondition.setTable(data->table);
+    data->whereCondition.setTable(data->tableName.isEmpty() ? data->table : data->tableName);
 }
 
 void QpSqlQuery::addOrder(const QString &field, QpSqlQuery::Order order)
@@ -280,8 +291,11 @@ void QpSqlQuery::addJoin(const QString &direction, const QString &table, const Q
 
 void QpSqlQuery::addJoin(const QString &direction, const QpSqlQuery &subSelect, const QString &on)
 {
+    QString joinName = subSelect.data->tableName.isEmpty()
+                       ? QString::fromLatin1("sub_select_%1").arg(data->joins.size())
+                       : subSelect.data->tableName;
     addJoin(direction,
-            QString::fromLatin1("(%1) as sub_select_%2").arg(subSelect.data->constructSelectQuery()).arg(data->joins.size()),
+            QString::fromLatin1("(%1) as %2").arg(subSelect.data->constructSelectQuery()).arg(joinName),
             on);
     foreach(QVariant bindValue, subSelect.boundValues()) {
         addBindValue(bindValue);
@@ -385,7 +399,9 @@ QString QpSqlQueryPrivate::constructSelectQuery() const
         query.append(localFields.join(", "));
     }
 
-    query.append(" FROM ").append(QpSqlQuery::escapeField(table)).append("");
+    query.append(" FROM ").append(QpSqlQuery::escapeField(table));
+    if(!tableName.isEmpty())
+        query.append(" AS ").append(QpSqlQuery::escapeField(tableName));
 
     foreach(QpSqlQueryPrivate::Join join, joins) {
         query.append(QString("\n%1 JOIN %2 ON %3")
