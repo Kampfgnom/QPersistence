@@ -132,8 +132,12 @@ QVariant QpObjectListModelBase::headerData(int section, Qt::Orientation orientat
 
 QModelIndex QpObjectListModelBase::indexForObjectBase(QSharedPointer<QObject> object) const
 {
-    if(!d->rows.contains(object))
-        return QModelIndex();
+    while(!d->rows.contains(object)) {
+        if(!canFetchMore())
+            return QModelIndex();
+
+        const_cast<QpObjectListModelBase *>(this)->fetchMore();
+    }
 
     int row = d->rows.value(object);
     return index(row);
@@ -171,20 +175,14 @@ void QpObjectListModelBase::setObjects(QList<QSharedPointer<QObject> > objects)
 
 void QpObjectListModelBase::objectInserted(QSharedPointer<QObject> object)
 {
-    while(!d->rows.contains(object)) {
-        if(!canFetchMore())
-            return;
-
-        fetchMore();
-    }
+    // fetches more items until the object is fetched
+    indexForObjectBase(object);
 }
 
 void QpObjectListModelBase::objectUpdated(QSharedPointer<QObject> object)
 {
-    QModelIndex i;
-    while(!(i = indexForObjectBase(object)).isValid() && canFetchMore()) {
-        fetchMore();
-    }
+    // fetches more items until the object is fetched
+    QModelIndex i = indexForObjectBase(object);
 
     if(i.isValid())
         emit dataChanged(i, index(i.row(), columnCount(QModelIndex()) - 1));
