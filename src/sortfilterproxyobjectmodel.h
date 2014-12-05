@@ -43,8 +43,9 @@ public:
     QpSortFilterProxyObjectModel(QpObjectListModelBase *sourceModel, QObject *parent = 0);
 
 protected:
-    bool filterAcceptsObjectBase(QSharedPointer<QObject> object) const;
+    bool filterAcceptsObjectBase(QSharedPointer<QObject> object) const Q_DECL_OVERRIDE;
     virtual bool filterAcceptsObject(QSharedPointer<T>) const;
+    bool objectLessThanBase(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const Q_DECL_OVERRIDE;
     virtual bool objectLessThan(QSharedPointer<T> left, QSharedPointer<T> right) const;
 };
 
@@ -71,6 +72,12 @@ template<class T>
 bool QpSortFilterProxyObjectModel<T>::filterAcceptsObject(QSharedPointer<T>) const
 {
     return true;
+}
+
+template<class T>
+bool QpSortFilterProxyObjectModel<T>::objectLessThanBase(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const
+{
+    return objectLessThan(qSharedPointerCast<T>(left), qSharedPointerCast<T>(right));
 }
 
 template<class T>
