@@ -15,11 +15,13 @@ public:
     QpModelBase *sourceQpModel() const;
     virtual QModelIndex indexForObjectBase(QSharedPointer<QObject> object) const;
     virtual QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const;
+    virtual QList<QSharedPointer<QObject> > objectsByIndexes(const QModelIndexList &list) const;
     virtual QList<QSharedPointer<QObject> > objectsBase() const;
     QAbstractItemModel *model() const;
     template<class T> T *findModelInHierarchy() const;
     template<class T> QList<T *> findModelsInHierarchy() const;
     template<class T> T *createProxyIfNotExistsInHierarchy();
+    template<class T> T *createProxyInHierarchy();
 };
 template<class T>
 T *QpModelBase::createProxyIfNotExistsInHierarchy()
@@ -28,7 +30,13 @@ T *QpModelBase::createProxyIfNotExistsInHierarchy()
     if(proxy)
         return proxy;
 
-    proxy = new T(model());
+    return createProxyInHierarchy<T>();
+}
+
+template<class T>
+T *QpModelBase::createProxyInHierarchy()
+{
+    T *proxy = new T(model());
     proxy->setSourceModel(model());
     return proxy;
 }

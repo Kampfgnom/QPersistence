@@ -26,6 +26,7 @@ QpObjectListModelBase::QpObjectListModelBase(QpDaoBase *dao, QObject *parent) :
     connect(dao, &QpDaoBase::objectRemoved, this, &QpObjectListModelBase::objectRemoved);
     connect(dao, &QpDaoBase::objectUpdated, this, &QpObjectListModelBase::objectUpdated);
     connect(dao, &QpDaoBase::objectMarkedAsDeleted, this, &QpObjectListModelBase::objectMarkedAsDeleted);
+    connect(dao, &QpDaoBase::objectUndeleted, this, &QpObjectListModelBase::objectUndeleted);
 }
 
 QpObjectListModelBase::~QpObjectListModelBase()
@@ -131,8 +132,12 @@ QVariant QpObjectListModelBase::headerData(int section, Qt::Orientation orientat
 
 QModelIndex QpObjectListModelBase::indexForObjectBase(QSharedPointer<QObject> object) const
 {
-    if(!d->rows.contains(object))
-        return QModelIndex();
+    while(!d->rows.contains(object)) {
+        if(!canFetchMore())
+            return QModelIndex();
+
+        const_cast<QpObjectListModelBase *>(this)->fetchMore();
+    }
 
     int row = d->rows.value(object);
     return index(row);
@@ -170,20 +175,14 @@ void QpObjectListModelBase::setObjects(QList<QSharedPointer<QObject> > objects)
 
 void QpObjectListModelBase::objectInserted(QSharedPointer<QObject> object)
 {
-    while(!d->rows.contains(object)) {
-        if(!canFetchMore())
-            return;
-
-        fetchMore();
-    }
+    // fetches more items until the object is fetched
+    indexForObjectBase(object);
 }
 
 void QpObjectListModelBase::objectUpdated(QSharedPointer<QObject> object)
 {
-    QModelIndex i;
-    while(!(i = indexForObjectBase(object)).isValid() && canFetchMore()) {
-        fetchMore();
-    }
+    // fetches more items until the object is fetched
+    QModelIndex i = indexForObjectBase(object);
 
     if(i.isValid())
         emit dataChanged(i, index(i.row(), columnCount(QModelIndex()) - 1));
@@ -212,5 +211,23 @@ void QpObjectListModelBase::objectMarkedAsDeleted(QSharedPointer<QObject> object
 
     if(Qp::isDeleted(object))
         objectRemoved(object);
+}
+
+void QpObjectListModelBase::objectUndeleted(QSharedPointer<QObject> object)
+{
+    if(!d->objectsFromDao || d->rows.contains(object))
+        return;
+
+    int index = d->dao->count(d->condition
+                              && QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, QpSqlCondition::LessThan, Qp::primaryKey(object)));
+
+    beginInsertRows(QModelIndex(), index, index);
+
+    d->objects.insert(index, object);
+    for(int i = index, c = d->objects.count(); i < c; ++i) {
+        d->rows.insert(d->objects.at(i), i);
+    }
+
+    endInsertRows();
 }
 

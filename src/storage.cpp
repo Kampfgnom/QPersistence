@@ -212,8 +212,18 @@ QList<QpDaoBase *> QpStorage::dataAccessObjects()
 
 QpDaoBase *QpStorage::dataAccessObject(const QMetaObject metaObject) const
 {
-    Q_ASSERT(data->dataAccessObjects.contains(metaObject.className()));
-    return data->dataAccessObjects.value(metaObject.className());
+    return dataAccessObject(metaObject.className());
+}
+
+QpDaoBase *QpStorage::dataAccessObject(const QString &className) const
+{
+    Q_ASSERT(data->dataAccessObjects.contains(className));
+    return data->dataAccessObjects.value(className);
+}
+
+QpDaoBase *QpStorage::dataAccessObject(int userType) const
+{
+    return dataAccessObject(Qp::Private::classNameForUserType(userType));
 }
 
 #ifndef QP_NO_LOCKS

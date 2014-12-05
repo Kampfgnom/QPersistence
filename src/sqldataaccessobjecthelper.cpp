@@ -158,7 +158,7 @@ QpSqlQuery QpSqlDataAccessObjectHelper::readObjectsUpdatedAfterRevision(const Qp
 {
     QString table = metaObject.tableName();
     QString qualifiedRevisionField = QString::fromLatin1("%1.%2")
-                                     .arg(QpSqlQuery::escapeField("sub_select_0"))
+                                     .arg(QpSqlQuery::escapeField("history_subselect"))
                                      .arg(QpSqlQuery::escapeField(QpDatabaseSchema::COLUMN_NAME_REVISION));
 
     QpSqlQuery query(data->storage->database());
@@ -272,7 +272,9 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
 
 void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, QpSqlQuery &query)
 {
+    query.setForwardOnly(true);
 
+    // Select normal fields
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
         if(property.isLazy())
             continue;
@@ -285,39 +287,79 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
         query.addField(columnName);
     }
 
-    // We select the revision as a subquery, because the needed GROUP BY does not work well with the relations' LEFT JOINs.
+    // Select some internal fields
+    query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG);
+
+#ifndef QP_NO_TIMESTAMPS
+    query.addField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
+    query.addField(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME);
+#endif
+#ifndef QP_NO_LOCKS
+    if (data->storage->isLocksEnabled())
+        query.addField(QpDatabaseSchema::COLUMN_LOCK);
+#endif
+
+    // History subselects:
+
+    // We select the revision as a subquery with another subquery, because the needed GROUP BY does not work well with the relations' LEFT JOINs
+    // and we also need the `action`-field as a 'content' field as in http://stackoverflow.com/a/7745635.
     // BTW: Other RDBMS wouldn't have allowed this error ;)
     // Me:          Who wants some MySQL specifics??
     // Also me:     HERE ME! MYSQL IS GREAT!!!1!!11elf!
     // Me again:    -.-
+
+    // The resulting query is something along the lines of:
+    //    SELECT fields FROM object
+    //        LEFT JOIN (
+    //            SELECT historyStuff
+    //            FROM object_Qp_history
+    //            INNER JOIN (
+    //                SELECT MAX(revision), historyStuff
+    //                FROM object_Qp_history
+    //                GROUP BY _Qp_ID) AS history_revision_subselect
+    //            ON id AND revision) AS history_subselect
+    //        ON id
+    //        ORDER BY revision ASC
+
+    const QString historyTable = QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(metaObject.tableName());
+    const QString revisionSubSubQueryName = "history_revision_subselect";
+    const QString revisionSubQueryName = "history_subselect";
+
+    // Sub-Subselect for getting the MAX(revision) grouped by the ID
+    QpSqlQuery revisionSubSubQuery(data->storage->database());
+    revisionSubSubQuery.setTable(historyTable);
+    revisionSubSubQuery.setTableName(revisionSubSubQueryName);
+    revisionSubSubQuery.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    revisionSubSubQuery.addRawField(QString::fromLatin1("MAX(%1) AS %1")
+                                    .arg(QpDatabaseSchema::COLUMN_NAME_REVISION));
+    revisionSubSubQuery.addGroupBy(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+
+    // Subselect for actually getting the correct `action`-field
     QpSqlQuery revisionSubQuery(data->storage->database());
-    QString historyTable = QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(metaObject.tableName());
-    QString qualifiedRevisionField = QString::fromLatin1("%1.%2")
-            .arg(historyTable)
-            .arg(QpDatabaseSchema::COLUMN_NAME_REVISION);
-
     revisionSubQuery.setTable(historyTable);
+    revisionSubQuery.setTableName(revisionSubQueryName);
     revisionSubQuery.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
-    revisionSubQuery.addRawField(QString::fromLatin1("MAX(%1) AS %2")
-                      .arg(qualifiedRevisionField)
-                      .arg(QpDatabaseSchema::COLUMN_NAME_REVISION));
-    revisionSubQuery.addRawField(QString::fromLatin1("%1 as %1")
-                      .arg(QpDatabaseSchema::COLUMN_NAME_ACTION));
-    revisionSubQuery.addGroupBy(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    revisionSubQuery.addField(QpDatabaseSchema::COLUMN_NAME_REVISION);
+    revisionSubQuery.addField(QpDatabaseSchema::COLUMN_NAME_ACTION);
+    revisionSubQuery.addJoin("INNER",
+                  revisionSubSubQuery,
+                  QString::fromLatin1("%1.%3 = %2.%3 AND %1.%4 = %2.%4")
+                             .arg(QpSqlQuery::escapeField(revisionSubQueryName))
+                             .arg(QpSqlQuery::escapeField(revisionSubSubQueryName))
+                             .arg(QpSqlQuery::escapeField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY))
+                             .arg(QpSqlQuery::escapeField(QpDatabaseSchema::COLUMN_NAME_REVISION)));
 
+    // Add subselects to query
     query.addJoin("LEFT",
                   revisionSubQuery,
                   QString::fromLatin1("%1 = %2.%3")
                   .arg(query.escapedQualifiedField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY))
-
-
-                  // Hard-coding this is not the best solution, but at this point I am too lazy
-                  .arg("sub_select_0")
-
-
+                  .arg(revisionSubQueryName)
                   .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
     query.addRawField(QpSqlQuery::escapeField(QpDatabaseSchema::COLUMN_NAME_REVISION));
 
+    // Implicitly join to-one related tables
     int tableJoin = 0;
     foreach(const QpMetaProperty relation, metaObject.relationProperties()) {
         if(relation.hasTableForeignKey()) {
@@ -333,21 +375,6 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
                           " = " + query.escapedQualifiedField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY));
         }
     }
-
-    query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
-    query.addField(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG);
-
-#ifndef QP_NO_TIMESTAMPS
-    query.addField(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME);
-    query.addField(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME);
-#endif
-#ifndef QP_NO_LOCKS
-    if (data->storage->isLocksEnabled())
-        query.addField(QpDatabaseSchema::COLUMN_LOCK);
-#endif
-
-
-    query.setForwardOnly(true);
 }
 
 void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,

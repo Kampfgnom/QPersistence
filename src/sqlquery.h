@@ -37,6 +37,7 @@ public:
 
     void clear();
     void setTable(const QString &table);
+    void setTableName(const QString &tableName);
     void addPrimaryKey(const QString &name);
     void addKey(const QString &keyType, const QStringList &fields);
     void setOrIgnore(bool ignore);

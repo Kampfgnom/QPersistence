@@ -378,7 +378,7 @@ QString QpMetaProperty::tableName() const
     return shortName(result);
 }
 
-void QpMetaProperty::remove(QSharedPointer<QObject> object, QSharedPointer<QObject> related)
+void QpMetaProperty::remove(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const
 {
     if(isToOneRelationProperty()) {
         data->metaProperty.write(object.data(), Qp::Private::variantCast(QSharedPointer<QObject>(), reverseClassName()));
@@ -404,7 +404,7 @@ void QpMetaProperty::remove(QSharedPointer<QObject> object, QSharedPointer<QObje
     }
 }
 
-void QpMetaProperty::add(QSharedPointer<QObject> object, QSharedPointer<QObject> related)
+void QpMetaProperty::add(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const
 {
     if(isToOneRelationProperty()) {
         data->metaProperty.write(object.data(), Qp::Private::variantCast(related, reverseClassName()));
@@ -430,7 +430,7 @@ void QpMetaProperty::add(QSharedPointer<QObject> object, QSharedPointer<QObject>
     }
 }
 
-QList<QSharedPointer<QObject> > QpMetaProperty::read(QSharedPointer<QObject> object)
+QList<QSharedPointer<QObject> > QpMetaProperty::read(QSharedPointer<QObject> object) const
 {
     switch(cardinality()) {
         case QpMetaProperty::OneToOneCardinality:

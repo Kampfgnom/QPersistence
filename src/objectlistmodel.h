@@ -48,6 +48,7 @@ protected slots:
     void objectUpdated(QSharedPointer<QObject>);
     void objectRemoved(QSharedPointer<QObject>);
     void objectMarkedAsDeleted(QSharedPointer<QObject>);
+    void objectUndeleted(QSharedPointer<QObject>);
 
 private:
     QExplicitlySharedDataPointer<QpObjectListModelBaseData> d;
