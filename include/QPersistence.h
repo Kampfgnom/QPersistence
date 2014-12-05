@@ -5,6 +5,7 @@
 #include "../src/error.h"
 #include "../src/lazyPixmap.h"
 #include "../src/lock.h"
+#include "../src/metaproperty.h"
 #include "../src/objectlistmodel.h"
 #include "../src/qpersistence.h"
 #include "../src/relation_belongstomany.h"
@@ -17,3 +18,4 @@
 #include "../src/storage.h"
 #include "../src/throttledfetchproxymodel.h"
 #include "../src/usermanagement.h"
+

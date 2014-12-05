@@ -231,6 +231,10 @@ QString QpMySqlBackend::variantTypeToSqlType(QVariant::Type type) const
         return QLatin1String("BLOB");
     }
 
+    if(type == 41) { // QMetaType::Variant
+        return QLatin1String("BLOB");
+    }
+
     Q_ASSERT(false);
     return QString();
 }

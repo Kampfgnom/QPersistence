@@ -37,6 +37,15 @@ QSharedDataPointer<QpMetaPropertyPrivate> QpMetaPropertyPrivate::shared_null() {
     return shared_null;
 }
 
+QString QpMetaProperty::nameFromMaybeQualifiedName(const QString &maybeQualifiedName)
+{
+    int classNameEndIndex = maybeQualifiedName.lastIndexOf("::");
+    QString n = maybeQualifiedName;
+    if(classNameEndIndex >= 0)
+        n = maybeQualifiedName.mid(classNameEndIndex + 2);
+    return n;
+}
+
 QpMetaProperty::QpMetaProperty() :
     data(QpMetaPropertyPrivate::shared_null())
 {
@@ -367,6 +376,99 @@ QString QpMetaProperty::tableName() const
     }
 
     return shortName(result);
+}
+
+void QpMetaProperty::remove(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const
+{
+    if(isToOneRelationProperty()) {
+        data->metaProperty.write(object.data(), Qp::Private::variantCast(QSharedPointer<QObject>(), reverseClassName()));
+    }
+    else {
+        QVariant wrapper = Qp::Private::variantCast(related, reverseClassName());
+
+        const QMetaObject *mo = object->metaObject();
+        QByteArray methodName = data->metaObject.removeObjectMethod(*this).methodSignature();
+        int index = mo->indexOfMethod(methodName);
+
+        Q_ASSERT_X(index > 0, Q_FUNC_INFO,
+                   QString("You have to add a public slot with the signature '%1' to your '%2' class!")
+                   .arg(QString::fromLatin1(methodName))
+                   .arg(mo->className())
+                   .toLatin1());
+
+        QMetaMethod method = mo->method(index);
+        bool result = method.invoke(object.data(), Qt::DirectConnection,
+                                    QGenericArgument(data->metaProperty.typeName(), wrapper.data()));
+        Q_ASSERT(result);
+        Q_UNUSED(result);
+    }
+}
+
+void QpMetaProperty::add(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const
+{
+    if(isToOneRelationProperty()) {
+        data->metaProperty.write(object.data(), Qp::Private::variantCast(related, reverseClassName()));
+    }
+    else {
+        QVariant wrapper = Qp::Private::variantCast(related, reverseClassName());
+
+        const QMetaObject *mo = object->metaObject();
+        QByteArray methodName = data->metaObject.addObjectMethod(*this).methodSignature();
+        int index = mo->indexOfMethod(methodName);
+
+        Q_ASSERT_X(index > 0, Q_FUNC_INFO,
+                   QString("You have to add a public slot with the signature '%1' to your '%2' class!")
+                   .arg(QString::fromLatin1(methodName))
+                   .arg(mo->className())
+                   .toLatin1());
+
+        QMetaMethod method = mo->method(index);
+        bool result = method.invoke(object.data(), Qt::DirectConnection,
+                                    QGenericArgument(data->metaProperty.typeName(), wrapper.data()));
+        Q_ASSERT(result);
+        Q_UNUSED(result);
+    }
+}
+
+QList<QSharedPointer<QObject> > QpMetaProperty::read(QSharedPointer<QObject> object) const
+{
+    switch(cardinality()) {
+        case QpMetaProperty::OneToOneCardinality:
+        case QpMetaProperty::ManyToOneCardinality:
+            return { Qp::Private::objectCast(data->metaProperty.read(object.data())) };
+
+        case QpMetaProperty::OneToManyCardinality:
+        case QpMetaProperty::ManyToManyCardinality:
+            return Qp::Private::objectListCast(data->metaProperty.read(object.data()));
+
+        case QpMetaProperty::UnknownCardinality:
+            return {};
+    }
+
+    return {};
+}
+
+bool QpMetaProperty::isRelated(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const
+{
+    QVariant value = data->metaProperty.read(left.data());
+
+    switch(cardinality()) {
+        case QpMetaProperty::UnknownCardinality:
+            return false;
+
+        case QpMetaProperty::OneToOneCardinality:
+        case QpMetaProperty::ManyToOneCardinality: {
+            QSharedPointer<QObject> related = Qp::Private::objectCast(value);
+            return related == right;
+        }
+        case QpMetaProperty::OneToManyCardinality:
+        case QpMetaProperty::ManyToManyCardinality: {
+            QList<QSharedPointer<QObject > > objects = Qp::Private::objectListCast(value);
+            return objects.contains(right);
+        }
+    }
+
+    return false;
 }
 
 bool QpMetaProperty::isMappingProperty() const

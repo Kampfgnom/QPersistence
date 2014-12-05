@@ -21,7 +21,9 @@ public:
     QList<QSharedPointer<QObject> > objects() const;
     void add(QSharedPointer<QObject> object);
     void remove(QSharedPointer<QObject> object);
-    void setObjects(const QList<QSharedPointer<QObject> > objects) const;
+    void setObjects(const QList<QSharedPointer<QObject> > &objects) const;
+
+    bool operator ==(const QList<QSharedPointer<QObject> > &objects) const;
 
 private:
     QExplicitlySharedDataPointer<QpBelongsToManyData> data;
@@ -39,6 +41,7 @@ public:
 
     operator QList<QSharedPointer<T> > () const { return Qp::castList<T>(QpBelongsToManyBase::objects()); }
     QpBelongsToMany &operator=(const QList<QSharedPointer<T> > objects) { QpBelongsToManyBase::setObjects(Qp::castList<QObject>(objects)); return *this; }
+    bool operator ==(const QList<QSharedPointer<T> > &objects) const { return QpBelongsToManyBase::operator ==(Qp::castList<QObject>(objects)); }
 };
 
 #endif // QPERSISTENCE_RELATION_BELONGSTOMANY_H

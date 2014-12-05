@@ -21,6 +21,8 @@ public:
     QSharedPointer<QObject> object() const;
     void setObject(const QSharedPointer<QObject> object) const;
 
+    bool operator ==(const QSharedPointer<QObject> &object) const;
+
 private:
     QExplicitlySharedDataPointer<QpHasOneData> data;
     Q_DISABLE_COPY(QpHasOneBase)
@@ -35,13 +37,18 @@ public:
 
     operator QSharedPointer<T> () const { return qSharedPointerCast<T>(object()); }
     QpHasOne &operator=(const QSharedPointer<T> object) { setObject(qSharedPointerCast<QObject>(object)); return *this; }
-    bool operator==(QSharedPointer<T> object) { return objectWithoutResolving() == object; }
-    bool operator!=(QSharedPointer<T> object) { return !operator ==(object); }
+    bool operator ==(const QSharedPointer<T> &object) const { return QpHasOneBase::operator ==(object); }
+    bool operator !=(const QSharedPointer<T> &object) { return !operator ==(object); }
 };
 
 #ifndef QpRelation
 #define QpRelation(Address) \
     "" #Address, this
+#endif
+
+#ifndef QpRelationName
+#define QpRelationName(Address) \
+    "" #Address
 #endif
 
 #endif // QPERSISTENCE_RELATION_HASONE_H

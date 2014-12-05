@@ -246,11 +246,11 @@ void QpDatabaseSchema::createManyToManyRelationTables(const QMetaObject &metaObj
         createTableQuery.addForeignKey(columnName,
                                        COLUMN_NAME_PRIMARY_KEY,
                                        primaryTable,
-                                       "SET NULL");
+                                       ONDELETE_CASCADE);
         createTableQuery.addForeignKey(foreignColumnName,
                                        COLUMN_NAME_PRIMARY_KEY,
                                        foreignTable,
-                                       "SET NULL");
+                                       ONDELETE_CASCADE);
         createTableQuery.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
         createTableQuery.addKey(QpSqlBackend::forDatabase(data->database)->uniqueKeyType(),
                                 QStringList() << columnName << foreignColumnName);

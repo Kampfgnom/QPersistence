@@ -76,19 +76,22 @@ bool QpUserManagement::grandTableColumn(const QString &table, const QString &col
                 "FLUSH PRIVILEGES;");
 }
 
-bool QpUserManagement::grandAll(const QString &username)
+bool QpUserManagement::grandAll(const QString &username, bool withGrantOption)
 {
-    return exec("GRANT RELOAD, CREATE USER "
-                "ON *.* "
-                "TO '" + username + "'@'%' "
-                "WITH GRANT OPTION; "
-                "GRANT SELECT, INSERT, UPDATE, DELETE "
-                "ON `" + storage->database().databaseName() + "`.* "
-                "TO '" + username + "'@'%'; "
-                "GRANT SELECT, INSERT, UPDATE, DELETE "
-                "ON `mysql`.* "
-                "TO '" + username + "'@'%'; "
-                "FLUSH PRIVILEGES;");
+    return exec(QString(
+                    "GRANT RELOAD, CREATE USER "
+                    "ON *.* "
+                    "TO '" + username + "'@'%' "
+                    "WITH GRANT OPTION; "
+                    "GRANT SELECT, INSERT, UPDATE, DELETE "
+                    "ON `" + storage->database().databaseName() + "`.* "
+                    "TO '" + username + "'@'%'; "
+                    "GRANT SELECT, INSERT, UPDATE, DELETE "
+                    "ON `mysql`.* "
+                    "TO '" + username + "'@'%' "
+                    "%1"
+                    "FLUSH PRIVILEGES;")
+                .arg(withGrantOption ? "WITH GRANT OPTION; " : ""));
 }
 
 bool QpUserManagement::revokeAll(const QString &username)

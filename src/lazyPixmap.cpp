@@ -1,10 +1,14 @@
 #include "lazyPixmap.h"
 
+#ifdef QP_NO_GUI
+void qpunused() {}
+#else
+
 #include "sqldataaccessobjecthelper.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
-#include <QPixmap>
 #include <QSharedData>
+#include <QPixmap>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "storage.h"
@@ -68,6 +72,5 @@ QpLazyPixmap::operator QPixmap () const
     return data->pixmap;
 }
 
-
-
+#endif
 

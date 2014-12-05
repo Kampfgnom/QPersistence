@@ -45,11 +45,31 @@ public:
     void startBulkDatabaseQueries();
     void commitBulkDatabaseQueries();
 
-    template<class T, class... Superclasses> void registerClass();
-
     QList<QpDaoBase *> dataAccessObjects();
     QpDaoBase *dataAccessObject(const QMetaObject metaObject) const;
+    QpDaoBase *dataAccessObject(const QString &className) const;
+    QpDaoBase *dataAccessObject(int userType) const;
+    Qp::SynchronizeResult synchronize(QSharedPointer<QObject> object, QpDaoBase::SynchronizeMode mode);
+    Qp::UpdateResult update(QSharedPointer<QObject> object);
+    bool incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName);
+    bool remove(QSharedPointer<QObject> object);
+    int primaryKey(QSharedPointer<QObject> object);
+    bool isDeleted(QSharedPointer<QObject> object);
+    bool markAsDeleted(QSharedPointer<QObject> object);
+    bool undelete(QSharedPointer<QObject> object);
+    QpDaoBase *dataAccessObject(QSharedPointer<QObject> object) const;
+
+    QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
+    void enableStorageFrom(QObject *object);
+    static QpStorage *forObject(const QObject *object);
+
+    int revisionInDatabase(QObject *object);
+    int revisionInObject(QObject *object);
+
+    template<class T, class... Superclasses> void registerClass();
+
     template<class T> QpDao<T> *dataAccessObject();
+    template<class T> QpDaoBase *dataAccessObject(QSharedPointer<T> object) const;
     template<class T> int primaryKey(QSharedPointer<T> object);
     template<class T> QSharedPointer<T> read(int id);
     template<class T> QList<QSharedPointer<T> > readAll(const QpSqlCondition &condition = QpSqlCondition());
@@ -92,17 +112,59 @@ public:
     template<class T> QpLock lockStatus(QSharedPointer<T> object);
 #endif
 
-    QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
-    void enableStorageFrom(QObject *object);
-    static QpStorage *forObject(const QObject *object);
-
-    int revisionInDatabase(QObject *object);
-    int revisionInObject(QObject *object);
-
 private:
     void registerDataAccessObject(QpDaoBase *dao, const QMetaObject *metaObject);
     QExplicitlySharedDataPointer<QpStorageData> data;
 };
+
+template <class T>
+bool QpStorage::incrementNumericColumn(QSharedPointer<T> object, const QString &fieldName)
+{
+    return incrementNumericColumn(qSharedPointerCast<QObject>(object), fieldName);
+}
+
+template <class T>
+Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<T> object)
+{
+    return synchronize(qSharedPointerCast<QObject>(object));
+}
+
+template <class T>
+bool QpStorage::isDeleted(QSharedPointer<T> object)
+{
+    return isDeleted(qSharedPointerCast<QObject>(object));
+}
+
+template <class T>
+bool QpStorage::markAsDeleted(QSharedPointer<T> object)
+{
+    return markAsDeleted(qSharedPointerCast<QObject>(object));
+}
+
+template <class T>
+bool QpStorage::remove(QSharedPointer<T> object)
+{
+    return remove(qSharedPointerCast<QObject>(object));
+}
+
+template <class T>
+Qp::UpdateResult QpStorage::update(QSharedPointer<T> object)
+{
+    return update(qSharedPointerCast<QObject>(object));
+}
+
+template <class T>
+int QpStorage::primaryKey(QSharedPointer<T> object)
+{
+    return primaryKey(qSharedPointerCast<QObject>(object));
+}
+
+template <class T>
+QpDaoBase *QpStorage::dataAccessObject(QSharedPointer<T> object) const
+{
+    return dataAccessObject(qSharedPointerCast<QObject>(object));
+}
+
 Q_DECLARE_METATYPE(QpStorage*)
 
 template <class T>
@@ -120,6 +182,8 @@ void registerMetaType() {
     Qp::Private::registerConverter<QSharedPointer<T> >(converter);
 }
 
+template<typename... Args> void unpackTemplateParameters(Args...) {}
+
 template<class T, class... Superclasses>
 void QpStorage::registerClass()
 {
@@ -127,9 +191,9 @@ void QpStorage::registerClass()
     registerDataAccessObject(dao, &T::staticMetaObject);
 
     registerMetaType<T>();
-    int _[] = {0, (registerMetaType<Superclasses>(), 0)...}; // I AM CRAAAAZY
+
     // http://stackoverflow.com/questions/12515616/expression-contains-unexpanded-parameter-packs/12515637#12515637
-    Q_UNUSED(_)
+    unpackTemplateParameters((registerMetaType<Superclasses>(), 0)...);
 }
 
 template<class T> QSharedPointer<T> QpStorage::read(int id)
@@ -159,76 +223,6 @@ template<class T>
 QpDao<T> *QpStorage::dataAccessObject()
 {
     return static_cast<QpDao<T> *>(dataAccessObject(T::staticMetaObject));
-}
-
-template<class T>
-bool QpStorage::incrementNumericColumn(QSharedPointer<T> object, const QString &fieldName)
-{
-    QpDao<T> *dao = dataAccessObject<T>();
-    if(!dao->incrementNumericColumn(object, fieldName))
-        return false;
-
-    return dao->synchronizeObject(object, QpDao<T>::IgnoreRevision) == Qp::Updated;
-}
-
-
-template<class T>
-Qp::UpdateResult QpStorage::update(QSharedPointer<T> object)
-{
-    beginTransaction();
-    Qp::UpdateResult result = dataAccessObject<T>()->updateObject(object);
-    if(result == Qp::UpdateConflict) {
-        qWarning() << "Update conflict for " << T::staticMetaObject.className() << primaryKey(object);
-#ifdef QT_DEBUG
-        qFatal("Aborting");
-#endif
-        database().rollback();
-        return Qp::UpdateConflict;
-    }
-
-    Qp::CommitResult commitResult = commitOrRollbackTransaction();
-    if(commitResult == Qp::CommitSuccessful)
-        return result;
-
-    return Qp::UpdateError;
-}
-
-template<class T>
-Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<T> object)
-{
-    return dataAccessObject<T>()->synchronizeObject(object);
-}
-
-template<class T>
-bool QpStorage::remove(QSharedPointer<T> object)
-{
-    beginTransaction();
-    dataAccessObject<T>()->removeObject(object);
-    return commitOrRollbackTransaction() == Qp::CommitSuccessful;
-}
-
-template<class T>
-int QpStorage::primaryKey(QSharedPointer<T> object)
-{
-    return Qp::Private::primaryKey(object.data());
-}
-
-template<class T>
-bool QpStorage::isDeleted(QSharedPointer<T> object)
-{
-    return Qp::Private::isDeleted(object.data());
-}
-
-template<class T>
-bool QpStorage::markAsDeleted(QSharedPointer<T> object)
-{
-    return dataAccessObject<T>()->markAsDeleted(object);
-}
-
-template<class T>
-bool QpStorage::undelete(QSharedPointer<T> object)
-{
-    return dataAccessObject<T>()->undelete(object);
 }
 
 #ifndef QP_NO_TIMESTAMPS

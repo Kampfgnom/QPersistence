@@ -13,7 +13,7 @@ QObject *GlobalGuard();
 void enableSharedFromThis(QSharedPointer<QObject> object);
 QSharedPointer<QObject> sharedFrom(const QObject *object);
 
-int primaryKey(QObject *object);
+int primaryKey(const QObject *object);
 void setPrimaryKey(QObject *object, int key);
 
 bool isDeleted(QObject *object);

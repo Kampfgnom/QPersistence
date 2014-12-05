@@ -1,3 +1,8 @@
+COMMON_CONFIGFILE = ../../../common.pri
+exists($$COMMON_CONFIGFILE) {
+    include($$COMMON_CONFIGFILE)
+}
+
 QPERSISTENCE_PATH = ..
 include($$QPERSISTENCE_PATH/QPersistence.pri)
 
@@ -42,7 +47,8 @@ HEADERS += \
     storage.h \
     defaultstorage.h \
     schemaversioning.h \
-    lazyPixmap.h
+    lazyPixmap.h \
+    model.h
 
 SOURCES += \
         cache.cpp \
@@ -70,4 +76,5 @@ SOURCES += \
     storage.cpp \
     defaultstorage.cpp \
     schemaversioning.cpp \
-    lazyPixmap.cpp
+    lazyPixmap.cpp \
+    model.cpp

@@ -22,6 +22,8 @@ public:
         ManyToManyCardinality
     };
 
+    static QString nameFromMaybeQualifiedName(const QString &maybeQualifiedName);
+
     QpMetaProperty();
     virtual ~QpMetaProperty();
     QpMetaProperty(const QpMetaProperty &other);
@@ -56,6 +58,12 @@ public:
     QpMetaProperty reverseRelation() const;
 
     QString tableName() const;
+
+    void remove(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const;
+    void add(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const;
+    QList<QSharedPointer<QObject > > read(QSharedPointer<QObject> object) const;
+
+    bool isRelated(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const;
 
     // Maps
     bool isMappingProperty() const;

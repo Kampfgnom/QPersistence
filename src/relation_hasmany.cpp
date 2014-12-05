@@ -22,16 +22,17 @@ QpHasManyBase::QpHasManyBase(const QString &name, QObject *parent) :
     data(new QpHasManyData)
 {
     data->parent = parent;
-    int classNameEndIndex = name.lastIndexOf("::");
-    QString n = name;
-    if(classNameEndIndex >= 0)
-        n = name.mid(classNameEndIndex + 2);
-
-    data->metaProperty = QpMetaObject::forObject(parent).metaProperty(n);
+    QString propertyName = QpMetaProperty::nameFromMaybeQualifiedName(name);
+    data->metaProperty = QpMetaObject::forObject(parent).metaProperty(propertyName);
 }
 
 QpHasManyBase::~QpHasManyBase()
 {
+}
+
+bool QpHasManyBase::operator ==(const QList<QSharedPointer<QObject> > &objects) const
+{
+    return data->objects == objects;
 }
 
 QList<QSharedPointer<QObject> > QpHasManyBase::objects() const
@@ -134,4 +135,9 @@ void QpHasManyBase::setObjects(const QList<QSharedPointer<QObject>> objects) con
 {
     data->objects = objects;
     data->resolved = true;
+}
+
+bool QpHasManyBase::isResolved() const
+{
+    return data->resolved;
 }

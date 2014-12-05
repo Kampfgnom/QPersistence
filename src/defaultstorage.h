@@ -39,7 +39,7 @@ template<class T> bool remove(QSharedPointer<T> object) { return QpStorage::defa
 template<class T> bool markAsDeleted(QSharedPointer<T> object) { return QpStorage::defaultStorage()->markAsDeleted(object); }
 template<class T> bool undelete(QSharedPointer<T> object) { return QpStorage::defaultStorage()->undelete(object); }
 template<class T> bool isDeleted(QSharedPointer<T> object) { return QpStorage::defaultStorage()->isDeleted(object); }
-template<class T> SynchronizeResult synchronize(QSharedPointer<T> object) { return QpStorage::defaultStorage()->synchronize(object); }
+template<class T> SynchronizeResult synchronize(QSharedPointer<T> object, QpDaoBase::SynchronizeMode mode = QpDaoBase::NormalMode) { return QpStorage::defaultStorage()->synchronize(object, mode); }
 template<class T> bool incrementNumericColumn(QSharedPointer<T> object, const QString &fieldName) { return QpStorage::defaultStorage()->incrementNumericColumn(object, fieldName); }
 #ifndef QP_NO_TIMESTAMPS
 template<class T> QList<QSharedPointer<T>> createdSince(const QDateTime &time) { return QpStorage::defaultStorage()->createdSince<T>(time); }

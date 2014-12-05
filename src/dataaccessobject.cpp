@@ -148,6 +148,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
     QList<QSharedPointer<QObject> > result;
     QSqlRecord record = query.record();
     int primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    int revisionRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_REVISION);
 
     while(query.next()) {
         int key = query.value(primaryKeyRecordIndex).toInt();
@@ -164,10 +165,13 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
             Qp::Private::enableSharedFromThis(currentObject);
         }
 
-        // We also do this for known objects, since this method is being used by sync()
-        data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query,
-                                                                        record,
-                                                                        currentObject.data());
+        int localRevision = data->storage->revisionInObject(currentObject.data());
+        int remoteRevision = query.value(revisionRecordIndex).toInt();
+        if(localRevision < remoteRevision) {
+            data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query,
+                                                                            record,
+                                                                            currentObject.data());
+        }
 
         result.append(currentObject);
     }
@@ -182,6 +186,10 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
 
 QSharedPointer<QObject> QpDaoBase::readObject(int id) const
 {
+    if(id <= 0) {
+        return QSharedPointer<QObject>();
+    }
+
     QSharedPointer<QObject> p = data->cache.get(id);
 
     if (p)
@@ -248,6 +256,8 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
         return false;
     }
 
+//    unlinkRelations(object);
+
     data->cache.remove(data->storage->primaryKey(object));
     emit objectRemoved(object);
     return true;
@@ -260,14 +270,34 @@ bool QpDaoBase::markAsDeleted(QSharedPointer<QObject> object)
     if(result != Qp::UpdateSuccess)
         return false;
 
+//    unlinkRelations(object);
+
     emit objectMarkedAsDeleted(object);
     return true;
+}
+
+void QpDaoBase::unlinkRelations(QSharedPointer<QObject> object) const
+{
+#ifdef __clang__
+    _Pragma("clang diagnostic push");
+    _Pragma("clang diagnostic ignored \"-Wshadow\"");
+#endif
+    foreach(QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
+        foreach(QSharedPointer<QObject> related, relation.read(object)) {
+            relation.remove(object, related);
+        }
+    }
+#ifdef __clang__
+    _Pragma("clang diagnostic pop");
+#endif
 }
 
 bool QpDaoBase::undelete(QSharedPointer<QObject> object)
 {
     Qp::Private::undelete(object.data());
+    blockSignals(true); // block object updated signal
     Qp::UpdateResult result = updateObject(object);
+    blockSignals(false);
     if(result != Qp::UpdateSuccess)
         return false;
 

@@ -8,7 +8,9 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QElapsedTimer>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-class QpThrottledFetchProxyModel : public QIdentityProxyModel
+#include "model.h"
+
+class QpThrottledFetchProxyModel : public QIdentityProxyModel, public QpModelBase
 {
     Q_OBJECT
 public:
@@ -20,9 +22,6 @@ public:
     bool isThrottled() const;
 
     bool canFetchMore(const QModelIndex &parent) const Q_DECL_OVERRIDE;
-
-    QModelIndex indexForObject(QSharedPointer<QObject> object) const;
-    QSharedPointer<QObject> objectByIndex(const QModelIndex &index) const;
 
 private:
     int m_throttle;

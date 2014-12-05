@@ -8,13 +8,14 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "dataaccessobject.h"
+#include "defaultstorage.h"
+#include "model.h"
 #include "private.h"
 #include "qpersistence.h"
 #include "storage.h"
-#include "defaultstorage.h"
 
 class QpObjectListModelBaseData;
-class QpObjectListModelBase : public QAbstractListModel
+class QpObjectListModelBase : public QAbstractListModel, public QpModelBase
 {
     Q_OBJECT
 public:
@@ -32,11 +33,11 @@ public:
     int fetchCount() const;
     void setFetchCount(int fetchCount);
 
-    QList<QSharedPointer<QObject> > objects() const;
-    void setObjects(QList<QSharedPointer<QObject> > objects);
+    void setObjects(QList<QSharedPointer<QObject> > objectsBase);
 
-    QSharedPointer<QObject> objectByIndex(const QModelIndex &index) const;
-    QModelIndex indexForObject(QSharedPointer<QObject> object) const;
+    QList<QSharedPointer<QObject> > objectsBase() const Q_DECL_OVERRIDE;
+    QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const Q_DECL_OVERRIDE;
+    QModelIndex indexForObjectBase(QSharedPointer<QObject> object) const Q_DECL_OVERRIDE;
 
     QpDaoBase *dataAccessObject() const;
 
@@ -47,21 +48,18 @@ protected slots:
     void objectUpdated(QSharedPointer<QObject>);
     void objectRemoved(QSharedPointer<QObject>);
     void objectMarkedAsDeleted(QSharedPointer<QObject>);
+    void objectUndeleted(QSharedPointer<QObject>);
 
 private:
     QExplicitlySharedDataPointer<QpObjectListModelBaseData> d;
 };
 
 template<class T>
-class QpObjectListModel : public QpObjectListModelBase
+class QpObjectListModel : public QpObjectListModelBase, public QpModel<QpObjectListModel<T>, T>
 {
 public:
     explicit QpObjectListModel(QObject *parent = 0);
     explicit QpObjectListModel(QpStorage *storage, QObject *parent = 0);
-
-    QSharedPointer<T> objectByIndex(const QModelIndex &index) const;
-    QList<QSharedPointer<T> > objects() const;
-    QModelIndex indexForObject(QSharedPointer<T> object) const;
 };
 
 template<class T>
@@ -74,24 +72,6 @@ template<class T>
 QpObjectListModel<T>::QpObjectListModel(QpStorage *storage, QObject *parent) :
     QpObjectListModelBase(storage->dataAccessObject<T>(), parent)
 {
-}
-
-template<class T>
-QSharedPointer<T> QpObjectListModel<T>::objectByIndex(const QModelIndex &index) const
-{
-    return qSharedPointerCast<T>(QpObjectListModelBase::objectByIndex(index));
-}
-
-template<class T>
-QList<QSharedPointer<T> > QpObjectListModel<T>::objects() const
-{
-    return Qp::castList<T>(QpObjectListModelBase::objects());
-}
-
-template<class T>
-QModelIndex QpObjectListModel<T>::indexForObject(QSharedPointer<T> object) const
-{
-    return QpObjectListModelBase::indexForObject(qSharedPointerCast<QObject>(object));
 }
 
 #endif // QPERSISTENCE_OBJECTLISTMODEL_H

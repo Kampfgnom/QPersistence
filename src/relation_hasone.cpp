@@ -25,16 +25,17 @@ QpHasOneBase::QpHasOneBase(const QString &name, QObject *parent) :
     data(new QpHasOneData)
 {
     data->parent = parent;
-    int classNameEndIndex = name.lastIndexOf("::");
-    QString n = name;
-    if(classNameEndIndex >= 0)
-        n = name.mid(classNameEndIndex + 2);
-
-    data->metaProperty = QpMetaObject::forObject(parent).metaProperty(n);
+    QString propertyName = QpMetaProperty::nameFromMaybeQualifiedName(name);
+    data->metaProperty = QpMetaObject::forObject(parent).metaProperty(propertyName);
 }
 
 QpHasOneBase::~QpHasOneBase()
 {
+}
+
+bool QpHasOneBase::operator ==(const QSharedPointer<QObject> &object) const
+{
+    return data->object == object;
 }
 
 QSharedPointer<QObject> QpHasOneBase::objectWithoutResolving() const
@@ -120,4 +121,13 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
 
     // Set again, because it may (will) happen, that setting the reverse relations has also changed this value.
     data->object = newObject;
+
+    QByteArray column;
+    if(data->metaProperty.hasTableForeignKey()) {
+       column = data->metaProperty.columnName().toLatin1();
+    }
+    else {
+        column = QByteArray("_Qp_FK_") + data->metaProperty.name().toLatin1();
+    }
+    data->object->setProperty(column, Qp::Private::primaryKey(newObject.data()));
 }

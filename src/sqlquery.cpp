@@ -10,13 +10,15 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QByteArray>
 #include <QDebug>
 #include <QHash>
-#include <QPixmap>
+#include <QMetaProperty>
 #include <QRegularExpressionMatchIterator>
 #include <QSharedData>
-#include <QStringList>
 #include <QSqlDriver>
 #include <QSqlRecord>
-#include <QMetaProperty>
+#include <QStringList>
+#ifndef QP_NO_GUI
+#   include <QPixmap>
+#endif
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlQueryPrivate : public QSharedData {
@@ -39,6 +41,7 @@ public:
     QSqlDatabase database;
     QpSqlBackend *backend;
     QString table;
+    QString tableName;
     QHash<QString, QVariant> fields;
     // inserted directly into query instead of using bindValue
     QHash<QString, QString> rawFields;
@@ -169,11 +172,12 @@ void QpSqlQuery::setDebugEnabled(bool value)
 
 QString QpSqlQueryPrivate::escapedQualifiedField(const QString &field) const
 {
-    if(table.isEmpty() || field.contains('.'))
+    QString t = tableName.isEmpty() ? table : tableName;
+    if(t.isEmpty() || field.contains('.'))
         return QpSqlQuery::escapeField(field);
 
     return QString("%1.%2")
-            .arg(QpSqlQuery::escapeField(table))
+            .arg(QpSqlQuery::escapeField(t))
             .arg(QpSqlQuery::escapeField(field));
 }
 
@@ -205,6 +209,15 @@ QString QpSqlQuery::escapeField(const QString &field)
 void QpSqlQuery::setTable(const QString &table)
 {
     data->table = table;
+    if(data->whereCondition.isValid())
+        data->whereCondition.setTable(data->tableName.isEmpty() ? data->table : data->tableName);
+}
+
+void QpSqlQuery::setTableName(const QString &tableName)
+{
+    data->tableName = tableName;
+    if(data->whereCondition.isValid())
+        data->whereCondition.setTable(data->tableName.isEmpty() ? data->table : data->tableName);
 }
 
 void QpSqlQuery::addPrimaryKey(const QString &name)
@@ -254,7 +267,7 @@ void QpSqlQuery::setSkip(int skip)
 void QpSqlQuery::setWhereCondition(const QpSqlCondition &condition)
 {
     data->whereCondition = condition;
-    data->whereCondition.setTable(data->table);
+    data->whereCondition.setTable(data->tableName.isEmpty() ? data->table : data->tableName);
 }
 
 void QpSqlQuery::addOrder(const QString &field, QpSqlQuery::Order order)
@@ -278,8 +291,11 @@ void QpSqlQuery::addJoin(const QString &direction, const QString &table, const Q
 
 void QpSqlQuery::addJoin(const QString &direction, const QpSqlQuery &subSelect, const QString &on)
 {
+    QString joinName = subSelect.data->tableName.isEmpty()
+                       ? QString::fromLatin1("sub_select_%1").arg(data->joins.size())
+                       : subSelect.data->tableName;
     addJoin(direction,
-            QString::fromLatin1("(%1) as sub_select_%2").arg(subSelect.data->constructSelectQuery()).arg(data->joins.size()),
+            QString::fromLatin1("(%1) as %2").arg(subSelect.data->constructSelectQuery()).arg(joinName),
             on);
     foreach(QVariant bindValue, subSelect.boundValues()) {
         addBindValue(bindValue);
@@ -383,7 +399,9 @@ QString QpSqlQueryPrivate::constructSelectQuery() const
         query.append(localFields.join(", "));
     }
 
-    query.append(" FROM ").append(QpSqlQuery::escapeField(table)).append("");
+    query.append(" FROM ").append(QpSqlQuery::escapeField(table));
+    if(!tableName.isEmpty())
+        query.append(" AS ").append(QpSqlQuery::escapeField(tableName));
 
     foreach(QpSqlQueryPrivate::Join join, joins) {
         query.append(QString("\n%1 JOIN %2 ON %3")
@@ -601,10 +619,20 @@ const char LISTSEPARATOR = 0x1;
 QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
 {
     QVariant value = val;
-    if (static_cast<QMetaType::Type>(val.type()) == QMetaType::QStringList) {
+
+    if (val.type() == QVariant::DateTime) {
+        QDateTime time = val.toDateTime();
+        return time.toTimeSpec(Qt::UTC);
+    }
+    else if (val.type() == QVariant::Time) {
+        QDateTime time = QDateTime(QDate::currentDate(), val.toTime());
+        return time.toTimeSpec(Qt::UTC).time();
+    }
+    else if (static_cast<QMetaType::Type>(val.type()) == QMetaType::QStringList) {
         return QVariant::fromValue<QString>(val.toStringList().join(LISTSEPARATOR));
     }
     else if (static_cast<QMetaType::Type>(val.type()) == QMetaType::QPixmap) {
+#ifndef QP_NO_GUI
         QByteArray byteArray;
         QPixmap pixmap = val.value<QPixmap>();
 
@@ -612,6 +640,7 @@ QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
         buffer.open(QIODevice::WriteOnly);
         pixmap.save(&buffer, "png");
         return byteArray;
+#endif
     }
     else if (Qp::Private::canConvertToSqlStorableVariant(val)) {
         return Qp::Private::convertToSqlStorableVariant(val);
@@ -623,14 +652,30 @@ QVariant QpSqlQuery::variantToSqlStorableVariant(const QVariant &val)
 QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaType::Type type)
 {
     QVariant value = val;
+    if (static_cast<QVariant::Type>(type) == QVariant::DateTime) {
+        QDateTime time = val.toDateTime();
+        time.setTimeSpec(Qt::UTC);
+        return time.toLocalTime();
+    }
+    else if (static_cast<QVariant::Type>(type) == QVariant::Time) {
+        QDateTime time = QDateTime(QDate::currentDate(), val.toTime());
+        time.setTimeSpec(Qt::UTC);
+        return time.toLocalTime();
+    }
     if (type == QMetaType::QStringList) {
-        return QVariant::fromValue<QStringList>(val.toString().split(LISTSEPARATOR));
+        QString string = val.toString();
+        if(string.isEmpty())
+            return QStringList();
+
+        return QVariant::fromValue<QStringList>(string.split(LISTSEPARATOR));
     }
     else if (type == QMetaType::QPixmap) {
+#ifndef QP_NO_GUI
         QByteArray byteArray = val.toByteArray();
         QPixmap pixmap;
         pixmap.loadFromData(byteArray, "png");
         return QVariant::fromValue<QPixmap>(pixmap);
+#endif
     }
     else if (Qp::Private::canConvertFromSqlStoredVariant(type)) {
         return Qp::Private::convertFromSqlStoredVariant(val.toString(), type);

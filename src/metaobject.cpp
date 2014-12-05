@@ -85,6 +85,11 @@ QpMetaObject QpMetaObject::forClassName(const QString &className)
     return it.value();
 }
 
+QpMetaObject QpMetaObject::forMetaObject(const QMetaObject &metaObject)
+{
+    return QpMetaObject::forClassName(metaObject.className());
+}
+
 QList<QpMetaObject> QpMetaObject::registeredMetaObjects()
 {
     return *MetaObjects();

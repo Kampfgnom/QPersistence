@@ -91,6 +91,7 @@ private:
 
     void setLastError(const QpError &error) const;
     void resetLastError() const;
+    void unlinkRelations(QSharedPointer<QObject> object) const;
 
     Qp::SynchronizeResult sync(QSharedPointer<QObject> object);
 

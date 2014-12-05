@@ -39,7 +39,9 @@ public:
     int latestRevision(const QpMetaObject &metaObject) const;
     int maxPrimaryKey(const QpMetaObject &metaObject) const;
 
+#ifndef QP_NO_GUI
     QPixmap readPixmap(QObject *object, const QString &propertyName);
+#endif
 
     int objectRevision(QObject *object) const;
 
