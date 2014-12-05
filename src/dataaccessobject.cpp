@@ -167,7 +167,12 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
 
         int localRevision = data->storage->revisionInObject(currentObject.data());
         int remoteRevision = query.value(revisionRecordIndex).toInt();
-        if(localRevision < remoteRevision) {
+
+        // A revision of 0 means the object has no revision.
+        // This should only be the case for objects, which have been created before enabling the history tracking.
+        // We have to read these objects:
+        if(remoteRevision <= 0
+           || localRevision < remoteRevision) {
             data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query,
                                                                             record,
                                                                             currentObject.data());
