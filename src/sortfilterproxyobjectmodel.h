@@ -27,7 +27,7 @@ public:
 
 protected:
     bool lessThan(const QModelIndex &left, const QModelIndex &right) const Q_DECL_OVERRIDE;
-    bool lessThan(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const;
+    virtual bool objectLessThanBase(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const;
     bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const Q_DECL_OVERRIDE;
     virtual bool filterAcceptsObjectBase(QSharedPointer<QObject> object) const = 0;
 
@@ -45,6 +45,7 @@ public:
 protected:
     bool filterAcceptsObjectBase(QSharedPointer<QObject> object) const;
     virtual bool filterAcceptsObject(QSharedPointer<T>) const;
+    virtual bool objectLessThan(QSharedPointer<T> left, QSharedPointer<T> right) const;
 };
 
 template<class T>
@@ -70,6 +71,12 @@ template<class T>
 bool QpSortFilterProxyObjectModel<T>::filterAcceptsObject(QSharedPointer<T>) const
 {
     return true;
+}
+
+template<class T>
+bool QpSortFilterProxyObjectModel<T>::objectLessThan(QSharedPointer<T> left, QSharedPointer<T> right) const
+{
+    return QpSortFilterProxyObjectModelBase::objectLessThanBase(qSharedPointerCast<QObject>(left), qSharedPointerCast<QObject>(right));
 }
 
 #endif // QPERSISTENCE_SORTFILTERPROXYOBJECTMODEL_H
