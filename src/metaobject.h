@@ -61,6 +61,7 @@ private:
     explicit QpMetaObject(const QMetaObject &metaObject);
 
     QMetaMethod method(QString signature, const QpMetaProperty &property) const;
+    QMetaMethod findMethod(QString signature) const;
 
     void initProperties() const;
     QExplicitlySharedDataPointer<QpMetaObjectPrivate> data;
