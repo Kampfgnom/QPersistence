@@ -111,7 +111,32 @@ QMetaMethod QpMetaObject::method(QString signature, const QpMetaProperty &proper
 {
     QString propertyName = property.name();
     propertyName[0] = propertyName.at(0).toTitleCase();
-    signature = signature.arg(propertyName).arg(property.reverseClassName());
+    QString reverseClassName = property.reverseClassName();
+    QMetaMethod method = findMethod(signature.arg(propertyName).arg(reverseClassName));
+
+
+    if(method.isValid())
+        return method;
+
+    QString reverseClassNameWithoutNamespaces = removeNamespaces(reverseClassName);
+    if(reverseClassNameWithoutNamespaces == reverseClassName)
+        return QMetaMethod();
+
+
+    method = findMethod(signature.arg(propertyName).arg(reverseClassNameWithoutNamespaces));
+    if(method.isValid())
+        return method;
+
+    Q_ASSERT_X(false, Q_FUNC_INFO,
+               QString("No such method '%1::%2'")
+               .arg(data->metaObject.className())
+
+               .arg(signature.arg(propertyName).arg(reverseClassName)).toLatin1());
+    return QMetaMethod();
+}
+
+QMetaMethod QpMetaObject::findMethod(QString signature) const
+{
     QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
     int index = data->metaObject.indexOfMethod(normalized);
 
@@ -135,17 +160,14 @@ QMetaMethod QpMetaObject::method(QString signature, const QpMetaProperty &proper
         return data->metaObject.method(index);
 
     // Remove all 's' to even better match 'many' relations
-
     signature.remove('s');
     normalized = QMetaObject::normalizedSignature(signature.toUtf8());
     index = data->metaObject.indexOfMethod(normalized);
 
-    Q_ASSERT_X(index > 0, Q_FUNC_INFO,
-               QString("No such method '%1::%2'")
-               .arg(data->metaObject.className())
-               .arg(signature).toLatin1());
+    if(index > 0)
+        return data->metaObject.method(index);
 
-    return data->metaObject.method(index);
+    return QMetaMethod();
 }
 
 void QpMetaObject::initProperties() const

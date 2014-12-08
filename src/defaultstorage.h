@@ -44,6 +44,7 @@ template<class T> bool incrementNumericColumn(QSharedPointer<T> object, const QS
 #ifndef QP_NO_TIMESTAMPS
 template<class T> QList<QSharedPointer<T>> createdSince(const QDateTime &time) { return QpStorage::defaultStorage()->createdSince<T>(time); }
 template<class T> QList<QSharedPointer<T>> updatedSince(const QDateTime &time) { return QpStorage::defaultStorage()->updatedSince<T>(time); }
+template<class T> QDateTime creationTime(QSharedPointer<T> object) { return QpStorage::defaultStorage()->creationTime(object); }
 template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object) { return QpStorage::defaultStorage()->creationTimeInDatabase(object); }
 template<class T> QDateTime creationTimeInInObject(QSharedPointer<T> object) { return QpStorage::defaultStorage()->creationTimeInInObject(object); }
 template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object) { return QpStorage::defaultStorage()->updateTimeInDatabase(object); }

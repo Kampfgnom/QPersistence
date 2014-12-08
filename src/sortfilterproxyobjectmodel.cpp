@@ -59,10 +59,10 @@ bool QpSortFilterProxyObjectModelBase::lessThan(const QModelIndex &left, const Q
     QSharedPointer<QObject> o1 = sourceQpModel()->objectByIndexBase(left);
     QSharedPointer<QObject> o2 = sourceQpModel()->objectByIndexBase(right);
 
-    return lessThan(o1, o2);
+    return objectLessThanBase(o1, o2);
 }
 
-bool QpSortFilterProxyObjectModelBase::lessThan(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const
+bool QpSortFilterProxyObjectModelBase::objectLessThanBase(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const
 {
     return Qp::Private::primaryKey(left.data()) < Qp::Private::primaryKey(right.data());
 }

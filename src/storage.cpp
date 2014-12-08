@@ -356,6 +356,17 @@ double QpStorage::databaseTimeInternal()
     return query.value(0).toDouble();
 }
 
+double QpStorage::creationTime(QObject *object)
+{
+    double time = creationTimeInInObject(object);
+    _Pragma("GCC diagnostic push")
+    _Pragma("GCC diagnostic ignored \"-Wused-but-marked-unused\"")
+    if(qFuzzyCompare(0.0, time))
+        return creationTimeInDatabase(object);
+    _Pragma("GCC diagnostic pop")
+    return time;
+}
+
 double QpStorage::creationTimeInDatabase(QObject *object)
 {
     return sqlDataAccessObjectHelper()->readCreationTime(object);
@@ -380,6 +391,8 @@ QDateTime dateFromDouble(double value)
 {
     QString string = QString("%1").arg(value, 17, 'f', 3);
     QDateTime time = QDateTime::fromString(string, "yyyyMMddHHmmss.zzz");
+
+    // TODO: Query the DB's timezone
     time.setTimeSpec(Qt::UTC);
     return time.toLocalTime();
 }
