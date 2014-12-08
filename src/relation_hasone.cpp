@@ -132,9 +132,9 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
     }
 
     if(newObject) {
-        data->object->setProperty(column, Qp::Private::primaryKey(newObject.data()));
+        data->parent->setProperty(column, Qp::Private::primaryKey(newObject.data()));
     }
     else {
-        data->object->setProperty(column, 0);
+        data->parent->setProperty(column, 0);
     }
 }
