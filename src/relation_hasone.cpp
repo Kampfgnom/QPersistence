@@ -122,6 +122,7 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
     // Set again, because it may (will) happen, that setting the reverse relations has also changed this value.
     data->object = newObject;
 
+    // Set dynamic property for relation
     QByteArray column;
     if(data->metaProperty.hasTableForeignKey()) {
        column = data->metaProperty.columnName().toLatin1();
@@ -129,5 +130,11 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
     else {
         column = QByteArray("_Qp_FK_") + data->metaProperty.name().toLatin1();
     }
-    data->object->setProperty(column, Qp::Private::primaryKey(newObject.data()));
+
+    if(newObject) {
+        data->object->setProperty(column, Qp::Private::primaryKey(newObject.data()));
+    }
+    else {
+        data->object->setProperty(column, 0);
+    }
 }
