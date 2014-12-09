@@ -120,6 +120,7 @@ void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> newObject) cons
     // Set again, because it may happen, that resetting the previousObjects relation has also reset this value.
     data->object = newObject.toWeakRef();
 
+    // Set dynamic property for relation
     QByteArray column;
     if(data->metaProperty.hasTableForeignKey()) {
        column = data->metaProperty.columnName().toLatin1();
@@ -127,5 +128,11 @@ void QpBelongsToOneBase::setObject(const QSharedPointer<QObject> newObject) cons
     else {
         column = QByteArray("_Qp_FK_") + data->metaProperty.name().toLatin1();
     }
-    shared->setProperty(column, Qp::Private::primaryKey(newObject.data()));
+
+    if(newObject) {
+        shared->setProperty(column, Qp::Private::primaryKey(newObject.data()));
+    }
+    else {
+        shared->setProperty(column, 0);
+    }
 }
