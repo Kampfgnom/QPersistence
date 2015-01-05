@@ -211,7 +211,6 @@ QSharedPointer<QObject> QpDaoBase::readObject(int id) const
             setLastError(error);
 
         data->cache.remove(id);
-        delete object;
         return QSharedPointer<QObject>();
     }
 
