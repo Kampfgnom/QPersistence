@@ -18,7 +18,7 @@ class QpSqlCondition;
 class QpSqlQuery;
 class QpStorage;
 
-class QpSqlDataAccessObjectHelperPrivate;
+class QpSqlDataAccessObjectHelperData;
 class QpSqlDataAccessObjectHelper : public QObject
 {
     Q_OBJECT
@@ -56,7 +56,7 @@ public:
     QList<int> foreignKeys(const QpMetaProperty relation, QObject *object);
 
 private:
-    QExplicitlySharedDataPointer<QpSqlDataAccessObjectHelperPrivate> data;
+    QExplicitlySharedDataPointer<QpSqlDataAccessObjectHelperData> data;
 
     void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;

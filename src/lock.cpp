@@ -9,6 +9,7 @@
 #include "sqlcondition.h"
 #include "sqlquery.h"
 #include "storage.h"
+#include "transactionshelper.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
@@ -20,29 +21,31 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
  *  QpLockData
  */
 class QpLockData : public QSharedData {
-    public:
-        QpLockData();
-        ~QpLockData();
+public:
+    QpLockData();
+    ~QpLockData();
 
-        int id;
-        QpError error;
-        QSharedPointer<QObject> object;
-        QHash<QString, QVariant> information;
-        QpLock::Status status;
+    int id;
+    QpError error;
+    QSharedPointer<QObject> object;
+    QHash<QString, QVariant> information;
+    QpLock::Status status;
 
-        static QpLock insertLock(QpStorage *storage, QSharedPointer<QObject> object, QHash<QString,QVariant> additionalInformation);
-        static QpLock selectLock(QpStorage *storage, int id, QSharedPointer<QObject> object);
-        static int selectLockId(QpStorage *storage, QSharedPointer<QObject> object, bool forUpdate);
-        static void removeLock(QpStorage *storage, int id, QSharedPointer<QObject> object);
+    static QpLock insertLock(QpStorage *storage, QSharedPointer<QObject> object, QHash<QString,QVariant> additionalInformation);
+    static QpLock selectLock(QpStorage *storage, int id, QSharedPointer<QObject> object);
+    static int selectLockId(QpStorage *storage, QSharedPointer<QObject> object, bool forUpdate);
+    static void removeLock(QpStorage *storage, int id, QSharedPointer<QObject> object);
 };
 
 typedef QHash<QSharedPointer<QObject>, QpLock> LocksHash;
 QP_DEFINE_STATIC_LOCAL(LocksHash, LOCALLOCKS)
 
-QpLockData::QpLockData() : QSharedData(),
+QpLockData::QpLockData() :
+    QSharedData(),
     id(-1),
     status(QpLock::UnkownStatus)
-{}
+{
+}
 
 QpLockData::~QpLockData()
 {
@@ -55,7 +58,7 @@ QpLock QpLockData::insertLock(QpStorage *storage, QSharedPointer<QObject> object
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
     query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
 
-    foreach(QString field, storage->additionalLockInformationFields().keys()) {
+    foreach (QString field, storage->additionalLockInformationFields().keys()) {
         query.addField(field, additionalInformation.value(field));
     }
 
@@ -72,7 +75,7 @@ QpLock QpLockData::insertLock(QpStorage *storage, QSharedPointer<QObject> object
     lock.data->id = query.lastInsertId().toInt();
     lock.data->status = QpLock::LockedLocally;
 
-    foreach(QString field, storage->additionalLockInformationFields().keys()) {
+    foreach (QString field, storage->additionalLockInformationFields().keys()) {
         lock.data->information.insert(field, additionalInformation.value(field));
     }
 
@@ -99,7 +102,7 @@ QpLock QpLockData::selectLock(QpStorage *storage, int id, QSharedPointer<QObject
     QpSqlQuery query(storage->database());
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
     query.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
-    foreach(QString field, storage->additionalLockInformationFields().keys()) {
+    foreach (QString field, storage->additionalLockInformationFields().keys()) {
         query.addField(field);
     }
     query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
@@ -120,7 +123,7 @@ QpLock QpLockData::selectLock(QpStorage *storage, int id, QSharedPointer<QObject
     lock.data->id = query.value(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY).toInt();
     lock.data->status = QpLock::LockedRemotely;
 
-    foreach(QString field, storage->additionalLockInformationFields().keys()) {
+    foreach (QString field, storage->additionalLockInformationFields().keys()) {
         QVariant value = query.value(field);
         value.convert(static_cast<int>(storage->additionalLockInformationFields().value(field)));
         lock.data->information.insert(field, value);
@@ -149,7 +152,7 @@ int QpLockData::selectLockId(QpStorage *storage, QSharedPointer<QObject> object,
         return -1;
     }
 
-    if(!query.first())
+    if (!query.first())
         return 0;
 
     return query.value(0).toInt();
@@ -175,13 +178,14 @@ void QpLockData::removeLock(QpStorage *storage, int id, QSharedPointer<QObject> 
 }
 #endif
 
+
 /**********************************************************
  *  QpLock
  */
 QpLock::QpLock()
 #ifndef QP_NO_LOCKS
     : data(new QpLockData)
-    #endif
+#endif
 {
 }
 
@@ -194,13 +198,15 @@ bool QpLock::isLocked(QSharedPointer<QObject> object)
     return ok && lockId > 0;
 }
 
-QpLock::QpLock(const QpError &error) : data(new QpLockData)
+QpLock::QpLock(const QpError &error) :
+    data(new QpLockData)
 {
     data->error = error;
     data->status = DatabaseError;
 }
 
-QpLock::QpLock(const QpLock &rhs) : data(rhs.data)
+QpLock::QpLock(const QpLock &rhs) :
+    data(rhs.data)
 {
 }
 
@@ -232,12 +238,8 @@ QVariant QpLock::additionalInformation(const QString &name) const
 
 QpLock QpLock::lockStatus(QpStorage *storage, QSharedPointer<QObject> object)
 {
-    if(!storage->beginTransaction()) {
-        QpError error = storage->lastError();
-        if(!error.isValid())
-            error = QpError("TRANSACTION failed while locking", QpError::TransactionError);
-        return QpLock(error);
-    }
+    if (!storage->beginTransaction())
+        return QpLock(storage->lastError());
 
     QpLock localLock = LOCALLOCKS()->value(object);
 
@@ -248,7 +250,7 @@ QpLock QpLock::lockStatus(QpStorage *storage, QSharedPointer<QObject> object)
         // There is no lock
         lock.data->object = object;
 
-        if(localLock.status() == LockedLocally) {
+        if (localLock.status() == LockedLocally) {
             // Someone else unlocked my lock!
             LOCALLOCKS()->remove(object);
             lock.data->status = QpLock::UnlockedRemotely;
@@ -258,8 +260,8 @@ QpLock QpLock::lockStatus(QpStorage *storage, QSharedPointer<QObject> object)
         }
     }
     else {
-        if(localLock.status() == LockedLocally) {
-            if(localLock.data->id == lockId) {
+        if (localLock.status() == LockedLocally) {
+            if (localLock.data->id == lockId) {
                 // This is my lock
                 lock = localLock;
             }
@@ -275,12 +277,8 @@ QpLock QpLock::lockStatus(QpStorage *storage, QSharedPointer<QObject> object)
         }
     }
 
-    if(storage->commitOrRollbackTransaction() != Qp::CommitSuccessful) {
-        QpError error = storage->lastError();
-        if(!error.isValid())
-            error = QpError("COMMIT failed while locking", QpError::TransactionError);
-        return QpLock(error);
-    }
+    if (!storage->commitOrRollbackTransaction())
+        return QpLock(storage->lastError());
 
     return lock;
 
@@ -288,12 +286,8 @@ QpLock QpLock::lockStatus(QpStorage *storage, QSharedPointer<QObject> object)
 
 QpLock QpLock::tryLock(QpStorage *storage, QSharedPointer<QObject> object, QHash<QString, QVariant> additionalInformation)
 {
-    if(!storage->beginTransaction()) {
-        QpError error = storage->lastError();
-        if(!error.isValid())
-            error = QpError("TRANSACTION failed while locking", QpError::TransactionError);
-        return QpLock(error);
-    }
+    if (!storage->beginTransaction())
+        return QpLock(storage->lastError());
 
     QpLock localLock = LOCALLOCKS()->value(object);
 
@@ -304,7 +298,7 @@ QpLock QpLock::tryLock(QpStorage *storage, QSharedPointer<QObject> object, QHash
     if (lockId == 0) {
         // There is no lock
 
-        if(localLock.status() == LockedLocally) {
+        if (localLock.status() == LockedLocally) {
             // Someone else unlocked my lock!
             LOCALLOCKS()->remove(object);
         }
@@ -314,8 +308,8 @@ QpLock QpLock::tryLock(QpStorage *storage, QSharedPointer<QObject> object, QHash
     else {
         // There is a lock
 
-        if(localLock.status() == LockedLocally) {
-            if(localLock.data->id == lockId) {
+        if (localLock.status() == LockedLocally) {
+            if (localLock.data->id == lockId) {
                 // This is my lock
                 lock = localLock;
             }
@@ -331,24 +325,16 @@ QpLock QpLock::tryLock(QpStorage *storage, QSharedPointer<QObject> object, QHash
         }
     }
 
-    if(storage->commitOrRollbackTransaction() != Qp::CommitSuccessful) {
-        QpError error = storage->lastError();
-        if(!error.isValid())
-            error = QpError("COMMIT failed while locking", QpError::TransactionError);
-        return QpLock(error);
-    }
+    if (!storage->commitOrRollbackTransaction())
+        return QpLock(storage->lastError());
 
     return lock;
 }
 
 QpLock QpLock::unlock(QpStorage *storage, QSharedPointer<QObject> object)
 {
-    if(!storage->beginTransaction()) {
-        QpError error = storage->lastError();
-        if(!error.isValid())
-            error = QpError("TRANSACTION failed while locking", QpError::TransactionError);
-        return QpLock(error);
-    }
+    if (!storage->beginTransaction())
+        return QpLock(storage->lastError());
 
     // Local lock
     QpLock localLock = LOCALLOCKS()->value(object);
@@ -361,8 +347,8 @@ QpLock QpLock::unlock(QpStorage *storage, QSharedPointer<QObject> object)
         // There is a lock
         lock = QpLockData::selectLock(storage, lockId, object);
 
-        if(localLock.status() == LockedLocally) {
-            if(lockId != localLock.data->id) {
+        if (localLock.status() == LockedLocally) {
+            if (lockId != localLock.data->id) {
                 // Someone else locked my object! AAAH!!
                 lock.data->status = UnlockedRemoteLock;
             }
@@ -379,7 +365,7 @@ QpLock QpLock::unlock(QpStorage *storage, QSharedPointer<QObject> object)
     else {
         // There is no lock
 
-        if(localLock.status() == LockedLocally) {
+        if (localLock.status() == LockedLocally) {
             // Someone else unlocked my lock! AAAH!!
             lock.data->status = UnlockedRemotely;
             LOCALLOCKS()->remove(object);
@@ -389,12 +375,8 @@ QpLock QpLock::unlock(QpStorage *storage, QSharedPointer<QObject> object)
         }
     }
 
-    if(storage->commitOrRollbackTransaction() != Qp::CommitSuccessful) {
-        QpError error = storage->lastError();
-        if(!error.isValid())
-            error = QpError("COMMIT failed while locking", QpError::TransactionError);
-        return QpLock(error);
-    }
+    if (!storage->commitOrRollbackTransaction())
+        return QpLock(storage->lastError());
 
     lock.data->object = object;
     return lock;

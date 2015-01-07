@@ -3,6 +3,7 @@
 #include "sqlbackend.h"
 #include "error.h"
 #include "sqlquery.h"
+#include "transactionshelper.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
@@ -10,13 +11,18 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 static const char *PROPERTY_STORAGE = "_Qp_storage";
 
+
+/******************************************************************************
+ * QpStorageData
+ */
 class QpStorageData : public QSharedData
 {
 public:
     QpStorageData() :
         QSharedData(),
         locksEnabled(false)
-    {}
+    {
+    }
 
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper;
     QSqlDatabase database;
@@ -27,14 +33,20 @@ public:
     QHash<QString, QVariant::Type> additionalLockFields;
     QHash<QString, QpDaoBase *> dataAccessObjects;
     QList<QpAbstractErrorHandler *> errorHandlers;
+    QpTransactionsHelper transactions;
 
     static QpStorage *defaultStorage;
 };
 
 QpStorage *QpStorageData::defaultStorage(nullptr);
+
+
+/******************************************************************************
+ * QpStorage
+ */
 QpStorage *QpStorage::defaultStorage()
 {
-    if(!QpStorageData::defaultStorage)
+    if (!QpStorageData::defaultStorage)
         QpStorageData::defaultStorage = new QpStorage(Qp::Private::GlobalGuard());
 
     return QpStorageData::defaultStorage;
@@ -45,6 +57,7 @@ QpStorage::QpStorage(QObject *parent) :
     data(new QpStorageData)
 {
     data->sqlDataAccessObjectHelper = new QpSqlDataAccessObjectHelper(this);
+    data->transactions = QpTransactionsHelper::forStorage(this);
 }
 
 QpStorage::~QpStorage()
@@ -79,7 +92,7 @@ void QpStorage::registerDataAccessObject(QpDaoBase *dao, const QMetaObject *obje
         data->dataAccessObjects.insert(className, dao);
 
         objectInClassHierarchy = objectInClassHierarchy->superClass();
-    } while(objectInClassHierarchy->className() != QObject::staticMetaObject.className());
+    } while (objectInClassHierarchy->className() != QObject::staticMetaObject.className());
 }
 
 void QpStorage::setDatabase(const QSqlDatabase &database)
@@ -94,31 +107,27 @@ void QpStorage::setDatabase(const QSqlDatabase &database)
     QpSqlQuery query(database);
     query.prepare("PRAGMA foreign_keys = 1;");
     if (!query.exec()
-            || query.lastError().isValid()) {
+        || query.lastError().isValid()) {
         qCritical() << "The PRAGMA foreign_keys could not be set to 1:" << query.lastError();
     }
 #endif
 }
 
-QSqlDatabase QpStorage::database()
+QSqlDatabase QpStorage::database() const
 {
     return data->database;
 }
 
 bool QpStorage::adjustDatabaseSchema()
 {
-    beginTransaction();
     QpDatabaseSchema schema(this);
-    schema.adjustSchema();
-    return commitOrRollbackTransaction() == Qp::CommitSuccessful;
+    return schema.adjustSchema();
 }
 
 bool QpStorage::createCleanSchema()
 {
-    beginTransaction();
     QpDatabaseSchema schema(this);
-    schema.createCleanSchema();
-    return commitOrRollbackTransaction() == Qp::CommitSuccessful;
+    return schema.createCleanSchema();
 }
 
 QpError QpStorage::lastError() const
@@ -133,7 +142,7 @@ _Pragma("clang diagnostic ignored \"-Wmissing-noreturn\"")
 void QpStorage::setLastError(QpError error)
 {
     data->lastError = error;
-    foreach(QpAbstractErrorHandler *handler, data->errorHandlers) {
+    foreach (QpAbstractErrorHandler *handler, data->errorHandlers) {
         handler->handleError(error);
     }
 }
@@ -153,56 +162,26 @@ void QpStorage::clearErrorHandlers()
     data->errorHandlers.clear();
 }
 
+bool QpStorage::beginTransaction()
+{
+    return data->transactions.begin();
+}
+
+bool QpStorage::commitOrRollbackTransaction()
+{
+    return data->transactions.commitOrRollback();
+}
+
+void QpStorage::resetAllLastKnownSynchronizations()
+{
+    foreach(QpDaoBase *dao, data->dataAccessObjects.values()) {
+        dao->resetLastKnownSynchronization();
+    }
+}
+
 void QpStorage::setSqlDebugEnabled(bool enable)
 {
     QpSqlQuery::setDebugEnabled(enable);
-}
-
-bool QpStorage::beginTransaction()
-{
-    if(data->database.driverName() != "QMYSQL")
-        return true;
-
-    bool transaction = data->database.transaction();
-    if(!transaction)
-        qFatal("START TRANSACTION failed.");
-
-    if(QpSqlQuery::isDebugEnabled())
-        qDebug() << "START TRANSACTION;";
-
-    return transaction;
-}
-
-Qp::CommitResult QpStorage::commitOrRollbackTransaction()
-{
-    if(data->database.driverName() != "QMYSQL")
-        return Qp::CommitSuccessful;
-
-    if(lastError().isValid()) {
-        bool rollback = data->database.rollback();
-        if(!rollback)
-            qFatal("ROLLBACK failed.");
-
-        if(QpSqlQuery::isDebugEnabled())
-            qDebug() << "ROLLBACK;";
-        if(rollback)
-            return Qp::RollbackSuccessful;
-        else
-            return Qp::RollbackFailed;
-    }
-
-    bool commit = data->database.commit();
-    if(!commit) {
-        qWarning() << data->database.lastError();
-        qFatal("COMMIT failed.");
-    }
-
-    if(QpSqlQuery::isDebugEnabled())
-        qDebug() << "COMMIT;";
-    if(commit)
-        return Qp::CommitSuccessful;
-    else
-        return Qp::CommitFailed;
 }
 
 QList<QpDaoBase *> QpStorage::dataAccessObjects()
@@ -239,7 +218,7 @@ bool QpStorage::unlockAllLocks()
     query.prepareDelete();
 
     if (!query.exec()
-            || query.lastError().isValid()) {
+        || query.lastError().isValid()) {
         setLastError(query.lastError());
         return false;
     }
@@ -276,7 +255,7 @@ QpDaoBase *QpStorage::dataAccessObject(QSharedPointer<QObject> object) const
 bool QpStorage::incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName)
 {
     QpDaoBase *dao = dataAccessObject(object);
-    if(!dao->incrementNumericColumn(object, fieldName))
+    if (!dao->incrementNumericColumn(object, fieldName))
         return false;
 
     return dao->synchronizeObject(object, QpDaoBase::IgnoreRevision) == Qp::Updated;
@@ -284,31 +263,9 @@ bool QpStorage::incrementNumericColumn(QSharedPointer<QObject> object, const QSt
 
 Qp::UpdateResult QpStorage::update(QSharedPointer<QObject> object)
 {
-    beginTransaction();
     Qp::UpdateResult result = dataAccessObject(object)->updateObject(object);
-    if(result == Qp::UpdateConflict) {
-        qWarning() << "Update conflict for " << object->metaObject()->className() << primaryKey(object);
-        database().rollback();
-#ifdef QT_DEBUG
-        qFatal("Aborting");
-#   ifndef Q_OS_WIN
-        _Pragma("GCC diagnostic push");
-        _Pragma("GCC diagnostic ignored \"-Wunreachable-code-return\"");
-#   endif
-#endif
-        return Qp::UpdateConflict;
-#ifdef QT_DEBUG
-#   ifndef Q_OS_WIN
-        _Pragma("GCC diagnostic pop");
-#   endif
-#endif
-    }
-
-    Qp::CommitResult commitResult = commitOrRollbackTransaction();
-    if(commitResult == Qp::CommitSuccessful)
-        return result;
-
-    return Qp::UpdateError;
+    Q_ASSERT(result == Qp::UpdateSuccess);
+    return result;
 }
 
 Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<QObject> object, QpDaoBase::SynchronizeMode mode)
@@ -318,9 +275,7 @@ Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<QObject> object, QpD
 
 bool QpStorage::remove(QSharedPointer<QObject> object)
 {
-    beginTransaction();
-    dataAccessObject(object)->removeObject(object);
-    return commitOrRollbackTransaction() == Qp::CommitSuccessful;
+    return dataAccessObject(object)->removeObject(object);
 }
 
 int QpStorage::primaryKey(QSharedPointer<QObject> object)
@@ -347,8 +302,8 @@ bool QpStorage::undelete(QSharedPointer<QObject> object)
 double QpStorage::databaseTimeInternal()
 {
     QpSqlQuery query(data->database);
-    if(!query.exec(QString("SELECT %1").arg(QpSqlBackend::forDatabase(data->database)->nowTimestamp()))
-            || !query.first()) {
+    if (!query.exec(QString("SELECT %1").arg(QpSqlBackend::forDatabase(data->database)->nowTimestamp()))
+        || !query.first()) {
         setLastError(QpError(query.lastError()));
         return -1.0;
     }
@@ -361,7 +316,7 @@ double QpStorage::creationTime(QObject *object)
     double time = creationTimeInInObject(object);
     _Pragma("GCC diagnostic push")
     _Pragma("GCC diagnostic ignored \"-Wused-but-marked-unused\"")
-    if(qFuzzyCompare(0.0, time))
+    if (qFuzzyCompare(0.0, time))
         return creationTimeInDatabase(object);
     _Pragma("GCC diagnostic pop")
     return time;

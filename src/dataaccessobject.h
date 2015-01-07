@@ -59,9 +59,9 @@ public:
     int latestRevision() const;
 
 #ifndef QP_NO_TIMESTAMPS
-    QList<QSharedPointer<QObject>> createdSince(const QDateTime &time);
+    QList<QSharedPointer<QObject> > createdSince(const QDateTime &time);
     QList<QSharedPointer<QObject> > createdSince(double time);
-    QList<QSharedPointer<QObject>> updatedSince(const QDateTime &time);
+    QList<QSharedPointer<QObject> > updatedSince(const QDateTime &time);
     QList<QSharedPointer<QObject> > updatedSince(double time);
 #endif
 
@@ -107,7 +107,9 @@ template<class T>
 class QpDao : public QpDaoBase
 {
 public:
-    QSharedPointer<T> read(int id) { return qSharedPointerCast<T>(readObject(id)); }
+    QSharedPointer<T> read(int id) {
+        return qSharedPointerCast<T>(readObject(id));
+    }
     QList<QSharedPointer<T> > readAllObjects(int skip = -1,
                                              int count = -1,
                                              const QpSqlCondition &condition = QpSqlCondition(),
@@ -119,9 +121,12 @@ public:
 protected:
     QpDao(QpStorage *parent) :
         QpDaoBase(T::staticMetaObject, parent)
-    {}
+    {
+    }
 
-    QObject *createInstance() const Q_DECL_OVERRIDE { return new T; }
+    QObject *createInstance() const Q_DECL_OVERRIDE {
+        return new T;
+    }
 
 private:
     friend class QpStorage;

@@ -27,20 +27,29 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #endif
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-class QpSqlDataAccessObjectHelperPrivate : public QSharedData
+
+/******************************************************************************
+ * QpSqlDataAccessObjectHelperPrivate
+ */
+class QpSqlDataAccessObjectHelperData : public QSharedData
 {
 public:
-    QpSqlDataAccessObjectHelperPrivate() :
+    QpSqlDataAccessObjectHelperData() :
         QSharedData()
-    {}
+    {
+    }
 
     QpStorage *storage;
     QHash<QpMetaProperty, QpSqlQuery> queriesForRelation;
 };
 
+
+/******************************************************************************
+ * QpSqlDataAccessObjectHelper
+ */
 QpSqlDataAccessObjectHelper::QpSqlDataAccessObjectHelper(QpStorage *storage) :
     QObject(storage),
-    data(new QpSqlDataAccessObjectHelperPrivate)
+    data(new QpSqlDataAccessObjectHelperData)
 {
     data->storage = storage;
 }
@@ -59,14 +68,14 @@ int QpSqlDataAccessObjectHelper::count(const QpMetaObject &metaObject, const QpS
     c = QpSqlCondition::notDeletedAnd(c);
     c.setBindValuesAsString(true);
 
-    if(c.isValid())
+    if (c.isValid())
         q.append(QString(" WHERE %1").arg(c.toWhereClause()));
 
     query.prepare(q);
 
     if (!query.exec()
-            || !query.first()
-            || query.lastError().isValid()) {
+        || !query.first()
+        || query.lastError().isValid()) {
         setLastError(query);
         return 0;
     }
@@ -91,7 +100,7 @@ QList<int> QpSqlDataAccessObjectHelper::allKeys(const QpMetaObject &metaObject, 
 
     QList<int> result;
     if (!query.exec()
-            || query.lastError().isValid()) {
+        || query.lastError().isValid()) {
         setLastError(query);
         return result;
     }
@@ -120,12 +129,12 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
     query.prepareSelect();
 
     if (!query.exec()
-            || query.lastError().isValid()) {
+        || query.lastError().isValid()) {
         setLastError(query);
         return false;
     }
 
-    if(!query.first())
+    if (!query.first())
         return false;
 
     readQueryIntoObject(query, query.record(), object);
@@ -141,7 +150,7 @@ QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaO
     query.setCount(count);
     query.setSkip(skip);
     query.setForwardOnly(true);
-    foreach(QpSqlQuery::OrderField orderField, orders) {
+    foreach (QpSqlQuery::OrderField orderField, orders) {
         query.addOrder(orderField.field, orderField.order);
     }
     query.prepareSelect();
@@ -184,6 +193,9 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
 {
     Q_ASSERT(object);
 
+    if (!data->storage->beginTransaction())
+        return false;
+
     // Create main INSERT query
     QpSqlQuery query(data->storage->database());
     query.setTable(metaObject.tableName());
@@ -196,7 +208,7 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
     // Insert the object itself
     query.prepareInsert();
     if (!query.exec()
-            || query.lastError().isValid()) {
+        || query.lastError().isValid()) {
         setLastError(query);
         return false;
     }
@@ -206,12 +218,15 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
     int revision = objectRevision(object);
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_REVISION, revision);
 
-    return true;
+    return data->storage->commitOrRollbackTransaction();
 }
 
 bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, QObject *object)
 {
     Q_ASSERT(object);
+
+    if (!data->storage->beginTransaction())
+        return false;
 
     // Create main UPDATE query
     QpSqlQuery query(data->storage->database());
@@ -230,18 +245,18 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
     // Insert the object itself
     query.prepareUpdate();
     if (!query.exec()
-            || query.lastError().isValid()) {
+        || query.lastError().isValid()) {
         setLastError(query);
         return false;
     }
 
     // Update related objects
-    bool result = adjustRelationsInDatabase(metaObject, object);
+    adjustRelationsInDatabase(metaObject, object);
 
     int revision = objectRevision(object);
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_REVISION, revision);
 
-    return result;
+    return data->storage->commitOrRollbackTransaction();
 }
 
 void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaObject,
@@ -251,13 +266,13 @@ void QpSqlDataAccessObjectHelper::fillValuesIntoQuery(const QpMetaObject &metaOb
     // Add simple properties
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
         QVariant value = property.metaProperty().read(object);
-        if(value == QVariant(0)
-           && (property.metaProperty().isEnumType()
-               || property.metaProperty().isFlagType())) {
+        if (value == QVariant(0)
+            && (property.metaProperty().isEnumType()
+                || property.metaProperty().isFlagType())) {
             query.addRawField(property.columnName(), "NULL");
         }
         else {
-            if(property.metaProperty().isEnumType() && !property.metaProperty().isFlagType())
+            if (property.metaProperty().isEnumType() && !property.metaProperty().isFlagType())
 #ifdef QP_FOR_MYSQL
                 value = property.metaProperty().enumerator().valueToKey(value.toInt());
 #elif QP_FOR_SQLITE
@@ -276,12 +291,12 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
 
     // Select normal fields
     foreach (const QpMetaProperty property, metaObject.simpleProperties()) {
-        if(property.isLazy())
+        if (property.isLazy())
             continue;
 
         QString columnName = property.columnName();
 #ifdef QP_FOR_MYSQL
-        if(property.metaProperty().isEnumType())
+        if (property.metaProperty().isEnumType())
             columnName += "+0";
 #endif
         query.addField(columnName);
@@ -343,8 +358,8 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
     revisionSubQuery.addField(QpDatabaseSchema::COLUMN_NAME_REVISION);
     revisionSubQuery.addField(QpDatabaseSchema::COLUMN_NAME_ACTION);
     revisionSubQuery.addJoin("INNER",
-                  revisionSubSubQuery,
-                  QString::fromLatin1("%1.%3 = %2.%3 AND %1.%4 = %2.%4")
+                             revisionSubSubQuery,
+                             QString::fromLatin1("%1.%3 = %2.%3 AND %1.%4 = %2.%4")
                              .arg(QpSqlQuery::escapeField(revisionSubQueryName))
                              .arg(QpSqlQuery::escapeField(revisionSubSubQueryName))
                              .arg(QpSqlQuery::escapeField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY))
@@ -361,11 +376,11 @@ void QpSqlDataAccessObjectHelper::selectFields(const QpMetaObject &metaObject, Q
 
     // Implicitly join to-one related tables
     int tableJoin = 0;
-    foreach(const QpMetaProperty relation, metaObject.relationProperties()) {
-        if(relation.hasTableForeignKey()) {
+    foreach (const QpMetaProperty relation, metaObject.relationProperties()) {
+        if (relation.hasTableForeignKey()) {
             query.addField(relation.columnName());
         }
-        else if(relation.isToOneRelationProperty()) {
+        else if (relation.isToOneRelationProperty()) {
             QString joinName = QString("join_table_%1").arg(tableJoin++);
             query.addRawField(joinName + "." +
                               QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY +
@@ -385,19 +400,19 @@ void QpSqlDataAccessObjectHelper::readQueryIntoObject(const QpSqlQuery &query,
     for (int i = 0; i < fieldCount; ++i) {
         QString fieldName = record.fieldName(i);
         QMetaProperty property = query.propertyForIndex(record, object->metaObject(), i);
-        if(!property.isValid()) {
-            if(fieldName.startsWith("_Qp_")
-               || fieldName == QLatin1String("revision"))
+        if (!property.isValid()) {
+            if (fieldName.startsWith("_Qp_")
+                || fieldName == QLatin1String("revision"))
                 object->setProperty(fieldName.toLatin1(), query.value(i));
             continue;
         }
 
         QVariant value = query.value(i);
 
-        if(property.isFlagType()) {
+        if (property.isFlagType()) {
             value = value.toInt();
         }
-        else if(property.isEnumType()) {
+        else if (property.isEnumType()) {
 #ifdef QP_FOR_MYSQL
             value = property.enumerator().value(value.toInt());
 #elif defined QP_FOR_SQLITE
@@ -436,7 +451,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
 
     foreach (QpSqlQuery query, queries) {
         if (!query.exec()
-                || query.lastError().isValid()) {
+            || query.lastError().isValid()) {
             setLastError(query);
             return false;
         }
@@ -447,7 +462,7 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
 
 QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToOneRelation(const QpMetaProperty &relation, QObject *object)
 {
-    if(relation.hasTableForeignKey())
+    if (relation.hasTableForeignKey())
         return queriesThatAdjustToOneRelation(relation, object);
 
     QList<QpSqlQuery> queries;
@@ -459,7 +474,7 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToOneRelation
     QpSqlCondition whereClause = QpSqlCondition(relation.columnName(),
                                                 QpSqlCondition::EqualTo,
                                                 primaryKey);
-    if(relatedObject) {
+    if (relatedObject) {
         whereClause = whereClause && QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
                                                     QpSqlCondition::NotEqualTo,
                                                     Qp::Private::primaryKey(relatedObject.data()));
@@ -475,7 +490,7 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToOneRelation
     resetRelationQuery.prepareUpdate();
     queries.append(resetRelationQuery);
 
-    if(!relatedObject)
+    if (!relatedObject)
         return queries;
 
     QVariant relatedPrimary = Qp::Private::primaryKey(relatedObject.data());
@@ -517,7 +532,7 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToManyRelatio
     QpSqlCondition resetCondition = QpSqlCondition(relation.columnName(),
                                                    QpSqlCondition::EqualTo,
                                                    primaryKey);
-    if(!relatedObjects.isEmpty()) {
+    if (!relatedObjects.isEmpty()) {
         resetCondition = resetCondition && !relatedObjectsWhereClause;
     }
 
@@ -533,16 +548,16 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToManyRelatio
     resetRelationQuery.prepareUpdate();
     queries.append(resetRelationQuery);
 
-    if(relatedObjects.isEmpty())
+    if (relatedObjects.isEmpty())
         return queries;
 
 
     QpSqlCondition newlyRelatedObjectsClause = relatedObjectsWhereClause
-            && QpSqlCondition(QpSqlCondition::Or, QList<QpSqlCondition>()
-                              << QpSqlCondition(relation.columnName(),
-                                                QpSqlCondition::NotEqualTo,
-                                                primaryKey)
-                              << QpSqlCondition(QString("%1 IS NULL").arg(relation.columnName())));
+                                               && QpSqlCondition(QpSqlCondition::Or, QList<QpSqlCondition>()
+                                                                 << QpSqlCondition(relation.columnName(),
+                                                                                   QpSqlCondition::NotEqualTo,
+                                                                                   primaryKey)
+                                                                 << QpSqlCondition(QString("%1 IS NULL").arg(relation.columnName())));
 
 
 #ifndef QP_NO_TIMESTAMPS
@@ -553,13 +568,13 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustOneToManyRelatio
                                             "\n\t\tON %2.%3 = tableToUpdate.%4 "
                                             "\n\tSET tableToUpdate.%5 = %6 "
                                             "\n\tWHERE %7")
-            .arg(QpSqlQuery::escapeField(relation.metaObject().tableName()))
-            .arg(QpSqlQuery::escapeField(relation.tableName()))
-            .arg(QpSqlQuery::escapeField(relation.columnName()))
-            .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
-            .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
-            .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
-            .arg(relatedObjectsWhereClause2.toWhereClause());
+                                    .arg(QpSqlQuery::escapeField(relation.metaObject().tableName()))
+                                    .arg(QpSqlQuery::escapeField(relation.tableName()))
+                                    .arg(QpSqlQuery::escapeField(relation.columnName()))
+                                    .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
+                                    .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
+                                    .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
+                                    .arg(relatedObjectsWhereClause2.toWhereClause());
 
     QpSqlQuery setUpdateTimeOnRelatedObjectsQuery(data->storage->database());
     setUpdateTimeOnRelatedObjectsQuery.prepare(updateTimeQueryString);
@@ -599,21 +614,21 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustToOneRelation(co
                                                                           QpSqlCondition::EqualTo,
                                                                           primaryKey));
     selectPreviouslyRelatedObjectPKQuery.prepareSelect();
-    if(!selectPreviouslyRelatedObjectPKQuery.exec()
-            || selectPreviouslyRelatedObjectPKQuery.lastError().isValid()) {
+    if (!selectPreviouslyRelatedObjectPKQuery.exec()
+        || selectPreviouslyRelatedObjectPKQuery.lastError().isValid()) {
         setLastError(selectPreviouslyRelatedObjectPKQuery);
         return queries;
     }
 
     QVariant previousRelatedPK;
-    if(selectPreviouslyRelatedObjectPKQuery.first())
+    if (selectPreviouslyRelatedObjectPKQuery.first())
         previousRelatedPK = selectPreviouslyRelatedObjectPKQuery.value(0);
 
-    if(previousRelatedPK == relatedPrimary)
+    if (previousRelatedPK == relatedPrimary)
         return queries;
 
 #ifndef QP_NO_TIMESTAMPS
-    if(!previousRelatedPK.isNull()) {
+    if (!previousRelatedPK.isNull()) {
         // Prepare a query, which adjusts the update time of a previously related object (in the foreign object's table)
         QpSqlQuery adjustUpdateTimeQueryPreviouslyRelated(data->storage->database());
         adjustUpdateTimeQueryPreviouslyRelated.setTable(relation.reverseMetaObject().tableName());
@@ -626,8 +641,8 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustToOneRelation(co
     }
 #endif
 
-    if(!relatedPrimary.isNull()) {
-        if(relation.cardinality() == QpMetaProperty::OneToOneCardinality) {
+    if (!relatedPrimary.isNull()) {
+        if (relation.cardinality() == QpMetaProperty::OneToOneCardinality) {
             // Prepare a query, which resets the relation (in my table: set old foreign key to NULL)
             QpSqlQuery resetRelationQuery(data->storage->database());
             resetRelationQuery.setTable(relation.tableName());
@@ -701,7 +716,7 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
                                                    QpSqlCondition::EqualTo,
                                                    primaryKey);
     resetCondition.setTable(relation.tableName());
-    if(!relatedObjects.isEmpty()) {
+    if (!relatedObjects.isEmpty()) {
         resetCondition = resetCondition && !relatedObjectsWhereClause;
     }
 
@@ -714,13 +729,13 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
                                                              "\n\t\tON %2.%3 = tableToUpdate.%4 "
                                                              "\n\tSET tableToUpdate.%5 = %6 "
                                                              "\n\tWHERE %7")
-            .arg(QpSqlQuery::escapeField(relation.reverseRelation().metaObject().tableName()))
-            .arg(QpSqlQuery::escapeField(relation.tableName()))
-            .arg(QpSqlQuery::escapeField(relation.reverseRelation().columnName()))
-            .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
-            .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
-            .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
-            .arg(resetCondition2.toWhereClause());
+                                                     .arg(QpSqlQuery::escapeField(relation.reverseRelation().metaObject().tableName()))
+                                                     .arg(QpSqlQuery::escapeField(relation.tableName()))
+                                                     .arg(QpSqlQuery::escapeField(relation.reverseRelation().columnName()))
+                                                     .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
+                                                     .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
+                                                     .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
+                                                     .arg(resetCondition2.toWhereClause());
 
     QpSqlQuery setUpdateTimeOnPreviouslyRelatedObjectsQuery(data->storage->database());
     setUpdateTimeOnPreviouslyRelatedObjectsQuery.prepare(updatePreviouslyRelatedTimeQueryString);
@@ -741,15 +756,15 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustManyToManyRelati
     QString updateNewlyRelatedTimeQueryString = QString("UPDATE %1 SET %2 = %3 "
                                                         "WHERE %4 "
                                                         "AND NOT EXISTS (SELECT 1 FROM %5 WHERE %6 = %1.%7 AND %8 = %9)")
-            .arg(QpSqlQuery::escapeField(relation.reverseRelation().metaObject().tableName()))
-            .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
-            .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
-            .arg(relatedObjectsWhereClause2.toWhereClause())
-            .arg(QpSqlQuery::escapeField(relation.tableName()))
-            .arg(QpSqlQuery::escapeField(relation.reverseRelation().columnName()))
-            .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
-            .arg(QpSqlQuery::escapeField(relation.columnName()))
-            .arg(primaryKey.toString());
+                                                .arg(QpSqlQuery::escapeField(relation.reverseRelation().metaObject().tableName()))
+                                                .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
+                                                .arg(QpSqlBackend::forDatabase(data->storage->database())->nowTimestamp())
+                                                .arg(relatedObjectsWhereClause2.toWhereClause())
+                                                .arg(QpSqlQuery::escapeField(relation.tableName()))
+                                                .arg(QpSqlQuery::escapeField(relation.reverseRelation().columnName()))
+                                                .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
+                                                .arg(QpSqlQuery::escapeField(relation.columnName()))
+                                                .arg(primaryKey.toString());
 
     QpSqlQuery setUpdateTimeOnRelatedObjectsQuery(data->storage->database());
     setUpdateTimeOnRelatedObjectsQuery.prepare(updateNewlyRelatedTimeQueryString);
@@ -784,7 +799,7 @@ bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, Q
     query.prepareDelete();
 
     if (!query.exec()
-            || query.lastError().isValid()) {
+        || query.lastError().isValid()) {
         setLastError(query);
         return false;
     }
@@ -798,7 +813,8 @@ bool QpSqlDataAccessObjectHelper::incrementNumericColumn(QObject *object, const 
     int tryCount = 0;
     do {
         ++tryCount;
-        data->storage->database().transaction();
+        if (!data->storage->beginTransaction())
+            continue;
         QpMetaObject mo = QpMetaObject::forObject(object);
         QpSqlQuery query(data->storage->database());
 
@@ -810,13 +826,13 @@ bool QpSqlDataAccessObjectHelper::incrementNumericColumn(QObject *object, const 
         query.prepareincrementNumericColumn();
 
         if (!query.exec()
-                || query.lastError().isValid()) {
+            || query.lastError().isValid()) {
             data->storage->database().rollback();
 
-            if(tryCount < TRY_COUNT_MAX && query.lastError().nativeErrorCode() == QLatin1String("1213")) {
+            if (tryCount < TRY_COUNT_MAX && query.lastError().nativeErrorCode() == QLatin1String("1213")) {
                 qDebug() << Q_FUNC_INFO << QString::fromLatin1("MySQL found a deadlock. Re-trying transaction (try %1 of %2).")
-                            .arg(tryCount)
-                            .arg(TRY_COUNT_MAX);
+                        .arg(tryCount)
+                        .arg(TRY_COUNT_MAX);
                 QThread::usleep(100);
                 continue;
             }
@@ -825,23 +841,25 @@ bool QpSqlDataAccessObjectHelper::incrementNumericColumn(QObject *object, const 
             return false;
         }
 
-        data->storage->database().commit();
+        if (!data->storage->commitOrRollbackTransaction())
+            continue;
+
         return true;
-    } while(true);
+    } while (true);
 }
 
 int QpSqlDataAccessObjectHelper::latestRevision(const QpMetaObject &metaObject) const
 {
     QpSqlQuery query(data->storage->database());
     if (!query.exec(QString::fromLatin1(
-                        "SELECT `AUTO_INCREMENT` "
-                        "FROM  INFORMATION_SCHEMA.TABLES "
-                        "WHERE TABLE_SCHEMA = '%1' "
-                        "AND   TABLE_NAME   = '%2';")
+                            "SELECT `AUTO_INCREMENT` "
+                            "FROM  INFORMATION_SCHEMA.TABLES "
+                            "WHERE TABLE_SCHEMA = '%1' "
+                            "AND   TABLE_NAME   = '%2';")
                     .arg(data->storage->database().databaseName())
                     .arg(QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(metaObject.tableName())))
-            || !query.first()
-            || query.lastError().isValid()) {
+        || !query.first()
+        || query.lastError().isValid()) {
         setLastError(query);
         return -1;
     }
@@ -864,12 +882,12 @@ int QpSqlDataAccessObjectHelper::objectRevision(QObject *object) const
     query.prepareSelect();
 
     if (!query.exec()
-            || query.lastError().isValid()) {
+        || query.lastError().isValid()) {
         setLastError(query);
         return -1;
     }
 
-    if(!query.first())
+    if (!query.first())
         return -1;
 
     return query.value(0).toInt();
@@ -879,12 +897,12 @@ int QpSqlDataAccessObjectHelper::maxPrimaryKey(const QpMetaObject &metaObject) c
 {
     QpSqlQuery query(data->storage->database());
     if (!query.exec(QString::fromLatin1(
-                        "SELECT MAX(%1) "
-                        "FROM  %2")
+                            "SELECT MAX(%1) "
+                            "FROM  %2")
                     .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
-                    .arg(metaObject.tableName()))
-            || !query.first()
-            || query.lastError().isValid()) {
+                    .arg(QpSqlQuery::escapeField(metaObject.tableName())))
+        || !query.first()
+        || query.lastError().isValid()) {
         setLastError(query);
         return -1;
     }
@@ -906,8 +924,8 @@ QPixmap QpSqlDataAccessObjectHelper::readPixmap(QObject *object, const QString &
     query.prepareSelect();
 
     if (!query.exec()
-            || !query.first()
-            || query.lastError().isValid()) {
+        || !query.first()
+        || query.lastError().isValid()) {
         setLastError(query);
         return QPixmap();
     }
@@ -932,12 +950,12 @@ double QpSqlDataAccessObjectHelper::readUpdateTime(QObject *object)
     query.prepareSelect();
 
     if (!query.exec()
-            || query.lastError().isValid()) {
+        || query.lastError().isValid()) {
         setLastError(query);
         return -1.0;
     }
 
-    if(!query.first())
+    if (!query.first())
         return -1.0;
 
     return query.value(0).toDouble();
@@ -957,12 +975,12 @@ double QpSqlDataAccessObjectHelper::readCreationTime(QObject *object)
     query.prepareSelect();
 
     if (!query.exec()
-            || query.lastError().isValid()) {
+        || query.lastError().isValid()) {
         setLastError(query);
         return -1.0;
     }
 
-    if(!query.first())
+    if (!query.first())
         return -1.0;
 
     return query.value(0).toDouble();
@@ -982,7 +1000,7 @@ int QpSqlDataAccessObjectHelper::foreignKey(const QpMetaProperty relation, QObje
 
 QpSqlQuery QpSqlDataAccessObjectHelper::queryForForeignKeys(const QpMetaProperty &relation)
 {
-    if(data->queriesForRelation.contains(relation))
+    if (data->queriesForRelation.contains(relation))
         return data->queriesForRelation.value(relation);
 
     QString foreignColumn;
@@ -992,7 +1010,7 @@ QpSqlQuery QpSqlDataAccessObjectHelper::queryForForeignKeys(const QpMetaProperty
     QpMetaProperty::Cardinality cardinality = relation.cardinality();
 
     if (cardinality == QpMetaProperty::OneToManyCardinality
-            || cardinality == QpMetaProperty::OneToOneCardinality) {
+        || cardinality == QpMetaProperty::OneToOneCardinality) {
         keyColumn = relation.reverseRelation().columnName();
         foreignColumn = QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY;
 
@@ -1022,7 +1040,7 @@ QpSqlQuery QpSqlDataAccessObjectHelper::queryForForeignKeys(const QpMetaProperty
     QpSqlCondition c(keyColumn, QpSqlCondition::EqualTo, ":keyColumn");
     c.setBindValuesAsString(true);
 
-    if(cardinality != QpMetaProperty::ManyToManyCardinality)
+    if (cardinality != QpMetaProperty::ManyToManyCardinality)
         c = QpSqlCondition::notDeletedAnd(c);
 
     query.setWhereCondition(c);
@@ -1042,7 +1060,7 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
     query.bindValue(QString(":keyColumn"), QVariant(pk));
 
     if (!query.exec()
-            || query.lastError().isValid()) {
+        || query.lastError().isValid()) {
         setLastError(query);
         return QList<int>();
     }
