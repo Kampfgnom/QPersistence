@@ -10,6 +10,10 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QMetaProperty>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
+
+/******************************************************************************
+ * QpSqlBackendData
+ */
 class QpSqlBackendData
 {
 public:
@@ -26,15 +30,19 @@ QpSqlBackend *QpSqlBackendData::createForDatabase()
 #elif defined QP_FOR_MYSQL
     return new QpMySqlBackend(Qp::Private::GlobalGuard());
 #else
-#error This should have 'errored' long before :)
+#   error This should have 'errored' long before :)
 #endif
 }
 
+
+/******************************************************************************
+ * QpSqlBackend
+ */
 QpSqlBackend *QpSqlBackend::forDatabase(const QSqlDatabase &database)
 {
     auto it = Backends()->find(database.driverName());
 
-    if(it != Backends()->end())
+    if (it != Backends()->end())
         return it.value();
 
     QpSqlBackend *backend = QpSqlBackendData::createForDatabase();
@@ -231,7 +239,7 @@ QString QpMySqlBackend::variantTypeToSqlType(QVariant::Type type) const
         return QLatin1String("BLOB");
     }
 
-    if(type == 41) { // QMetaType::Variant
+    if (type == 41) { // QMetaType::Variant
         return QLatin1String("BLOB");
     }
 

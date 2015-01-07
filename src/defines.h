@@ -1,5 +1,5 @@
-#ifndef DEFINES_H
-#define DEFINES_H
+#ifndef QPERSISTENCE_DEFINES_H
+#define QPERSISTENCE_DEFINES_H
 
 #ifdef __clang__
 #define BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS \
@@ -39,20 +39,20 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #define QP_DEFINE_STATIC_LOCAL(type, name) \
     type *name(); \
     type *name() { \
-    static type& name = *new type; \
-    return &name; \
+        static type& name = *new type; \
+        return &name; \
     }
 #define QP_DEFINE_STATIC_LOCAL_WITH_ARGS(type, name, arguments) \
     type *name() { \
-    static type& name = *new type arguments; \
-    return &name; \
+        static type& name = *new type arguments; \
+        return &name; \
     }
 
 #define QP_FOREACH (variable, container) \
     _Pragma("clang diagnostic push") \
     _Pragma("clang diagnostic ignored \"-Wshadow\"") \
-    foreach(variable, container) \
-    _Pragma("clang diagnostic pop") \
+    foreach (variable, container) \
+        _Pragma("clang diagnostic pop") \
 
 #if defined QP_FOR_MYSQL && defined QP_FOR_SQLITE
 #error You must not define both QP_FOR_SQLITE and QP_FOR_MYSQL
@@ -72,4 +72,4 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 // Nothing to define
 #endif
 
-#endif // DEFINES_H
+#endif // QPERSISTENCE_DEFINES_H

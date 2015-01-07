@@ -56,8 +56,10 @@ bool isObjectUserType(int userType);
 class ConverterBase : public QObject
 {
 public:
-    ConverterBase(QObject *parent) : QObject(parent) {}
-    virtual ~ConverterBase() {}
+    ConverterBase(QObject *parent) : QObject(parent) {
+    }
+    virtual ~ConverterBase() {
+    }
     virtual QList<QSharedPointer<QObject> > convertList(const QVariant &variant) const;
     virtual QSharedPointer<QObject> convertObject(const QVariant &variant) const;
     virtual QVariant convertVariant(QSharedPointer<QObject> object) const;
@@ -71,12 +73,13 @@ template<class O>
 class ObjectConverter : public ConverterBase
 {
 public:
-    ObjectConverter(QObject *parent = 0) : ConverterBase(parent) {}
+    ObjectConverter(QObject *parent = 0) : ConverterBase(parent) {
+    }
     QList<QSharedPointer<QObject> > convertList(const QVariant &variant) const
     {
         QList<QSharedPointer<O> > list = variant.value<QList<QSharedPointer<O> > >();
         QList<QSharedPointer<QObject> > result;
-        foreach(QSharedPointer<O> object, list) result.append(object);
+        foreach (QSharedPointer<O> object, list) result.append(object);
         return result;
     }
 
@@ -93,7 +96,7 @@ public:
     QVariant convertVariantList(QList<QSharedPointer<QObject> > objects) const
     {
         QList<QSharedPointer<O>  > result;
-        foreach(QSharedPointer<QObject> object, objects) result.append(qSharedPointerCast<O>(object));
+        foreach (QSharedPointer<QObject> object, objects) result.append(qSharedPointerCast<O>(object));
         return QVariant::fromValue<QList<QSharedPointer<O>  > >(result);
     }
 
@@ -107,7 +110,8 @@ template<typename T>
 class SqlConverter : public Qp::Private::ConverterBase
 {
 public:
-    SqlConverter(QObject *parent = 0) : ConverterBase(parent) {}
+    SqlConverter(QObject *parent = 0) : ConverterBase(parent) {
+    }
     QString convertToSqlStorableValue(const QVariant &variant) const
     {
         return variant.value<QString>();
@@ -124,7 +128,8 @@ class MapConverter : public ConverterBase
 {
 
 public:
-    MapConverter(QObject *parent = 0) : ConverterBase(parent) {}
+    MapConverter(QObject *parent = 0) : ConverterBase(parent) {
+    }
     QString convertToSqlStorableValue(const QVariant &variant) const
     {
         Q_ASSERT(canConvertToSqlStorableVariant<K>());
@@ -180,7 +185,8 @@ template<typename T>
 class SetConverter : public ConverterBase
 {
 public:
-    SetConverter(QObject *parent = 0) : ConverterBase(parent) {}
+    SetConverter(QObject *parent = 0) : ConverterBase(parent) {
+    }
     QString convertToSqlStorableValue(const QVariant &variant) const
     {
         QVariant v = QVariant::fromValue<T>(T());

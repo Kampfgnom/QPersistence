@@ -15,11 +15,11 @@ void QpRelationResolver::readRelationFromDatabase(const QpMetaProperty &relation
     QVariant variant;
     QpMetaProperty::Cardinality cardinality = relation.cardinality();
     if (cardinality == QpMetaProperty::OneToManyCardinality
-            || cardinality == QpMetaProperty::ManyToManyCardinality) {
+        || cardinality == QpMetaProperty::ManyToManyCardinality) {
         variant = Qp::Private::variantListCast(relatedObjects, relation.reverseMetaObject().className());
     }
     else {
-        if(relatedObjects.isEmpty()) {
+        if (relatedObjects.isEmpty()) {
             variant = Qp::Private::variantCast(QSharedPointer<QObject>(), relation.reverseMetaObject().className());
         }
         else {
@@ -41,7 +41,7 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveRelation(const QStrin
     QpMetaProperty::Cardinality cardinality = relation.cardinality();
 
     if (cardinality == QpMetaProperty::OneToManyCardinality
-            || cardinality == QpMetaProperty::ManyToManyCardinality) {
+        || cardinality == QpMetaProperty::ManyToManyCardinality) {
         result = resolveToManyRelation(name, object);
     }
     else {
@@ -56,8 +56,8 @@ QSharedPointer<QObject> QpRelationResolver::resolveToOneRelation(const QString &
     QpMetaObject metaObject = QpMetaObject::forObject(object);
     QpMetaProperty relation = metaObject.metaProperty(name);
     QByteArray column;
-    if(relation.hasTableForeignKey()) {
-       column = relation.columnName().toLatin1();
+    if (relation.hasTableForeignKey()) {
+        column = relation.columnName().toLatin1();
     }
     else {
         column = QByteArray("_Qp_FK_") + relation.name().toLatin1();
@@ -77,7 +77,7 @@ QSharedPointer<QObject> QpRelationResolver::resolveToOneRelation(const QString &
 
     QpMetaObject foreignMetaObject = relation.reverseMetaObject();
     QSharedPointer<QObject> related = storage->dataAccessObject(foreignMetaObject.metaObject())->readObject(foreignKey);
-    if(Qp::Private::isDeleted(related.data()))
+    if (Qp::Private::isDeleted(related.data()))
         return QSharedPointer<QObject>();
 
     if (!related)
@@ -102,10 +102,10 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveToManyRelation(const 
     QList<QSharedPointer<QObject> > relatedObjects;
     relatedObjects.reserve(foreignKeys.size());
     foreach (int key, foreignKeys) {
-        if(key <= 0) {
+        if (key <= 0) {
             qWarning() << QString("The object of type '%1' with the ID '%2' is related to a NULL object")
-                          .arg(metaObject.className())
-                          .arg(Qp::Private::primaryKey(object));
+                    .arg(metaObject.className())
+                    .arg(Qp::Private::primaryKey(object));
             Q_ASSERT_X(false, Q_FUNC_INFO, "invalid relation in db");
             continue;
         }
@@ -124,7 +124,7 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveToManyRelation(const 
 
         // here we explicitly check for deleted objects, because for many-to-many relations,
         // we cannot use the mysql server for filtering the related objects
-        if(Qp::Private::isDeleted(relatedObject.data()))
+        if (Qp::Private::isDeleted(relatedObject.data()))
             continue;
 
         relatedObjects.append(relatedObject);

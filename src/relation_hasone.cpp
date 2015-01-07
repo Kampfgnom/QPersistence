@@ -8,12 +8,18 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSharedData>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
+
+/******************************************************************************
+ * QpHasOneData
+ */
 class QpHasOneData : public QSharedData {
 public:
-    QpHasOneData() : QSharedData(),
+    QpHasOneData() :
+        QSharedData(),
         parent(nullptr),
         resolved(false)
-    {}
+    {
+    }
 
     QSharedPointer<QObject> object;
     QpMetaProperty metaProperty;
@@ -21,6 +27,10 @@ public:
     bool resolved;
 };
 
+
+/******************************************************************************
+ * QpHasOneBase
+ */
 QpHasOneBase::QpHasOneBase(const QString &name, QObject *parent) :
     data(new QpHasOneData)
 {
@@ -45,10 +55,10 @@ QSharedPointer<QObject> QpHasOneBase::objectWithoutResolving() const
 
 QSharedPointer<QObject> QpHasOneBase::object() const
 {
-    if(Qp::Private::primaryKey(data->parent) == 0)
+    if (Qp::Private::primaryKey(data->parent) == 0)
         return QSharedPointer<QObject>();
 
-    if(data->resolved)
+    if (data->resolved)
         return data->object;
 
     data->object = QpRelationResolver::resolveToOneRelation(data->metaProperty.name(), data->parent);
@@ -61,7 +71,7 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
 {
     QSharedPointer<QObject> previousObject = object();
 
-    if(previousObject == newObject)
+    if (previousObject == newObject)
         return;
 
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
@@ -69,8 +79,8 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
     data->object = newObject;
 
     QSharedPointer<QObject> sharedParent = Qp::sharedFrom(data->parent);
-    if(previousObject) {
-        if(reverse.isToOneRelationProperty()) {
+    if (previousObject) {
+        if (reverse.isToOneRelationProperty()) {
             reverse.write(previousObject.data(), Qp::Private::variantCast(QSharedPointer<QObject>(), className));
         }
         else {
@@ -88,14 +98,14 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
 
             QMetaMethod method = mo->method(index);
             bool result = method.invoke(previousObject.data(), Qt::DirectConnection,
-                                       QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data()));
+                                        QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data()));
             Q_ASSERT(result);
             Q_UNUSED(result);
         }
     }
 
-    if(newObject){
-        if(reverse.isToOneRelationProperty()) {
+    if (newObject) {
+        if (reverse.isToOneRelationProperty()) {
             reverse.write(newObject.data(), Qp::Private::variantCast(sharedParent));
         }
         else {
@@ -124,14 +134,14 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
 
     // Set dynamic property for relation
     QByteArray column;
-    if(data->metaProperty.hasTableForeignKey()) {
-       column = data->metaProperty.columnName().toLatin1();
+    if (data->metaProperty.hasTableForeignKey()) {
+        column = data->metaProperty.columnName().toLatin1();
     }
     else {
         column = QByteArray("_Qp_FK_") + data->metaProperty.name().toLatin1();
     }
 
-    if(newObject) {
+    if (newObject) {
         data->parent->setProperty(column, Qp::Private::primaryKey(newObject.data()));
     }
     else {

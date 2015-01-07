@@ -20,7 +20,7 @@ void QpThrottledFetchProxyModel::setThrottle(int throttle)
 
 bool QpThrottledFetchProxyModel::isThrottled() const
 {
-    if(!m_timer.hasExpired(m_throttle))
+    if (!m_timer.hasExpired(m_throttle))
         return true;
 
     m_timer.start();
@@ -29,7 +29,7 @@ bool QpThrottledFetchProxyModel::isThrottled() const
 
 bool QpThrottledFetchProxyModel::canFetchMore(const QModelIndex &parent) const
 {
-    if(isThrottled())
+    if (isThrottled())
         return false;
 
     return QIdentityProxyModel::sourceModel()->canFetchMore(QIdentityProxyModel::mapToSource(parent));

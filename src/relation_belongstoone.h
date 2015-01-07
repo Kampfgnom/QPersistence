@@ -29,12 +29,18 @@ template<class T>
 class QpBelongsToOne : public QpBelongsToOneBase
 {
 public:
-    explicit QpBelongsToOne(const QString &name, QObject *parent) : QpBelongsToOneBase(name, parent) {}
-    virtual ~QpBelongsToOne() {}
+    explicit QpBelongsToOne(const QString &name, QObject *parent) : QpBelongsToOneBase(name, parent) {
+    }
+    virtual ~QpBelongsToOne() {
+    }
 
     operator QSharedPointer<T> () const { return qSharedPointerCast<T>(object()); }
-    QpBelongsToOne &operator=(const QSharedPointer<T> object) { setObject(qSharedPointerCast<QObject>(object)); return *this; }
-    bool operator ==(const QSharedPointer<T> &object) const { return QpBelongsToOneBase::operator ==(object); }
+    QpBelongsToOne &operator=(const QSharedPointer<T> object) {
+        setObject(qSharedPointerCast<QObject>(object)); return *this;
+    }
+    bool operator ==(const QSharedPointer<T> &object) const {
+        return QpBelongsToOneBase::operator ==(object);
+    }
 };
 
 #endif // QPERSISTENCE_RELATION_BELONGSTOONE_H

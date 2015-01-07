@@ -6,34 +6,43 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
+
+/******************************************************************************
+ * QpErrorData
+ */
 class QpErrorData : public QSharedData
 {
-    public:
-        QpErrorData() :
-            QSharedData(),
-            text(QString()),
-            type(QpError::NoError),
-            isValid(false)
-        {}
+public:
+    QpErrorData() :
+        QSharedData(),
+        text(QString()),
+        type(QpError::NoError),
+        isValid(false)
+    {
+    }
 
-        static QpError *lastError;
+    static QpError *lastError;
 
-        QSqlError sqlError;
-        QString text;
-        QVariantMap additionalInformation;
-        QpError::ErrorType type;
-        bool isValid;
+    QSqlError sqlError;
+    QString text;
+    QVariantMap additionalInformation;
+    QpError::ErrorType type;
+    bool isValid;
 };
 
+
+/******************************************************************************
+ * QpError
+ */
 QpError::QpError(const QString &text,
-             ErrorType type,
-             QVariantMap additionalInformation) :
+                 ErrorType type,
+                 QVariantMap additionalInformation) :
     data(new QpErrorData)
 {
     data->text = text;
     data->type = type;
     data->additionalInformation = additionalInformation;
-    data->isValid = (type != NoError && ! text.isEmpty());
+    data->isValid = (type != NoError && !text.isEmpty());
 }
 
 QpError::QpError(const QSqlError &error) :

@@ -27,7 +27,7 @@ template<class T>
 T *QpModelBase::createProxyIfNotExistsInHierarchy()
 {
     T *proxy = findModelInHierarchy<T>();
-    if(proxy)
+    if (proxy)
         return proxy;
 
     return createProxyInHierarchy<T>();
@@ -44,10 +44,10 @@ T *QpModelBase::createProxyInHierarchy()
 template<class T>
 T *QpModelBase::findModelInHierarchy() const
 {
-    if(const T *t = dynamic_cast<const T *>(this))
+    if (const T *t = dynamic_cast<const T *>(this))
         return const_cast<T *>(t);
 
-    if(QpModelBase *source = sourceQpModel())
+    if (QpModelBase *source = sourceQpModel())
         return source->findModelInHierarchy<T>();
 
     return nullptr;
@@ -57,10 +57,10 @@ template<class T>
 QList<T *> QpModelBase::findModelsInHierarchy() const
 {
     QList<T *> result;
-    if(QpModelBase *source = sourceQpModel())
+    if (QpModelBase *source = sourceQpModel())
         result << source->findModelsInHierarchy<T>();
 
-    if(const T *t = dynamic_cast<const T *>(this))
+    if (const T *t = dynamic_cast<const T *>(this))
         result << const_cast<T *>(t);
 
     return result;

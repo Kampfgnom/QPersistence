@@ -15,7 +15,7 @@ class QVariant;
 
 class QpMetaProperty;
 
-class QpMetaObjectPrivate;
+class QpMetaObjectData;
 class QpMetaObject
 {
 public:
@@ -64,7 +64,7 @@ private:
     QMetaMethod findMethod(QString signature) const;
 
     void initProperties() const;
-    QExplicitlySharedDataPointer<QpMetaObjectPrivate> data;
+    QExplicitlySharedDataPointer<QpMetaObjectData> data;
 };
 
 bool operator==(const QpMetaObject &a1, const QpMetaObject &a2);

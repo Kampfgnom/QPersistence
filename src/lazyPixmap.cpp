@@ -1,30 +1,34 @@
 #include "lazyPixmap.h"
 
 #ifdef QP_NO_GUI
-void qpunused() {}
+void qpunused() {
+}
 #else
 
 #include "sqldataaccessobjecthelper.h"
+#include "storage.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSharedData>
 #include <QPixmap>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-#include "storage.h"
 
+/******************************************************************************
+ * QpLazyPixmapData
+ */
 class QpLazyPixmapData : public QSharedData {
-    public:
-        QString name;
-        QPixmap pixmap;
-        QObject *parent;
+public:
+    QString name;
+    QPixmap pixmap;
+    QObject *parent;
 
-        void load();
+    void load();
 };
 
 void QpLazyPixmapData::load()
 {
-    if(Qp::Private::primaryKey(parent) == 0)
+    if (Qp::Private::primaryKey(parent) == 0)
         return;
 
     QpStorage *storage = QpStorage::forObject(parent);
@@ -32,12 +36,16 @@ void QpLazyPixmapData::load()
     pixmap = helper->readPixmap(parent, name);
 }
 
+
+/******************************************************************************
+ * QpLazyPixmap
+ */
 QpLazyPixmap::QpLazyPixmap(const QString &name, QObject *parent) :
     data(new QpLazyPixmapData)
 {
     int classNameEndIndex = name.lastIndexOf("::");
     QString n = name;
-    if(classNameEndIndex >= 0)
+    if (classNameEndIndex >= 0)
         n = name.mid(classNameEndIndex + 2);
     data->name = n;
     data->parent = parent;
@@ -65,7 +73,7 @@ QpLazyPixmap &QpLazyPixmap::operator=(const QPixmap &pixmap)
 
 QpLazyPixmap::operator QPixmap () const
 {
-    if(data->pixmap.isNull()) {
+    if (data->pixmap.isNull()) {
         data->load();
     }
 

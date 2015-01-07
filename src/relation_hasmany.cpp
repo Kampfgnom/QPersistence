@@ -5,12 +5,18 @@
 #include "relationresolver.h"
 #include "qpersistence.h"
 
+
+/******************************************************************************
+ * QpHasManyBase
+ */
 class QpHasManyData : public QSharedData {
 public:
-    QpHasManyData() : QSharedData(),
+    QpHasManyData() :
+        QSharedData(),
         resolved(false),
         parent(nullptr)
-    {}
+    {
+    }
 
     bool resolved;
     QList<QSharedPointer<QObject>> objects;
@@ -18,6 +24,10 @@ public:
     QObject *parent;
 };
 
+
+/******************************************************************************
+ * QpHasManyBase
+ */
 QpHasManyBase::QpHasManyBase(const QString &name, QObject *parent) :
     data(new QpHasManyData)
 {
@@ -37,10 +47,10 @@ bool QpHasManyBase::operator ==(const QList<QSharedPointer<QObject> > &objects) 
 
 QList<QSharedPointer<QObject> > QpHasManyBase::objects() const
 {
-    if(Qp::Private::primaryKey(data->parent) == 0)
+    if (Qp::Private::primaryKey(data->parent) == 0)
         return QList<QSharedPointer<QObject> >();
 
-    if(data->resolved)
+    if (data->resolved)
         return data->objects;
 
     data->objects = QpRelationResolver::resolveToManyRelation(data->metaProperty.name(), data->parent);
@@ -52,7 +62,7 @@ void QpHasManyBase::add(QSharedPointer<QObject> object)
 {
     objects(); // resolve
 
-    if(data->objects.contains(object))
+    if (data->objects.contains(object))
         return;
 
     data->objects.append(object);
@@ -61,8 +71,8 @@ void QpHasManyBase::add(QSharedPointer<QObject> object)
     QSharedPointer<QObject> sharedParent = Qp::sharedFrom(data->parent);
     QString className = data->metaProperty.metaObject().className();
 
-    if(object){
-        if(reverse.isToOneRelationProperty()) {
+    if (object) {
+        if (reverse.isToOneRelationProperty()) {
             reverse.write(object.data(), Qp::Private::variantCast(sharedParent, className));
         }
         else {
@@ -88,7 +98,7 @@ void QpHasManyBase::add(QSharedPointer<QObject> object)
         }
     }
 
-    if(!data->objects.contains(object))
+    if (!data->objects.contains(object))
         data->objects.append(object);
 }
 
@@ -98,19 +108,19 @@ void QpHasManyBase::remove(QSharedPointer<QObject> object)
     int removeCount = data->objects.removeAll(object);
     Q_ASSERT(removeCount <= 1);
 
-    if(removeCount == 0)
+    if (removeCount == 0)
         return;
 
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
     QString className = data->metaProperty.metaObject().className();
 
-    if(object){
-        if(reverse.isToOneRelationProperty()) {
+    if (object) {
+        if (reverse.isToOneRelationProperty()) {
             reverse.write(object.data(), Qp::Private::variantCast(QSharedPointer<QObject>(), className));
         }
         else {
             QSharedPointer<QObject> shared = Qp::sharedFrom(data->parent);
-            QVariant wrapper = Qp::Private::variantCast(shared, className);       
+            QVariant wrapper = Qp::Private::variantCast(shared, className);
 
             const QMetaObject *mo = object->metaObject();
             QByteArray methodName = reverse.metaObject().removeObjectMethod(reverse).methodSignature();

@@ -21,15 +21,20 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #endif
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-class QpSqlQueryPrivate : public QSharedData {
+
+/******************************************************************************
+ * QpSqlQueryData
+ */
+class QpSqlQueryData : public QSharedData {
 public:
-    QpSqlQueryPrivate() :
+    QpSqlQueryData() :
         QSharedData(),
         count(-1),
         skip(-1),
         ignore(false),
         forUpdate(false)
-    {}
+    {
+    }
 
     struct Join {
         QString direction;
@@ -62,17 +67,21 @@ public:
     QString escapedQualifiedField(const QString &field) const;
 };
 
-bool QpSqlQueryPrivate::debugEnabled = false;
+bool QpSqlQueryData::debugEnabled = false;
 
+
+/******************************************************************************
+ * QpSqlQuery
+ */
 QpSqlQuery::QpSqlQuery() :
     QSqlQuery(),
-    data(new QpSqlQueryPrivate)
+    data(new QpSqlQueryData)
 {
 }
 
 QpSqlQuery::QpSqlQuery(const QSqlDatabase &database) :
     QSqlQuery(database),
-    data(new QpSqlQueryPrivate)
+    data(new QpSqlQueryData)
 {
     data->database = database;
     data->backend = QpSqlBackend::forDatabase(database);
@@ -122,9 +131,9 @@ bool QpSqlQuery::exec(const QString &queryString)
             index = query.indexOf('?', index + value.length());
             ++i;
         }
-        if(size() >= 0)
+        if (size() >= 0)
             query += QString("\n%1 rows returned.").arg(size());
-        if(numRowsAffected() >= 0)
+        if (numRowsAffected() >= 0)
             query += QString("\n%1 rows affected.").arg(numRowsAffected());
         qDebug() << qPrintable(query);
     }
@@ -162,23 +171,23 @@ void QpSqlQuery::clear()
 
 bool QpSqlQuery::isDebugEnabled()
 {
-    return QpSqlQueryPrivate::debugEnabled;
+    return QpSqlQueryData::debugEnabled;
 }
 
 void QpSqlQuery::setDebugEnabled(bool value)
 {
-    QpSqlQueryPrivate::debugEnabled = value;
+    QpSqlQueryData::debugEnabled = value;
 }
 
-QString QpSqlQueryPrivate::escapedQualifiedField(const QString &field) const
+QString QpSqlQueryData::escapedQualifiedField(const QString &field) const
 {
     QString t = tableName.isEmpty() ? table : tableName;
-    if(t.isEmpty() || field.contains('.'))
+    if (t.isEmpty() || field.contains('.'))
         return QpSqlQuery::escapeField(field);
 
     return QString("%1.%2")
-            .arg(QpSqlQuery::escapeField(t))
-            .arg(QpSqlQuery::escapeField(field));
+           .arg(QpSqlQuery::escapeField(t))
+           .arg(QpSqlQuery::escapeField(field));
 }
 
 QString QpSqlQuery::escapedQualifiedField(const QString &field) const
@@ -188,16 +197,16 @@ QString QpSqlQuery::escapedQualifiedField(const QString &field) const
 
 QString QpSqlQuery::escapeField(const QString &field)
 {
-    if(field.startsWith('('))
+    if (field.startsWith('('))
         return field;
 
     QStringList fields = field.split(".");
     QStringList escaped;
-    foreach(QString f, fields) {
+    foreach (QString f, fields) {
         QStringList split = f.split('+');
-        if(split.size() == 2)
+        if (split.size() == 2)
             escaped << QString("%1+%2").arg(escapeField(split.at(0))).arg(split.at(1));
-        else if(!f.contains('`'))
+        else if (!f.contains('`'))
             escaped << QString("`%1`").arg(f);
         else
             escaped << f;
@@ -209,14 +218,14 @@ QString QpSqlQuery::escapeField(const QString &field)
 void QpSqlQuery::setTable(const QString &table)
 {
     data->table = table;
-    if(data->whereCondition.isValid())
+    if (data->whereCondition.isValid())
         data->whereCondition.setTable(data->tableName.isEmpty() ? data->table : data->tableName);
 }
 
 void QpSqlQuery::setTableName(const QString &tableName)
 {
     data->tableName = tableName;
-    if(data->whereCondition.isValid())
+    if (data->whereCondition.isValid())
         data->whereCondition.setTable(data->tableName.isEmpty() ? data->table : data->tableName);
 }
 
@@ -282,7 +291,7 @@ void QpSqlQuery::setForUpdate(bool forUpdate)
 
 void QpSqlQuery::addJoin(const QString &direction, const QString &table, const QString &on)
 {
-    QpSqlQueryPrivate::Join join;
+    QpSqlQueryData::Join join;
     join.direction = direction;
     join.table = table;
     join.on = on;
@@ -297,7 +306,7 @@ void QpSqlQuery::addJoin(const QString &direction, const QpSqlQuery &subSelect, 
     addJoin(direction,
             QString::fromLatin1("(%1) as %2").arg(subSelect.data->constructSelectQuery()).arg(joinName),
             on);
-    foreach(QVariant bindValue, subSelect.boundValues()) {
+    foreach (QVariant bindValue, subSelect.boundValues()) {
         addBindValue(bindValue);
     }
 }
@@ -322,13 +331,13 @@ void QpSqlQuery::prepareCreateTable()
     }
     query.append(fields.join(",\n\t"));
 
-    foreach(QString key, data->keys.keys()) {
+    foreach (QString key, data->keys.keys()) {
         QStringList v = data->keys.value(key);
         QStringList values;
 
         QStringList::const_iterator it2;
         QStringList::const_iterator end = v.end();
-        for(it2 = v.constBegin(); it2 != end; ++it2)
+        for (it2 = v.constBegin(); it2 != end; ++it2)
             values << escapeField(*it2);
 
         query.append(QString(",\n\t%1 ")
@@ -350,11 +359,11 @@ void QpSqlQuery::prepareCreateTable()
                      .arg(escapeField(foreignKey.at(1))));
 
         QString onDelete = foreignKey.at(3);
-        if(!onDelete.isEmpty()) {
+        if (!onDelete.isEmpty()) {
             query.append(QString("\n\t\tON DELETE %1").arg(onDelete));
         }
         QString onUpdate = foreignKey.at(4);
-        if(!onUpdate.isEmpty()) {
+        if (!onUpdate.isEmpty()) {
             query.append(QString("\n\t\tON UPDATE %1").arg(onUpdate));
         }
     }
@@ -380,7 +389,7 @@ void QpSqlQuery::prepareAlterTable()
                        .arg(data->fields.values().first().toString()));
 }
 
-QString QpSqlQueryPrivate::constructSelectQuery() const
+QString QpSqlQueryData::constructSelectQuery() const
 {
     QString query("SELECT ");
 
@@ -392,7 +401,7 @@ QString QpSqlQueryPrivate::constructSelectQuery() const
         foreach (const QString &field, fields.keys()) {
             localFields.append(QString("%1").arg(escapedQualifiedField(field)));
         }
-        foreach(QString field, rawFields.keys()) {
+        foreach (QString field, rawFields.keys()) {
             localFields.append(field);
         }
 
@@ -400,21 +409,21 @@ QString QpSqlQueryPrivate::constructSelectQuery() const
     }
 
     query.append(" FROM ").append(QpSqlQuery::escapeField(table));
-    if(!tableName.isEmpty())
+    if (!tableName.isEmpty())
         query.append(" AS ").append(QpSqlQuery::escapeField(tableName));
 
-    foreach(QpSqlQueryPrivate::Join join, joins) {
+    foreach (QpSqlQueryData::Join join, joins) {
         query.append(QString("\n%1 JOIN %2 ON %3")
-                .arg(join.direction)
-                .arg(QpSqlQuery::escapeField(join.table))
-                .arg(join.on));
+                     .arg(join.direction)
+                     .arg(QpSqlQuery::escapeField(join.table))
+                     .arg(join.on));
     }
 
     if (whereCondition.isValid()) {
         query.append("\n\tWHERE ").append(whereCondition.toWhereClause());
     }
 
-    if(!groups.isEmpty()) {
+    if (!groups.isEmpty()) {
         query.append("\n\tGROUP BY ");
         query.append(groups.join(','));
     }
@@ -442,7 +451,7 @@ QString QpSqlQueryPrivate::constructSelectQuery() const
         query.append(QString("%1").arg(count));
     }
 
-    if(forUpdate) {
+    if (forUpdate) {
         query.append(" FOR UPDATE ");
     }
 
@@ -461,7 +470,7 @@ void QpSqlQuery::prepareSelect()
 bool QpSqlQuery::prepareUpdate()
 {
     if (data->fields.isEmpty()
-            && data->rawFields.isEmpty())
+        && data->rawFields.isEmpty())
         return false;
 
     QString query("UPDATE ");
@@ -497,7 +506,7 @@ bool QpSqlQuery::prepareUpdate()
 void QpSqlQuery::prepareInsert()
 {
     QString query("INSERT ");
-    if(data->ignore)
+    if (data->ignore)
         query.append(data->backend->orIgnore());
 
     query.append(" INTO ");
@@ -586,15 +595,15 @@ void QpSqlQuery::prepareincrementNumericColumn()
 QMetaProperty QpSqlQuery::propertyForIndex(const QSqlRecord &record, const QMetaObject *metaObject, int index) const
 {
     int propertyIndex = data->propertyIndexes.value(index, -123);
-    if(propertyIndex > 0)
+    if (propertyIndex > 0)
         return metaObject->property(propertyIndex);
-    if(propertyIndex != -123)
+    if (propertyIndex != -123)
         return QMetaProperty();
 
     QString fieldName = record.fieldName(index);
     propertyIndex = metaObject->indexOfProperty(fieldName.toLatin1());
-    if(propertyIndex <= 0) {
-        if(fieldName.contains('+'))
+    if (propertyIndex <= 0) {
+        if (fieldName.contains('+'))
             fieldName = fieldName.left(fieldName.length() - 2);
         fieldName = fieldName.split('.').last();
         fieldName = fieldName.remove('`');
@@ -603,7 +612,7 @@ QMetaProperty QpSqlQuery::propertyForIndex(const QSqlRecord &record, const QMeta
 
     data->propertyIndexes.insert(index, propertyIndex);
 
-    if(propertyIndex <= 0)
+    if (propertyIndex <= 0)
         return QMetaProperty();
 
     return metaObject->property(propertyIndex);
@@ -664,7 +673,7 @@ QVariant QpSqlQuery::variantFromSqlStorableVariant(const QVariant &val, QMetaTyp
     }
     if (type == QMetaType::QStringList) {
         QString string = val.toString();
-        if(string.isEmpty())
+        if (string.isEmpty())
             return QStringList();
 
         return QVariant::fromValue<QStringList>(string.split(LISTSEPARATOR));

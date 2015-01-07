@@ -34,7 +34,7 @@ QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bo
     QList<QSharedPointer<T> > result;
     result.reserve(list.size());
     if (ok) *ok = true;
-    foreach(QWeakPointer<T> s, list) {
+    foreach (QWeakPointer<T> s, list) {
         QSharedPointer<T> p = s.toStrongRef();
         if (ok && !p) *ok = false;
         result.append(p);
@@ -46,7 +46,7 @@ template<class T>
 QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list)
 {
     QList<QWeakPointer<T> > result;
-    foreach(QSharedPointer<T> s, list) result.append(s.toWeakRef());
+    foreach (QSharedPointer<T> s, list) result.append(s.toWeakRef());
     return result;
 }
 

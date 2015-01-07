@@ -12,10 +12,10 @@ QpModelBase *QpModelBase::sourceQpModel() const
 {
     const QAbstractProxyModel *proxyThis = dynamic_cast<const QAbstractProxyModel *>(this);
 
-    if(!proxyThis)
+    if (!proxyThis)
         return nullptr;
 
-    if(!proxyThis->sourceModel())
+    if (!proxyThis->sourceModel())
         return nullptr;
 
     QpModelBase *source = dynamic_cast<QpModelBase *>(proxyThis->sourceModel());
@@ -25,7 +25,7 @@ QpModelBase *QpModelBase::sourceQpModel() const
 
 QModelIndex QpModelBase::indexForObjectBase(QSharedPointer<QObject> object) const
 {
-    if(!object) {
+    if (!object) {
         return QModelIndex();
     }
     const QAbstractProxyModel *proxyThis = dynamic_cast<const QAbstractProxyModel *>(this);
@@ -35,7 +35,7 @@ QModelIndex QpModelBase::indexForObjectBase(QSharedPointer<QObject> object) cons
 
 QSharedPointer<QObject> QpModelBase::objectByIndexBase(const QModelIndex &index) const
 {
-    if(!index.isValid()) {
+    if (!index.isValid()) {
         return QSharedPointer<QObject>();
     }
     const QAbstractProxyModel *proxyThis = dynamic_cast<const QAbstractProxyModel *>(this);
@@ -46,8 +46,8 @@ QSharedPointer<QObject> QpModelBase::objectByIndexBase(const QModelIndex &index)
 QList<QSharedPointer<QObject> > QpModelBase::objectsByIndexes(const QModelIndexList &list) const
 {
     QList<QSharedPointer<QObject> > result;
-    foreach(QModelIndex index, list) {
-        if(index.column() != 0)
+    foreach (QModelIndex index, list) {
+        if (index.column() != 0)
             continue;
 
         result << objectByIndexBase(index);

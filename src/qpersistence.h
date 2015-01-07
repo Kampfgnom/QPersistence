@@ -18,13 +18,6 @@ class QpMetaObject;
 
 namespace Qp {
 
-enum CommitResult {
-    RollbackSuccessful,
-    RollbackFailed,
-    CommitSuccessful,
-    CommitFailed
-};
-
 enum SynchronizeResult : short {
     Error,
     Unchanged,
@@ -111,7 +104,7 @@ template<class Target, class Source>
 QList<Target> castList(const QList<Source>& list)
 {
     QList<Target> result;
-    foreach(Source s, list) result.append(static_cast<Target>(s));
+    foreach (Source s, list) result.append(static_cast<Target>(s));
     return result;
 }
 
@@ -120,7 +113,7 @@ QList<QSharedPointer<Target> > castList(const QList<QSharedPointer<Source> >& li
 {
     QList<QSharedPointer<Target> > result;
     result.reserve(list.size());
-    foreach(QSharedPointer<Source> s, list) result.append(qSharedPointerCast<Target>(s));
+    foreach (QSharedPointer<Source> s, list) result.append(qSharedPointerCast<Target>(s));
     return result;
 }
 template<class T> QVariant variant(QSharedPointer<T> object)

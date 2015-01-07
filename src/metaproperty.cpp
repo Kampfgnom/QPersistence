@@ -14,13 +14,18 @@ static const char* TOMANYRELATIONREGEXP("QList\\<(QSharedPointer|QWeakPointer)\\
 static const char* MAPPINGRELATIONREGEXP("QMap\\<(.+),(.+)\\>");
 static const char* SETTYPEREGEXP("QSet<(.+)\\>");
 
-class QpMetaPropertyPrivate : public QSharedData
+
+/******************************************************************************
+ * QpMetaPropertyData
+ */
+class QpMetaPropertyData : public QSharedData
 {
 public:
-    QpMetaPropertyPrivate() :
+    QpMetaPropertyData() :
         QSharedData(),
         cardinality(QpMetaProperty::UnknownCardinality)
-    {}
+    {
+    }
 
     QpMetaProperty::Cardinality cardinality;
     QString typeName;
@@ -29,30 +34,33 @@ public:
     mutable QHash<QString, QString> attributes;
     mutable QString columnName;
 
-    static QSharedDataPointer<QpMetaPropertyPrivate> shared_null();
+    static QSharedDataPointer<QpMetaPropertyData> shared_null();
 };
 
-QSharedDataPointer<QpMetaPropertyPrivate> QpMetaPropertyPrivate::shared_null() {
-    static QSharedDataPointer<QpMetaPropertyPrivate>& shared_null = *new QSharedDataPointer<QpMetaPropertyPrivate>(new QpMetaPropertyPrivate);
+QSharedDataPointer<QpMetaPropertyData> QpMetaPropertyData::shared_null() {
+    static QSharedDataPointer<QpMetaPropertyData>& shared_null = *new QSharedDataPointer<QpMetaPropertyData>(new QpMetaPropertyData);
     return shared_null;
 }
 
+/******************************************************************************
+ * QpMetaProperty
+ */
 QString QpMetaProperty::nameFromMaybeQualifiedName(const QString &maybeQualifiedName)
 {
     int classNameEndIndex = maybeQualifiedName.lastIndexOf("::");
     QString n = maybeQualifiedName;
-    if(classNameEndIndex >= 0)
+    if (classNameEndIndex >= 0)
         n = maybeQualifiedName.mid(classNameEndIndex + 2);
     return n;
 }
 
 QpMetaProperty::QpMetaProperty() :
-    data(QpMetaPropertyPrivate::shared_null())
+    data(QpMetaPropertyData::shared_null())
 {
 }
 
 QpMetaProperty::QpMetaProperty(const QMetaProperty &property, const QpMetaObject &metaObject) :
-    data(new QpMetaPropertyPrivate)
+    data(new QpMetaPropertyData)
 {
     data->metaObject = metaObject;
     data->typeName = property.typeName();
@@ -69,7 +77,7 @@ QString QpMetaProperty::generateColumnName() const
     if (cardinality() == QpMetaProperty::ManyToManyCardinality) {
         QString relationName;
 
-        if(reverseMetaObject().className() == data->metaObject.className())
+        if (reverseMetaObject().className() == data->metaObject.className())
             relationName = name();
         else
             relationName = data->metaObject.tableName();
@@ -98,7 +106,7 @@ QString QpMetaProperty::shortName(const QString &name) const
     // Since its automatically generated names of foreign key contraints append 7 to 8 characters to the table name,
     // 56 is needed...
     // This simple truncating by using left() could lead to collisions, which are currently not being handled!
-    if(result.size() > 56)
+    if (result.size() > 56)
         result = result.left(56);
 
     return result;
@@ -194,24 +202,24 @@ bool QpMetaProperty::isRelationProperty() const
 
 bool QpMetaProperty::isToOneRelationProperty() const
 {
-    if(data->cardinality == UnknownCardinality) {
+    if (data->cardinality == UnknownCardinality) {
         QString type(typeName());
         Q_ASSERT(!type.isEmpty());
         return type.startsWith("QSharedPointer<")
-                || type.startsWith("QWeakPointer<");
+               || type.startsWith("QWeakPointer<");
     }
 
     return data->cardinality == OneToOneCardinality
-            || data->cardinality == ManyToOneCardinality;
+           || data->cardinality == ManyToOneCardinality;
 }
 
 bool QpMetaProperty::isToManyRelationProperty() const
 {
-    if(data->cardinality == UnknownCardinality)
+    if (data->cardinality == UnknownCardinality)
         return QRegularExpression(TOMANYRELATIONREGEXP).match(typeName()).hasMatch();
 
     return data->cardinality == OneToManyCardinality
-            || data->cardinality == ManyToManyCardinality;
+           || data->cardinality == ManyToManyCardinality;
 }
 
 bool QpMetaProperty::hasTableForeignKey() const
@@ -224,7 +232,7 @@ bool QpMetaProperty::hasTableForeignKey() const
         return false;
 
     case QpMetaProperty::OneToOneCardinality:
-        return  metaObject().tableName() < reverseMetaObject().tableName();
+        return metaObject().tableName() < reverseMetaObject().tableName();
 
     case QpMetaProperty::ManyToManyCardinality:
         return false;
@@ -295,12 +303,12 @@ QString QpMetaProperty::reverseRelationName() const
         parseAttributes();
 
     QString reverse = data->attributes.value(QPERSISTENCE_PROPERTYMETADATA_REVERSERELATION);
-    if(!reverse.isEmpty())
+    if (!reverse.isEmpty())
         return reverse;
 
     QList<QpMetaProperty> possibleReverses;
-    foreach(QpMetaProperty relation, reverseMetaObject().relationProperties()) {
-        if(relation.reverseClassName() == metaObject().className()) {
+    foreach (QpMetaProperty relation, reverseMetaObject().relationProperties()) {
+        if (relation.reverseClassName() == metaObject().className()) {
             possibleReverses << relation;
         }
     }
@@ -358,16 +366,16 @@ QString QpMetaProperty::tableName() const
             qSwap(table, reverseTable);
             qSwap(s1, s2);
         }
-        if(table == reverseTable
-           && s1 < s2) {
+        if (table == reverseTable
+            && s1 < s2) {
             qSwap(table, reverseTable);
             qSwap(s1, s2);
         }
         result = QString("_Qp_REL_%1_%2__%3_%4")
-                .arg(table)
-                .arg(s1)
-                .arg(reverseTable)
-                .arg(s2);
+                 .arg(table)
+                 .arg(s1)
+                 .arg(reverseTable)
+                 .arg(s2);
         break;
 
     case UnknownCardinality:
@@ -380,7 +388,7 @@ QString QpMetaProperty::tableName() const
 
 void QpMetaProperty::remove(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const
 {
-    if(isToOneRelationProperty()) {
+    if (isToOneRelationProperty()) {
         data->metaProperty.write(object.data(), Qp::Private::variantCast(QSharedPointer<QObject>(), reverseClassName()));
     }
     else {
@@ -406,7 +414,7 @@ void QpMetaProperty::remove(QSharedPointer<QObject> object, QSharedPointer<QObje
 
 void QpMetaProperty::add(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const
 {
-    if(isToOneRelationProperty()) {
+    if (isToOneRelationProperty()) {
         data->metaProperty.write(object.data(), Qp::Private::variantCast(related, reverseClassName()));
     }
     else {
@@ -432,17 +440,17 @@ void QpMetaProperty::add(QSharedPointer<QObject> object, QSharedPointer<QObject>
 
 QList<QSharedPointer<QObject> > QpMetaProperty::read(QSharedPointer<QObject> object) const
 {
-    switch(cardinality()) {
-        case QpMetaProperty::OneToOneCardinality:
-        case QpMetaProperty::ManyToOneCardinality:
-            return { Qp::Private::objectCast(data->metaProperty.read(object.data())) };
+    switch (cardinality()) {
+    case QpMetaProperty::OneToOneCardinality:
+    case QpMetaProperty::ManyToOneCardinality:
+        return { Qp::Private::objectCast(data->metaProperty.read(object.data())) };
 
-        case QpMetaProperty::OneToManyCardinality:
-        case QpMetaProperty::ManyToManyCardinality:
-            return Qp::Private::objectListCast(data->metaProperty.read(object.data()));
+    case QpMetaProperty::OneToManyCardinality:
+    case QpMetaProperty::ManyToManyCardinality:
+        return Qp::Private::objectListCast(data->metaProperty.read(object.data()));
 
-        case QpMetaProperty::UnknownCardinality:
-            return {};
+    case QpMetaProperty::UnknownCardinality:
+        return {};
     }
 
     return {};
@@ -452,20 +460,20 @@ bool QpMetaProperty::isRelated(QSharedPointer<QObject> left, QSharedPointer<QObj
 {
     QVariant value = data->metaProperty.read(left.data());
 
-    switch(cardinality()) {
-        case QpMetaProperty::UnknownCardinality:
-            return false;
+    switch (cardinality()) {
+    case QpMetaProperty::UnknownCardinality:
+        return false;
 
-        case QpMetaProperty::OneToOneCardinality:
-        case QpMetaProperty::ManyToOneCardinality: {
-            QSharedPointer<QObject> related = Qp::Private::objectCast(value);
-            return related == right;
-        }
-        case QpMetaProperty::OneToManyCardinality:
-        case QpMetaProperty::ManyToManyCardinality: {
-            QList<QSharedPointer<QObject > > objects = Qp::Private::objectListCast(value);
-            return objects.contains(right);
-        }
+    case QpMetaProperty::OneToOneCardinality:
+    case QpMetaProperty::ManyToOneCardinality: {
+        QSharedPointer<QObject> related = Qp::Private::objectCast(value);
+        return related == right;
+    }
+    case QpMetaProperty::OneToManyCardinality:
+    case QpMetaProperty::ManyToManyCardinality: {
+        QList<QSharedPointer<QObject > > objects = Qp::Private::objectListCast(value);
+        return objects.contains(right);
+    }
     }
 
     return false;

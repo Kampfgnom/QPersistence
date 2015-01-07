@@ -1,5 +1,5 @@
-#ifndef LAZYPIXMAP_H
-#define LAZYPIXMAP_H
+#ifndef QPERSISTENCE_LAZYPIXMAP_H
+#define QPERSISTENCE_LAZYPIXMAP_H
 
 #ifdef QP_NO_GUI
 void qpunused();
@@ -16,20 +16,20 @@ class QPixmap;
 class QpLazyPixmapData;
 class QpLazyPixmap
 {
-    public:
-        explicit QpLazyPixmap(const QString &name, QObject *parent);
-        ~QpLazyPixmap();
+public:
+    explicit QpLazyPixmap(const QString &name, QObject *parent);
+    ~QpLazyPixmap();
 
-        QPixmap pixmap() const;
-        bool isNull() const;
+    QPixmap pixmap() const;
+    bool isNull() const;
 
-        operator QPixmap () const;
-        QpLazyPixmap &operator=(const QPixmap &objects);
+    operator QPixmap () const;
+    QpLazyPixmap &operator=(const QPixmap &objects);
 
-    private:
-        QExplicitlySharedDataPointer<QpLazyPixmapData> data;
+private:
+    QExplicitlySharedDataPointer<QpLazyPixmapData> data;
 };
 
 #endif
 
-#endif // LAZYPIXMAP_H
+#endif // QPERSISTENCE_LAZYPIXMAP_H
