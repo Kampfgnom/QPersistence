@@ -42,6 +42,7 @@ public:
 
     bool beginTransaction();
     bool commitOrRollbackTransaction();
+    bool rollbackTransaction();
 
     void startBulkDatabaseQueries();
     void commitBulkDatabaseQueries();
@@ -65,6 +66,7 @@ public:
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
     void enableStorageFrom(QObject *object);
     static QpStorage *forObject(const QObject *object);
+    static QpStorage *forObject(QSharedPointer<QObject> object);
 
     int revisionInDatabase(QObject *object);
     int revisionInObject(QObject *object);

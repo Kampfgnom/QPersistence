@@ -79,6 +79,11 @@ QpStorage *QpStorage::forObject(const QObject *object)
     return object->property(PROPERTY_STORAGE).value<QpStorage *>();
 }
 
+QpStorage *QpStorage::forObject(QSharedPointer<QObject> object)
+{
+    return object->property(PROPERTY_STORAGE).value<QpStorage *>();
+}
+
 int QpStorage::revisionInDatabase(QObject *object)
 {
     return sqlDataAccessObjectHelper()->objectRevision(object);
@@ -170,6 +175,11 @@ bool QpStorage::beginTransaction()
 bool QpStorage::commitOrRollbackTransaction()
 {
     return data->transactions.commitOrRollback();
+}
+
+bool QpStorage::rollbackTransaction()
+{
+    return data->transactions.rollback();
 }
 
 void QpStorage::resetAllLastKnownSynchronizations()

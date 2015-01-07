@@ -20,6 +20,7 @@ public:
         NoError = 0,
         SqlError,
         TransactionError,
+        TransactionRequestedByApplication,
         UserError = 1024
     };
 
