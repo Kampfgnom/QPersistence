@@ -269,7 +269,12 @@ bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
         return false;
     }
 
-//    unlinkRelations(object);
+    // We have to unlink all related objects, because otherwise the
+    // object will still be referenced by all strong relations.
+    // If I ever want to delete this line (again), I will have a look at the
+    // libdBase2::Material::amount, which does not show the right value,
+    // after removing storage contents, and reconsider deleting this line.
+    unlinkRelations(object);
 
     data->cache.remove(data->storage->primaryKey(object));
     emit objectRemoved(object);
@@ -283,7 +288,8 @@ bool QpDaoBase::markAsDeleted(QSharedPointer<QObject> object)
     if (result != Qp::UpdateSuccess)
         return false;
 
-//    unlinkRelations(object);
+    // See comment in removeObject for unlinkRelations
+    unlinkRelations(object);
 
     emit objectMarkedAsDeleted(object);
     return true;
