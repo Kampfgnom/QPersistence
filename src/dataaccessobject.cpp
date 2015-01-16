@@ -170,10 +170,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
         }
 
         if (!currentObject) {
-            QObject *object = createInstance();
-            data->storage->enableStorageFrom(object);
-            currentObject = data->cache.insert(key, object);
-            Qp::Private::enableSharedFromThis(currentObject);
+            currentObject = setupSharedObject(createInstance(), key);
         }
 
         int localRevision = data->storage->revisionInObject(currentObject.data());
@@ -212,34 +209,29 @@ QSharedPointer<QObject> QpDaoBase::readObject(int id) const
         return p;
 
     QObject *object = createInstance();
-    data->storage->enableStorageFrom(object);
-    QSharedPointer<QObject> obj = data->cache.insert(id, object);
-    Qp::Private::enableSharedFromThis(obj);
 
     if (!data->storage->sqlDataAccessObjectHelper()->readObject(data->metaObject, id, object)) {
         QpError error = data->storage->lastError();
         if (error.isValid())
             setLastError(error);
 
-        data->cache.remove(id);
         return QSharedPointer<QObject>();
     }
 
+    QSharedPointer<QObject> obj = setupSharedObject(object, id);
     return obj;
 }
 
 QSharedPointer<QObject> QpDaoBase::createObject()
 {
     QObject *object = createInstance();
-    data->storage->enableStorageFrom(object);
 
     if (!data->storage->sqlDataAccessObjectHelper()->insertObject(data->metaObject, object)) {
         setLastError(data->storage->lastError());
         return QSharedPointer<QObject>();
     }
-    QSharedPointer<QObject> obj = data->cache.insert(Qp::Private::primaryKey(object), object);
-    Qp::Private::enableSharedFromThis(obj);
 
+    QSharedPointer<QObject> obj = setupSharedObject(object, Qp::Private::primaryKey(object));
     emit objectCreated(obj);
     return obj;
 }
@@ -311,6 +303,15 @@ void QpDaoBase::unlinkRelations(QSharedPointer<QObject> object) const
 #ifdef __clang__
     _Pragma("clang diagnostic pop");
 #endif
+}
+
+QSharedPointer<QObject> QpDaoBase::setupSharedObject(QObject *object, int primaryKey) const
+{
+    data->storage->enableStorageFrom(object);
+    QSharedPointer<QObject> shared = data->cache.insert(primaryKey, object);
+    Qp::Private::enableSharedFromThis(shared);
+    emit objectInstanceCreated(shared);
+    return shared;
 }
 
 bool QpDaoBase::undelete(QSharedPointer<QObject> object)

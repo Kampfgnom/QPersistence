@@ -74,6 +74,7 @@ public slots:
     bool synchronizeAllObjects();
 
 Q_SIGNALS:
+    void objectInstanceCreated(QSharedPointer<QObject>) const;
     void objectCreated(QSharedPointer<QObject>);
     void objectMarkedAsDeleted(QSharedPointer<QObject>);
     void objectUndeleted(QSharedPointer<QObject>);
@@ -93,6 +94,8 @@ private:
     void setLastError(const QpError &error) const;
     void resetLastError() const;
     void unlinkRelations(QSharedPointer<QObject> object) const;
+
+    QSharedPointer<QObject> setupSharedObject(QObject *object, int id) const;
 
     Qp::SynchronizeResult sync(QSharedPointer<QObject> object);
 
