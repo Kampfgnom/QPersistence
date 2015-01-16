@@ -169,8 +169,12 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
             currentObject = data->cache.get(key);
         }
 
+        bool isNewObject = false;
         if (!currentObject) {
+            isNewObject = true;
             currentObject = setupSharedObject(createInstance(), key);
+            // Block signals, so that no signals are emitted for partly-initialized objects
+            currentObject->blockSignals(true);
         }
 
         int localRevision = data->storage->revisionInObject(currentObject.data());
@@ -184,6 +188,11 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
             data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query,
                                                                             record,
                                                                             currentObject.data());
+        }
+
+        if(isNewObject) {
+            currentObject->blockSignals(false);
+            emit objectInstanceCreated(currentObject);
         }
 
         result.append(currentObject);
@@ -209,29 +218,39 @@ QSharedPointer<QObject> QpDaoBase::readObject(int id) const
         return p;
 
     QObject *object = createInstance();
+    // Block signals, so that no signals are emitted for partly-initialized objects
+    object->blockSignals(true);
 
     if (!data->storage->sqlDataAccessObjectHelper()->readObject(data->metaObject, id, object)) {
         QpError error = data->storage->lastError();
         if (error.isValid())
             setLastError(error);
 
+        delete object;
         return QSharedPointer<QObject>();
     }
 
     QSharedPointer<QObject> obj = setupSharedObject(object, id);
+    object->blockSignals(false);
+    emit objectInstanceCreated(obj);
     return obj;
 }
 
 QSharedPointer<QObject> QpDaoBase::createObject()
 {
     QObject *object = createInstance();
+    // Block signals, so that no signals are emitted for partly-initialized objects
+    object->blockSignals(true);
 
     if (!data->storage->sqlDataAccessObjectHelper()->insertObject(data->metaObject, object)) {
         setLastError(data->storage->lastError());
+        delete object;
         return QSharedPointer<QObject>();
     }
 
     QSharedPointer<QObject> obj = setupSharedObject(object, Qp::Private::primaryKey(object));
+    object->blockSignals(false);
+    emit objectInstanceCreated(obj);
     emit objectCreated(obj);
     return obj;
 }
@@ -310,7 +329,6 @@ QSharedPointer<QObject> QpDaoBase::setupSharedObject(QObject *object, int primar
     data->storage->enableStorageFrom(object);
     QSharedPointer<QObject> shared = data->cache.insert(primaryKey, object);
     Qp::Private::enableSharedFromThis(shared);
-    emit objectInstanceCreated(shared);
     return shared;
 }
 
