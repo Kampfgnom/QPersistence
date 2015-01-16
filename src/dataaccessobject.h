@@ -79,6 +79,7 @@ Q_SIGNALS:
     void objectUndeleted(QSharedPointer<QObject>);
     void objectUpdated(QSharedPointer<QObject>);
     void objectRemoved(QSharedPointer<QObject>);
+    void objectSynchronized(QSharedPointer<QObject>);
 
 protected:
     explicit QpDaoBase(const QMetaObject &metaObject,

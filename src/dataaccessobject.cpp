@@ -107,6 +107,8 @@ Qp::SynchronizeResult QpDaoBase::sync(QSharedPointer<QObject> object)
         QpRelationResolver::readRelationFromDatabase(relation, obj);
     }
 
+    emit objectSynchronized(object);
+
     if (Qp::Private::isDeleted(object.data())) {
         emit objectMarkedAsDeleted(object);
         return Qp::Deleted;
@@ -361,6 +363,8 @@ bool QpDaoBase::synchronizeAllObjects()
             QpMetaProperty relation = rs.at(i);
             QpRelationResolver::readRelationFromDatabase(relation, object.data());
         }
+
+        emit objectSynchronized(object);
 
         if (Qp::Private::isDeleted(object.data()))
             emit objectMarkedAsDeleted(object);
