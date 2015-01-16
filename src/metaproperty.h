@@ -41,6 +41,7 @@ public:
     bool isStored() const;
     bool isValid() const;
     bool isLazy() const;
+    bool hasAnnotation(const QString &name) const;
     QVariant::Type type() const;
 
     QHash<QString, QString> attributes() const;

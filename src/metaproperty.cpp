@@ -176,10 +176,7 @@ bool QpMetaProperty::isValid() const
 
 bool QpMetaProperty::isLazy() const
 {
-    if (data->attributes.isEmpty())
-        parseAttributes();
-
-    return QVariant(data->attributes.value("lazy", "false")).toBool();
+    return hasAnnotation("lazy");
 }
 
 QVariant::Type QpMetaProperty::type() const
@@ -244,6 +241,11 @@ bool QpMetaProperty::hasTableForeignKey() const
 
     Q_ASSERT(false);
     return true;
+}
+
+bool QpMetaProperty::hasAnnotation(const QString &name) const
+{
+    return QVariant(attributes().value(name, "false")).toBool();
 }
 
 QpMetaProperty::Cardinality QpMetaProperty::cardinality() const
