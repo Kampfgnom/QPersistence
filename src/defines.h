@@ -3,23 +3,23 @@
 
 #ifdef __clang__
 #define BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS \
-    _Pragma("GCC diagnostic push") \
-    _Pragma("GCC diagnostic ignored \"-Wc++98-compat-pedantic\"") \
-    _Pragma("GCC diagnostic ignored \"-Wdisabled-macro-expansion\"") \
-    _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"") \
-    _Pragma("GCC diagnostic ignored \"-Wpadded\"") \
-    _Pragma("GCC diagnostic ignored \"-Wunreachable-code\"") \
-    _Pragma("GCC diagnostic ignored \"-Wexit-time-destructors\"") \
-    _Pragma("GCC diagnostic ignored \"-Wused-but-marked-unused\"") \
-    _Pragma("GCC diagnostic ignored \"-Wshorten-64-to-32\"") \
-    _Pragma("GCC diagnostic ignored \"-Wfloat-equal\"") \
-    _Pragma("GCC diagnostic ignored \"-Wconversion\"") \
-    _Pragma("GCC diagnostic ignored \"-Wswitch-enum\"") \
-    _Pragma("GCC diagnostic ignored \"-Wweak-vtables\"") \
-    _Pragma("GCC diagnostic ignored \"-Wdocumentation-unknown-command\"") \
-    _Pragma("GCC diagnostic ignored \"-Wdocumentation\"") \
-    _Pragma("GCC diagnostic ignored \"-Wcovered-switch-default\"") \
-    _Pragma("GCC diagnostic ignored \"-Wdeprecated\"")
+    _Pragma("GCC diagnostic push"); \
+    _Pragma("GCC diagnostic ignored \"-Wc++98-compat-pedantic\""); \
+    _Pragma("GCC diagnostic ignored \"-Wdisabled-macro-expansion\""); \
+    _Pragma("GCC diagnostic ignored \"-Wsign-conversion\""); \
+    _Pragma("GCC diagnostic ignored \"-Wpadded\""); \
+    _Pragma("GCC diagnostic ignored \"-Wunreachable-code\""); \
+    _Pragma("GCC diagnostic ignored \"-Wexit-time-destructors\""); \
+    _Pragma("GCC diagnostic ignored \"-Wused-but-marked-unused\""); \
+    _Pragma("GCC diagnostic ignored \"-Wshorten-64-to-32\""); \
+    _Pragma("GCC diagnostic ignored \"-Wfloat-equal\""); \
+    _Pragma("GCC diagnostic ignored \"-Wconversion\""); \
+    _Pragma("GCC diagnostic ignored \"-Wswitch-enum\""); \
+    _Pragma("GCC diagnostic ignored \"-Wweak-vtables\""); \
+    _Pragma("GCC diagnostic ignored \"-Wdocumentation-unknown-command\""); \
+    _Pragma("GCC diagnostic ignored \"-Wdocumentation\""); \
+    _Pragma("GCC diagnostic ignored \"-Wcovered-switch-default\""); \
+    _Pragma("GCC diagnostic ignored \"-Wdeprecated\"");
 #else
 #define BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #endif
@@ -27,7 +27,7 @@
 
 #ifdef __clang__
 #define END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS \
-    _Pragma("GCC diagnostic pop")
+    _Pragma("GCC diagnostic pop");
 #else
 #define END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #endif
