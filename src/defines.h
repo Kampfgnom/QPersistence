@@ -4,6 +4,7 @@
 #ifdef __clang__
 #define BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS \
     _Pragma("GCC diagnostic push"); \
+    _Pragma("GCC diagnostic ignored \"-Wshadow\""); \
     _Pragma("GCC diagnostic ignored \"-Wc++98-compat-pedantic\""); \
     _Pragma("GCC diagnostic ignored \"-Wdisabled-macro-expansion\""); \
     _Pragma("GCC diagnostic ignored \"-Wsign-conversion\""); \
