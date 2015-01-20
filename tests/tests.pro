@@ -10,7 +10,6 @@ TEMPLATE        = app
 QT              += sql testlib
 CONFIG          += c++11 console
 CONFIG          -= app_bundle
-QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
 DEFINES         += SRCDIR=\\\"$$PWD/\\\"
 
 
@@ -34,7 +33,8 @@ SOURCES +=  \
     tst_enumerationtest.cpp \
     tst_flagstest.cpp \
     tst_usermanagementtest.cpp \
-    tests_common.cpp
+    tests_common.cpp \
+    tst_propertydependenciestest.cpp
 
 HEADERS += \
     tst_cachetest.h \
@@ -47,4 +47,5 @@ HEADERS += \
     tst_enumerationtest.h \
     tst_flagstest.h \
     tst_usermanagementtest.h \
-    tests_common.h
+    tests_common.h \
+    tst_propertydependenciestest.h

@@ -32,22 +32,30 @@ class ParentObject : public QObject
     Q_PROPERTY(QList<QSharedPointer<TestNameSpace::ChildObject> > hasMany READ hasMany WRITE setHasMany)
     Q_PROPERTY(QList<QSharedPointer<TestNameSpace::ChildObject> > hasManyMany READ hasManyMany WRITE setHasManyMany)
 
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:childObjectOneToOne",
-                "reverserelation=parentObjectOneToOne")
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:childObjectsOneToMany",
-                "reverserelation=parentObjectOneToMany")
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:childObjectsManyToMany",
-                "reverserelation=parentObjectsManyToMany")
+    Q_PROPERTY(int calculatedIntDependency READ calculatedIntDependency WRITE setCalculatedIntDependency NOTIFY calculatedIntDependencyChanged)
+    Q_PROPERTY(int calculatedInt READ calculatedInt WRITE setCalculatedInt NOTIFY calculatedIntChanged STORED false)
+    Q_PROPERTY(int calculatedInt2 READ calculatedInt2 WRITE setCalculatedInt2 NOTIFY calculatedInt2Changed STORED false)
 
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:hasOne",
-                "reverserelation=belongsToOne")
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:hasMany",
-                "reverserelation=belongsToOneMany")
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:hasManyMany",
-                "reverserelation=belongsToManyMany")
+    Q_PROPERTY(int calculatedFromHasOne READ calculatedFromHasOne WRITE setCalculatedFromHasOne NOTIFY calculatedFromHasOneChanged STORED false)
+    Q_PROPERTY(int calculatedFromHasMany READ calculatedFromHasMany WRITE setCalculatedFromHasMany NOTIFY calculatedFromHasManyChanged STORED false)
+    Q_PROPERTY(int calculatedFromHasManyMany READ calculatedFromHasManyMany WRITE setCalculatedFromHasManyMany NOTIFY calculatedFromHasManyManyChanged STORED false)
 
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:customColumn",
-                "columnDefinition=INTEGER NOT NULL DEFAULT 5;")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:childObjectOneToOne", "reverserelation=parentObjectOneToOne")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:childObjectsOneToMany", "reverserelation=parentObjectOneToMany")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:childObjectsManyToMany", "reverserelation=parentObjectsManyToMany")
+
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:hasOne", "reverserelation=belongsToOne")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:hasMany", "reverserelation=belongsToOneMany")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:hasManyMany", "reverserelation=belongsToManyMany")
+
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:customColumn", "columnDefinition=INTEGER NOT NULL DEFAULT 5;")
+
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:calculatedInt", "depends=this.calculatedIntDependencyChanged(int)")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:calculatedInt2", "depends=this.calculatedIntChanged(int)")
+
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:calculatedFromHasOne", "depends=hasOne.calculatedIntDependencyChanged(int)")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:calculatedFromHasMany", "depends=hasMany.calculatedIntDependencyChanged(int)")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:calculatedFromHasManyMany", "depends=hasManyMany.calculatedIntDependencyChanged(int)")
 
 #ifdef QP_FOR_MYSQL
     Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:indexed",
@@ -107,6 +115,14 @@ public:
 
     int customColumn() const;
 
+    int calculatedIntDependency() const;
+    int calculatedInt() const;
+    int calculatedInt2() const;
+
+    int calculatedFromHasOne() const;
+    int calculatedFromHasMany() const;
+    int calculatedFromHasManyMany() const;
+
 public slots:
     void setHasOne(QSharedPointer<ChildObject> arg);
     void setChildObjectOneToOne(QSharedPointer<ChildObject> object);
@@ -127,10 +143,32 @@ public slots:
     void addHasManyMany(QSharedPointer<TestNameSpace::ChildObject> arg);
     void removeHasManyMany(QSharedPointer<TestNameSpace::ChildObject> arg);
 
-
     void setIndexed(int arg);
-
     void setCustomColumn(int arg);
+    void setCalculatedIntDependency(int arg);
+
+signals:
+    void calculatedIntDependencyChanged(int arg) const;
+    void calculatedIntChanged(int arg) const;
+    void calculatedInt2Changed(int arg) const;
+
+    void calculatedFromHasOneChanged(int arg) const;
+    void calculatedFromHasManyChanged(int arg) const;
+    void calculatedFromHasManyManyChanged(int arg) const;
+
+private slots:
+    void recalculateCalculatedInt() const;
+    void setCalculatedInt(int arg) const;
+
+    void recalculateCalculatedInt2() const;
+    void setCalculatedInt2(int arg) const;
+
+    void setCalculatedFromHasOne(int arg) const;
+    void recalculateCalculatedFromHasOne() const;
+    void setCalculatedFromHasMany(int arg) const;
+    void recalculateCalculatedFromHasMany() const;
+    void setCalculatedFromHasManyMany(int arg) const;
+    void recalculateCalculatedFromHasManyMany() const;
 
 private:
     void setCounter(int arg);
@@ -150,7 +188,14 @@ private:
     int m_indexed;
     int m_customColumn;
 
+    int m_calculatedIntDependency;
+    mutable int m_calculatedInt;
+    mutable int m_calculatedInt2;
+
     static int NEXT_INDEX;
+    mutable int m_calculatedFromHasOne;
+    mutable int m_calculatedFromHasMany;
+    mutable int m_calculatedFromHasManyMany;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(ParentObject::TestOptions)

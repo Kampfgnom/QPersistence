@@ -16,7 +16,11 @@ ChildObject::ChildObject(QObject *parent) :
     m_parentObjectsManyToMany(QpRelation(&ChildObject::parentObjectsManyToMany)),
     m_belongsToOne(QpRelation(&ChildObject::belongsToOne)),
     m_belongsToOneMany(QpRelation(&ChildObject::belongsToOneMany)),
-    m_belongsToManyMany(QpRelation(&ChildObject::belongsToManyMany))
+    m_belongsToManyMany(QpRelation(&ChildObject::belongsToManyMany)),
+    m_calculatedIntDependency(0),
+    m_calculatedFromToOne(0),
+    m_calculatedFromToMany(0),
+    m_calculatedFromManyToMany(0)
 {
 }
 
@@ -79,6 +83,35 @@ QList<QSharedPointer<ParentObject> > ChildObject::belongsToManyMany() const
     return m_belongsToManyMany;
 }
 
+int ChildObject::calculatedIntDependency() const
+{
+    return m_calculatedIntDependency;
+}
+
+int ChildObject::calculatedFromToOne() const
+{
+    if(m_calculatedFromToOne == 0)
+        recalculateCalculatedFromToOne();
+
+    return m_calculatedFromToOne;
+}
+
+int ChildObject::calculatedFromToMany() const
+{
+    if(m_calculatedFromToMany == 0)
+        recalculateCalculatedFromToMany();
+
+    return m_calculatedFromToMany;
+}
+
+int ChildObject::calculatedFromManyToMany() const
+{
+    if(m_calculatedFromManyToMany == 0)
+        recalculateCalculatedFromManyToMany();
+
+    return m_calculatedFromManyToMany;
+}
+
 void ChildObject::setBelongsToManyMany(QList<QSharedPointer<ParentObject> > arg)
 {
     m_belongsToManyMany = arg;
@@ -107,6 +140,67 @@ void ChildObject::addParentObjectsManyToMany(QSharedPointer<ParentObject> arg)
 void ChildObject::removeParentObjectsManyToMany(QSharedPointer<ParentObject> arg)
 {
     m_parentObjectsManyToMany.remove(arg);
+}
+
+void ChildObject::setCalculatedIntDependency(int arg)
+{
+    if (m_calculatedIntDependency == arg)
+        return;
+
+    m_calculatedIntDependency = arg;
+    emit calculatedIntDependencyChanged(arg);
+}
+
+void ChildObject::setCalculatedFromToOne(int arg) const
+{
+    if (m_calculatedFromToOne == arg)
+        return;
+
+    m_calculatedFromToOne = arg;
+    emit calculatedFromToOneChanged(arg);
+}
+
+void ChildObject::recalculateCalculatedFromToOne() const
+{
+    if(QSharedPointer<ParentObject> p = belongsToOne())
+        setCalculatedFromToOne(p->calculatedIntDependency() * 17);
+    else
+        setCalculatedFromToOne(0);
+}
+
+void ChildObject::setCalculatedFromToMany(int arg) const
+{
+    if (m_calculatedFromToMany == arg)
+        return;
+
+    m_calculatedFromToMany = arg;
+    emit calculatedFromToManyChanged(arg);
+}
+
+void ChildObject::recalculateCalculatedFromToMany() const
+{
+    if(QSharedPointer<ParentObject> p = belongsToOneMany())
+        setCalculatedFromToMany(p->calculatedIntDependency() * 23);
+    else
+        setCalculatedFromToMany(0);
+}
+
+void ChildObject::setCalculatedFromManyToMany(int arg) const
+{
+    if (m_calculatedFromManyToMany == arg)
+        return;
+
+    m_calculatedFromManyToMany = arg;
+    emit calculatedFromManyToManyChanged(arg);
+}
+
+void ChildObject::recalculateCalculatedFromManyToMany() const
+{
+    int result = 0;
+    foreach(QSharedPointer<ParentObject> p, belongsToManyMany()) {
+        result += p->calculatedIntDependency() * 29;
+    }
+    setCalculatedFromManyToMany(result);
 }
 
 void ChildObject::setParentObjectOneToMany(const QSharedPointer<ParentObject> &parentObject)

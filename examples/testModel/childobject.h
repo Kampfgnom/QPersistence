@@ -24,19 +24,23 @@ class ChildObject : public QObject
     Q_PROPERTY(QSharedPointer<TestNameSpace::ParentObject> belongsToOneMany READ belongsToOneMany WRITE setBelongsToOneMany)
     Q_PROPERTY(QList<QSharedPointer<TestNameSpace::ParentObject>> belongsToManyMany READ belongsToManyMany WRITE setBelongsToManyMany)
 
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:parentObjectOneToOne",
-                "reverserelation=childObjectOneToOne")
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:parentObjectOneToMany",
-                "reverserelation=childObjectsOneToMany")
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:parentObjectsManyToMany",
-                "reverserelation=childObjectsManyToMany")
+    Q_PROPERTY(int calculatedIntDependency READ calculatedIntDependency WRITE setCalculatedIntDependency NOTIFY calculatedIntDependencyChanged)
 
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:belongsToOne",
-                "reverserelation=hasOne")
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:belongsToOneMany",
-                "reverserelation=hasMany")
-    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:belongsToManyMany",
-                "reverserelation=hasManyMany")
+    Q_PROPERTY(int calculatedFromToOne READ calculatedFromToOne WRITE setCalculatedFromToOne NOTIFY calculatedFromToOneChanged STORED false)
+    Q_PROPERTY(int calculatedFromToMany READ calculatedFromToMany WRITE setCalculatedFromToMany NOTIFY calculatedFromToManyChanged STORED false)
+    Q_PROPERTY(int calculatedFromManyToMany READ calculatedFromManyToMany WRITE setCalculatedFromManyToMany NOTIFY calculatedFromManyToManyChanged STORED false)
+
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:parentObjectOneToOne", "reverserelation=childObjectOneToOne")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:parentObjectOneToMany", "reverserelation=childObjectsOneToMany")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:parentObjectsManyToMany", "reverserelation=childObjectsManyToMany")
+
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:belongsToOne", "reverserelation=hasOne")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:belongsToOneMany", "reverserelation=hasMany")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:belongsToManyMany", "reverserelation=hasManyMany")
+
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:calculatedFromToOne", "depends=belongsToOne.calculatedIntDependencyChanged(int)")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:calculatedFromToMany", "depends=belongsToOneMany.calculatedIntDependencyChanged(int)")
+    Q_CLASSINFO("QPERSISTENCE_PROPERTYMETADATA:calculatedFromManyToMany", "depends=belongsToManyMany.calculatedIntDependencyChanged(int)")
 
 public:
     explicit ChildObject(QObject *parent = 0);
@@ -57,6 +61,12 @@ public:
 
     QList<QSharedPointer<ParentObject>> belongsToManyMany() const;
 
+    int calculatedIntDependency() const;
+
+    int calculatedFromToOne() const;
+    int calculatedFromToMany() const;
+    int calculatedFromManyToMany() const;
+
 public slots:
     void setBelongsToManyMany(QList<QSharedPointer<ParentObject>> arg);
     void addBelongsToManyMany(QSharedPointer<TestNameSpace::ParentObject> arg);
@@ -65,6 +75,24 @@ public slots:
     void setParentObjectsManyToMany(QList<QSharedPointer<ParentObject> > arg);
     void addParentObjectsManyToMany(QSharedPointer<TestNameSpace::ParentObject> arg);
     void removeParentObjectsManyToMany(QSharedPointer<TestNameSpace::ParentObject> arg);
+
+    void setCalculatedIntDependency(int arg);
+
+    void setCalculatedFromToOne(int arg) const;
+    void recalculateCalculatedFromToOne() const;
+
+    void setCalculatedFromToMany(int arg) const;
+    void recalculateCalculatedFromToMany() const;
+
+    void setCalculatedFromManyToMany(int arg) const;
+    void recalculateCalculatedFromManyToMany() const;
+
+signals:
+    void calculatedIntDependencyChanged(int arg);
+
+    void calculatedFromToOneChanged(int arg) const;
+    void calculatedFromToManyChanged(int arg) const;
+    void calculatedFromManyToManyChanged(int arg) const;
 
 private:
     int m_someInt;
@@ -80,6 +108,10 @@ private:
     QpBelongsToOne<ParentObject> m_belongsToOne;
     QpBelongsToOne<ParentObject> m_belongsToOneMany;
     QpBelongsToMany<ParentObject> m_belongsToManyMany;
+    int m_calculatedIntDependency;
+    mutable int m_calculatedFromToOne;
+    mutable int m_calculatedFromToMany;
+    mutable int m_calculatedFromManyToMany;
 };
 
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
