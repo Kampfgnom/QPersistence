@@ -34,7 +34,6 @@ public:
 
     QpStorage *storage;
     QpMetaObject metaObject;
-    mutable QpError lastError;
     mutable QpCache cache;
     int lastSynchronizedCreatedId;
     int lastSynchronizedRevision;
@@ -59,11 +58,6 @@ QpDaoBase::~QpDaoBase()
 {
 }
 
-QpError QpDaoBase::lastError() const
-{
-    return data->lastError;
-}
-
 QpCache QpDaoBase::cache() const
 {
     return data->cache;
@@ -78,31 +72,16 @@ void QpDaoBase::resetLastKnownSynchronization()
     data->storage->commitOrRollbackTransaction();
 }
 
-void QpDaoBase::setLastError(const QpError &error) const
-{
-    data->lastError = error;
-    data->storage->setLastError(error);
-}
-
-void QpDaoBase::resetLastError() const
-{
-    setLastError(QpError());
-}
-
 Qp::SynchronizeResult QpDaoBase::sync(QSharedPointer<QObject> object)
 {
     QObject *obj = object.data();
     int id = data->storage->primaryKey(object);
     if (!data->storage->sqlDataAccessObjectHelper()->readObject(data->metaObject, id, obj)) {
-        QpError error = data->storage->lastError();
-        if (error.isValid()) {
-            setLastError(error);
+        if (data->storage->lastError().isValid())
             return Qp::Error;
-        }
 
         data->cache.remove(data->storage->primaryKey(object));
         emit objectRemoved(object);
-
         return Qp::Removed;
     }
 
@@ -136,7 +115,7 @@ QList<int> QpDaoBase::allKeys(int skip, int count) const
     QList<int> result = data->storage->sqlDataAccessObjectHelper()->allKeys(data->metaObject, skip, count);
 
     if (data->storage->lastError().isValid())
-        setLastError(data->storage->lastError());
+        return {};
 
     return result;
 }
@@ -155,9 +134,8 @@ QList<QSharedPointer<QObject> > QpDaoBase::readObjectsUpdatedAfterRevision(int r
 
 QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) const
 {
-    if (data->storage->lastError().isValid()) {
-        return QList<QSharedPointer<QObject> >();
-    }
+    if (data->storage->lastError().isValid())
+        return {};
 
     QList<QSharedPointer<QObject> > result;
     QSqlRecord record = query.record();
@@ -201,10 +179,8 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
         result.append(currentObject);
     }
 
-    if (data->storage->lastError().isValid()) {
-        setLastError(data->storage->lastError());
-        return QList<QSharedPointer<QObject> >();
-    }
+    if (data->storage->lastError().isValid())
+        return {};
 
     return result;
 }
@@ -225,10 +201,6 @@ QSharedPointer<QObject> QpDaoBase::readObject(int id) const
     object->blockSignals(true);
 
     if (!data->storage->sqlDataAccessObjectHelper()->readObject(data->metaObject, id, object)) {
-        QpError error = data->storage->lastError();
-        if (error.isValid())
-            setLastError(error);
-
         delete object;
         return QSharedPointer<QObject>();
     }
@@ -246,7 +218,6 @@ QSharedPointer<QObject> QpDaoBase::createObject()
     object->blockSignals(true);
 
     if (!data->storage->sqlDataAccessObjectHelper()->insertObject(data->metaObject, object)) {
-        setLastError(data->storage->lastError());
         delete object;
         return QSharedPointer<QObject>();
     }
@@ -269,10 +240,8 @@ Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 
     Q_ASSERT(localRevision == remoteRevision);
 
-    if (!data->storage->sqlDataAccessObjectHelper()->updateObject(data->metaObject, object.data())) {
-        setLastError(data->storage->lastError());
+    if (!data->storage->sqlDataAccessObjectHelper()->updateObject(data->metaObject, object.data()))
         return Qp::UpdateError;
-    }
 
     emit objectUpdated(object);
     return Qp::UpdateSuccess;
@@ -280,10 +249,8 @@ Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
 
 bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
 {
-    if (!data->storage->sqlDataAccessObjectHelper()->removeObject(data->metaObject, object.data())) {
-        setLastError(data->storage->lastError());
+    if (!data->storage->sqlDataAccessObjectHelper()->removeObject(data->metaObject, object.data()))
         return false;
-    }
 
     // We have to unlink all related objects, because otherwise the
     // object will still be referenced by all strong relations.
@@ -396,7 +363,7 @@ bool QpDaoBase::synchronizeAllObjects()
     }
 
     if (!data->storage->commitOrRollbackTransaction()
-        || lastError().isValid())
+        || data->storage->lastError().isValid())
         return false;
 
     return true;
@@ -404,12 +371,7 @@ bool QpDaoBase::synchronizeAllObjects()
 
 bool QpDaoBase::incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName)
 {
-    if (!data->storage->sqlDataAccessObjectHelper()->incrementNumericColumn(object.data(), fieldName)) {
-        setLastError(data->storage->lastError());
-        return false;
-    }
-
-    return true;
+    return data->storage->sqlDataAccessObjectHelper()->incrementNumericColumn(object.data(), fieldName);
 }
 
 int QpDaoBase::latestRevision() const

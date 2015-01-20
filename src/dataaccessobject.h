@@ -24,8 +24,6 @@ class QpStorage;
 namespace Qp {
 enum SynchronizeResult : short;
 enum UpdateResult : short;
-template<class T>
-struct SynchronizeAllResult;
 }
 
 
@@ -65,7 +63,6 @@ public:
     QList<QSharedPointer<QObject> > updatedSince(double time);
 #endif
 
-    QpError lastError() const;
     QpCache cache() const;
 
     void resetLastKnownSynchronization();
@@ -91,8 +88,6 @@ protected:
 private:
     QSharedDataPointer<QpDaoBaseData> data;
 
-    void setLastError(const QpError &error) const;
-    void resetLastError() const;
     void unlinkRelations(QSharedPointer<QObject> object) const;
 
     QSharedPointer<QObject> setupSharedObject(QObject *object, int id) const;
