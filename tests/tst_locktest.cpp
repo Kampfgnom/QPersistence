@@ -27,7 +27,7 @@ void LockTest::testLockAndUnlockLocally()
     QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(lock.object()), parent);
     QCOMPARE(lock.status(), QpLock::LockedLocally);
 
-    QpLock lockStatus = Qp::isLocked(parent);
+    QpLock lockStatus = Qp::lockStatus(parent);
     QCOMPARE(qSharedPointerCast<TestNameSpace::ParentObject>(lockStatus.object()), parent);
     QCOMPARE(lockStatus.status(), QpLock::LockedLocally);
 
@@ -45,9 +45,9 @@ void LockTest::testLockAndUnlockRemotely()
     QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockAndUnlock));
 
-    QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
+    QTRY_COMPARE(Qp::lockStatus(parent).status(), QpLock::LockedRemotely);
     QCOMPARE(Qp::tryLock(parent).status(), QpLock::LockedRemotely);
-    QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::NotLocked);
+    QTRY_COMPARE(Qp::lockStatus(parent).status(), QpLock::NotLocked);
 }
 
 void LockTest::testLockRemotelyAndUnlockLocally()
@@ -55,9 +55,9 @@ void LockTest::testLockRemotelyAndUnlockLocally()
     QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockAndUnlock));
 
-    QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
+    QTRY_COMPARE(Qp::lockStatus(parent).status(), QpLock::LockedRemotely);
     QCOMPARE(Qp::unlock(parent).status(), QpLock::UnlockedRemoteLock);
-    QCOMPARE(Qp::isLocked(parent).status(), QpLock::NotLocked);
+    QCOMPARE(Qp::lockStatus(parent).status(), QpLock::NotLocked);
 }
 
 void LockTest::testLockInformationLocal()
@@ -65,8 +65,8 @@ void LockTest::testLockInformationLocal()
     QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockAndUnlock));
 
-    QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
-    QpLock lock = Qp::isLocked(parent);
+    QTRY_COMPARE(Qp::lockStatus(parent).status(), QpLock::LockedRemotely);
+    QpLock lock = Qp::lockStatus(parent);
     foreach(QString field, additionalLockInfo().keys()) {
         QCOMPARE(lock.additionalInformation(field), additionalLockInfo().value(field));
     }
@@ -91,7 +91,7 @@ void LockTest::testSynchronizedCounter()
     QScopedPointer<QProcess, LockTest> process(startChangerProcess(Qp::primaryKey(parent), SynchronizeTest::LockedCounting));
 
     // Wait for the remote process to have started
-    QTRY_COMPARE(Qp::isLocked(parent).status(), QpLock::LockedRemotely);
+    QTRY_COMPARE(Qp::lockStatus(parent).status(), QpLock::LockedRemotely);
 
     for(int i = 0; i < 100; ++i) {
         QTRY_COMPARE(Qp::tryLock(parent).status(), QpLock::LockedLocally);

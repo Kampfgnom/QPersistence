@@ -11,6 +11,7 @@ public:
 
 #ifndef QP_NO_TIMESTAMPS
 private Q_SLOTS:
+    void init();
     void cleanupTestCase();
 
     void testCreationTime();

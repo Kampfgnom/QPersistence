@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 #endif
 
 #ifndef QP_NO_USERMANAGEMENT
-    //    RUNTEST(UserManagementTest);
+    RUNTEST(UserManagementTest);
 #endif
 
     return 0;
