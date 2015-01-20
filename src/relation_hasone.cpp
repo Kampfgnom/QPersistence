@@ -1,8 +1,10 @@
 #include "relation_hasone.h"
 
 #include "metaproperty.h"
-#include "relationresolver.h"
+#include "propertydependencies.h"
 #include "qpersistence.h"
+#include "relationresolver.h"
+#include "storage.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSharedData>
@@ -16,14 +18,14 @@ class QpHasOneData : public QSharedData {
 public:
     QpHasOneData() :
         QSharedData(),
-        parent(nullptr),
+        owner(nullptr),
         resolved(false)
     {
     }
 
     QSharedPointer<QObject> object;
     QpMetaProperty metaProperty;
-    QObject *parent;
+    QObject *owner;
     bool resolved;
 };
 
@@ -34,7 +36,7 @@ public:
 QpHasOneBase::QpHasOneBase(const QString &name, QObject *parent) :
     data(new QpHasOneData)
 {
-    data->parent = parent;
+    data->owner = parent;
     QString propertyName = QpMetaProperty::nameFromMaybeQualifiedName(name);
     data->metaProperty = QpMetaObject::forObject(parent).metaProperty(propertyName);
 }
@@ -55,14 +57,17 @@ QSharedPointer<QObject> QpHasOneBase::objectWithoutResolving() const
 
 QSharedPointer<QObject> QpHasOneBase::object() const
 {
-    if (Qp::Private::primaryKey(data->parent) == 0)
+    if (Qp::Private::primaryKey(data->owner) == 0)
         return QSharedPointer<QObject>();
 
     if (data->resolved)
         return data->object;
 
-    data->object = QpRelationResolver::resolveToOneRelation(data->metaProperty.name(), data->parent);
+    data->object = QpRelationResolver::resolveToOneRelation(data->metaProperty.name(), data->owner);
     data->resolved = true;
+
+    QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
+    dependecies.initDependencies(data->owner, data->object, data->metaProperty);
 
     return data->object;
 }
@@ -75,58 +80,18 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
         return;
 
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
-    QString className = data->metaProperty.metaObject().className();
     data->object = newObject;
+    QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
 
-    QSharedPointer<QObject> sharedParent = Qp::sharedFrom(data->parent);
+    QSharedPointer<QObject> sharedOwner = Qp::sharedFrom(data->owner);
     if (previousObject) {
-        if (reverse.isToOneRelationProperty()) {
-            reverse.write(previousObject.data(), Qp::Private::variantCast(QSharedPointer<QObject>(), className));
-        }
-        else {
-            QVariant wrapper = Qp::Private::variantCast(sharedParent);
-
-            const QMetaObject *mo = previousObject->metaObject();
-            QByteArray methodName = reverse.metaObject().removeObjectMethod(reverse).methodSignature();
-            int index = mo->indexOfMethod(methodName);
-
-            Q_ASSERT_X(index > 0, Q_FUNC_INFO,
-                       QString("You have to add a public slot with the signature '%1' to your '%2' class!")
-                       .arg(QString::fromLatin1(methodName))
-                       .arg(mo->className())
-                       .toLatin1());
-
-            QMetaMethod method = mo->method(index);
-            bool result = method.invoke(previousObject.data(), Qt::DirectConnection,
-                                        QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data()));
-            Q_ASSERT(result);
-            Q_UNUSED(result);
-        }
+        reverse.remove(previousObject, sharedOwner);
+        dependecies.removeDependencies(data->owner, previousObject, data->metaProperty);
     }
 
     if (newObject) {
-        if (reverse.isToOneRelationProperty()) {
-            reverse.write(newObject.data(), Qp::Private::variantCast(sharedParent));
-        }
-        else {
-            QVariant wrapper = Qp::Private::variantCast(sharedParent);
-
-            const QMetaObject *mo = newObject->metaObject();
-            QByteArray methodName = reverse.metaObject().addObjectMethod(reverse).methodSignature();
-            int index = mo->indexOfMethod(methodName);
-
-            Q_ASSERT_X(index > 0, Q_FUNC_INFO,
-                       QString("You have to add a public slot with the signature '%1' to your '%2' class!")
-                       .arg(QString::fromLatin1(methodName))
-                       .arg(mo->className())
-                       .toLatin1());
-
-            QMetaMethod method = mo->method(index);
-            bool result = method.invoke(newObject.data(), Qt::DirectConnection,
-                                        QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data()));
-            Q_ASSERT(result);
-            Q_UNUSED(result);
-        }
+        reverse.add(newObject, sharedOwner);
+        dependecies.initDependencies(data->owner, newObject, data->metaProperty);
     }
 
     // Set again, because it may (will) happen, that setting the reverse relations has also changed this value.
@@ -134,17 +99,13 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
 
     // Set dynamic property for relation
     QByteArray column;
-    if (data->metaProperty.hasTableForeignKey()) {
+    if (data->metaProperty.hasTableForeignKey())
         column = data->metaProperty.columnName().toLatin1();
-    }
-    else {
+    else
         column = QByteArray("_Qp_FK_") + data->metaProperty.name().toLatin1();
-    }
 
-    if (newObject) {
-        data->parent->setProperty(column, Qp::Private::primaryKey(newObject.data()));
-    }
-    else {
-        data->parent->setProperty(column, 0);
-    }
+    if (newObject)
+        data->owner->setProperty(column, Qp::Private::primaryKey(newObject.data()));
+    else
+        data->owner->setProperty(column, 0);
 }

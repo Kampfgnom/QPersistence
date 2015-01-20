@@ -5,6 +5,7 @@
 #include "error.h"
 #include "metaobject.h"
 #include "metaproperty.h"
+#include "propertydependencies.h"
 #include "qpersistence.h"
 #include "sqlbackend.h"
 #include "sqldataaccessobjecthelper.h"
@@ -37,6 +38,7 @@ public:
     mutable QpCache cache;
     int lastSynchronizedCreatedId;
     int lastSynchronizedRevision;
+    QpPropertyDependencies propertyDependencies;
 };
 
 
@@ -50,6 +52,7 @@ QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
 {
     data->storage = parent;
     data->metaObject = QpMetaObject::registerMetaObject(metaObject);
+    data->propertyDependencies = QpPropertyDependencies(parent);
 }
 
 QpDaoBase::~QpDaoBase()
@@ -329,6 +332,7 @@ QSharedPointer<QObject> QpDaoBase::setupSharedObject(QObject *object, int primar
     data->storage->enableStorageFrom(object);
     QSharedPointer<QObject> shared = data->cache.insert(primaryKey, object);
     Qp::Private::enableSharedFromThis(shared);
+    data->propertyDependencies.initSelfDependencies(shared);
     return shared;
 }
 
