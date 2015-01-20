@@ -184,6 +184,35 @@ QVariant::Type QpMetaProperty::type() const
     return data->metaProperty.type();
 }
 
+bool QpMetaProperty::isCalculated() const
+{
+    return attributes().contains("depends");
+}
+
+QStringList QpMetaProperty::dependencies() const
+{
+    return attributes().value("depends").split(',');
+}
+
+QMetaMethod QpMetaProperty::recalculateMethod(QSharedPointer<QObject> object) const
+{
+    const QMetaObject *metaObject = object->metaObject();
+    QString methodName = data->metaProperty.name();
+    methodName[0] = methodName.at(0).toTitleCase();
+    methodName.prepend("recalculate");
+
+    for(int i = 0, c = metaObject->methodCount(); i < c; ++i) {
+        qDebug() << metaObject->method(i).name();
+    }
+
+    QByteArray signature = QMetaObject::normalizedSignature(methodName.toLatin1());
+    int index = metaObject->indexOfMethod(signature);
+    Q_ASSERT_X(index >= 0,
+               Q_FUNC_INFO,
+               QString::fromLatin1("No recalculate method found for property '%1'").arg(data->metaProperty.name()).toLatin1());
+    return metaObject->method(index);
+}
+
 QHash<QString, QString> QpMetaProperty::attributes() const
 {
     if (data->attributes.isEmpty())

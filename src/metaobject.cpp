@@ -29,6 +29,7 @@ public:
     mutable QList<QpMetaProperty> metaProperties;
     mutable QList<QpMetaProperty> simpleProperties;
     mutable QList<QpMetaProperty> relationProperties;
+    mutable QList<QpMetaProperty> calculatedProperties;
     mutable QHash<QString, QpMetaProperty> metaPropertiesByName;
 
     static QHash<QString, QpMetaObject> metaObjectForName;
@@ -184,18 +185,22 @@ void QpMetaObject::initProperties() const
     int count = data->metaObject.propertyCount();
     for (int i = 1; i < count; ++i) {
         QMetaProperty p = data->metaObject.property(i);
+
+        QpMetaProperty mp = QpMetaProperty(p, *this);
+        if(mp.isCalculated()) {
+            data->calculatedProperties.append(mp);
+        }
+
         if (!p.isStored())
             continue;
 
-        QpMetaProperty mp = QpMetaProperty(p, *this);
         data->metaPropertiesByName.insert(p.name(), mp);
         data->metaProperties.append(mp);
-
-        if (!mp.isRelationProperty()) {
-            data->simpleProperties.append(mp);
+        if (mp.isRelationProperty()) {
+            data->relationProperties.append(mp);
         }
         else {
-            data->relationProperties.append(mp);
+            data->simpleProperties.append(mp);
         }
     }
 }
@@ -282,6 +287,14 @@ QList<QpMetaProperty> QpMetaObject::relationProperties() const
         initProperties();
     }
     return data->relationProperties;
+}
+
+QList<QpMetaProperty> QpMetaObject::calculatedProperties() const
+{
+    if (data->metaProperties.isEmpty()) {
+        initProperties();
+    }
+    return data->calculatedProperties;
 }
 
 QString QpMetaObject::sqlFilter() const

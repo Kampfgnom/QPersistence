@@ -47,6 +47,7 @@ public:
     QList<QpMetaProperty> metaProperties() const;
     QList<QpMetaProperty> simpleProperties() const;
     QList<QpMetaProperty> relationProperties() const;
+    QList<QpMetaProperty> calculatedProperties() const;
 
     QString sqlFilter() const;
 
