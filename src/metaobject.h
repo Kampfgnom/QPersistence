@@ -57,7 +57,7 @@ public:
     static QString removeNamespaces(const QString &classNameWithNamespaces);
 
 private:
-    friend class QpDaoBase;
+    friend class QpDataAccessObjectBase;
     static QpMetaObject registerMetaObject(const QMetaObject &metaObject);
     explicit QpMetaObject(const QMetaObject &metaObject);
 

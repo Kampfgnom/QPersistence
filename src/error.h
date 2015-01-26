@@ -8,7 +8,6 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QVariantMap>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-class QpError;
 class QSqlError;
 class QSqlQuery;
 

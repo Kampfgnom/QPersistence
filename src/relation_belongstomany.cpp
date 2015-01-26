@@ -1,7 +1,7 @@
 #include "relation_belongstomany.h"
 
 #include "metaproperty.h"
-#include "propertydependencies.h"
+#include "propertydependencieshelper.h"
 #include "qpersistence.h"
 #include "relationresolver.h"
 #include "storage.h"
@@ -66,8 +66,7 @@ QList<QSharedPointer<QObject> > QpBelongsToManyBase::objects() const
     data->objects = Qp::Private::makeListWeak(objects);
     data->resolved = true;
 
-    QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
-    dependecies.initDependencies(data->owner, objects, data->metaProperty);
+    QpStorage::forObject(data->owner)->propertyDependenciesHelper()->initDependencies(data->owner, objects, data->metaProperty);
 
     return objects;
 }
@@ -84,8 +83,7 @@ void QpBelongsToManyBase::add(QSharedPointer<QObject> object)
     if (object) {
         data->metaProperty.reverseRelation().add(object, Qp::sharedFrom(data->owner));
 
-        QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
-        dependecies.initDependencies(data->owner, object, data->metaProperty);
+        QpStorage::forObject(data->owner)->propertyDependenciesHelper()->initDependencies(data->owner, object, data->metaProperty);
     }
 }
 
@@ -99,8 +97,7 @@ void QpBelongsToManyBase::remove(QSharedPointer<QObject> object)
     if (object) {
         data->metaProperty.reverseRelation().remove(object, Qp::sharedFrom(data->owner));
 
-        QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
-        dependecies.removeDependencies(data->owner, object, data->metaProperty);
+        QpStorage::forObject(data->owner)->propertyDependenciesHelper()->removeDependencies(data->owner, object, data->metaProperty);
     }
 }
 
@@ -109,6 +106,5 @@ void QpBelongsToManyBase::setObjects(const QList<QSharedPointer<QObject> > &obje
     data->objects = Qp::Private::makeListWeak(objects);
     data->resolved = true;
 
-    QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
-    dependecies.initDependencies(data->owner, objects, data->metaProperty);
+    QpStorage::forObject(data->owner)->propertyDependenciesHelper()->initDependencies(data->owner, objects, data->metaProperty);
 }

@@ -17,6 +17,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 class QSqlDatabase;
 class QpAbstractErrorHandler;
 class QpError;
+class QpPropertyDependenciesHelper;
 class QpTransactionsHelper;
 
 class QpStorageData;
@@ -24,8 +25,6 @@ class QpStorage : public QObject
 {
     Q_OBJECT
 public:
-    static QpStorage *defaultStorage();
-
     explicit QpStorage(QObject *parent = 0);
     ~QpStorage();
 
@@ -50,11 +49,11 @@ public:
 
     void resetAllLastKnownSynchronizations();
 
-    QList<QpDaoBase *> dataAccessObjects();
-    QpDaoBase *dataAccessObject(const QMetaObject metaObject) const;
-    QpDaoBase *dataAccessObject(const QString &className) const;
-    QpDaoBase *dataAccessObject(int userType) const;
-    Qp::SynchronizeResult synchronize(QSharedPointer<QObject> object, QpDaoBase::SynchronizeMode mode);
+    QList<QpDataAccessObjectBase *> dataAccessObjects();
+    QpDataAccessObjectBase *dataAccessObject(const QMetaObject metaObject) const;
+    QpDataAccessObjectBase *dataAccessObject(const QString &className) const;
+    QpDataAccessObjectBase *dataAccessObject(int userType) const;
+    Qp::SynchronizeResult synchronize(QSharedPointer<QObject> object, QpDataAccessObjectBase::SynchronizeMode mode);
     Qp::UpdateResult update(QSharedPointer<QObject> object);
     bool incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName);
     bool remove(QSharedPointer<QObject> object);
@@ -62,9 +61,11 @@ public:
     bool isDeleted(QSharedPointer<QObject> object);
     bool markAsDeleted(QSharedPointer<QObject> object);
     bool undelete(QSharedPointer<QObject> object);
-    QpDaoBase *dataAccessObject(QSharedPointer<QObject> object) const;
+    QpDataAccessObjectBase *dataAccessObject(QSharedPointer<QObject> object) const;
 
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
+    QpPropertyDependenciesHelper *propertyDependenciesHelper() const;
+
     void enableStorageFrom(QObject *object);
     static QpStorage *forObject(const QObject *object);
     static QpStorage *forObject(QSharedPointer<QObject> object);
@@ -74,8 +75,8 @@ public:
 
     template<class T, class ... Superclasses> void registerClass();
 
-    template<class T> QpDao<T> *dataAccessObject();
-    template<class T> QpDaoBase *dataAccessObject(QSharedPointer<T> object) const;
+    template<class T> QpDataAccessObject<T> *dataAccessObject();
+    template<class T> QpDataAccessObjectBase *dataAccessObject(QSharedPointer<T> object) const;
     template<class T> int primaryKey(QSharedPointer<T> object);
     template<class T> QSharedPointer<T> read(int id);
     template<class T> QList<QSharedPointer<T> > readAll(const QpSqlCondition &condition = QpSqlCondition());
@@ -88,6 +89,7 @@ public:
     template<class T> bool isDeleted(QSharedPointer<T> object);
     template<class T> Qp::SynchronizeResult synchronize(QSharedPointer<T> object);
     template<class T> bool incrementNumericColumn(QSharedPointer<T> object, const QString &fieldName);
+    template <class K, class V> void registerMappableTypes();
 #ifndef QP_NO_TIMESTAMPS
     QDateTime databaseTime();
     double databaseTimeInternal();
@@ -119,9 +121,15 @@ public:
 #endif
 
 private:
-    void registerDataAccessObject(QpDaoBase *dao, const QMetaObject *metaObject);
+    void registerDataAccessObject(QpDataAccessObjectBase *dao, const QMetaObject *metaObject);
     QExplicitlySharedDataPointer<QpStorageData> data;
 };
+
+template <class K, class V>
+void QpStorage::registerMappableTypes()
+{
+    Qp::registerMappableTypes<K,V>();
+}
 
 template <class T>
 bool QpStorage::incrementNumericColumn(QSharedPointer<T> object, const QString &fieldName)
@@ -166,7 +174,7 @@ int QpStorage::primaryKey(QSharedPointer<T> object)
 }
 
 template <class T>
-QpDaoBase *QpStorage::dataAccessObject(QSharedPointer<T> object) const
+QpDataAccessObjectBase *QpStorage::dataAccessObject(QSharedPointer<T> object) const
 {
     return dataAccessObject(qSharedPointerCast<QObject>(object));
 }
@@ -179,7 +187,7 @@ void registerMetaType() {
     qRegisterMetaType<QList<QSharedPointer<T> > >();
 
     // Create converter
-    Qp::Private::ObjectConverter<T> *converter = new Qp::Private::ObjectConverter<T>(Qp::Private::GlobalGuard());
+    Qp::Private::ObjectConverter<T> *converter = new Qp::Private::ObjectConverter<T>();
 
     // Register converter for type
     Qp::Private::registerConverter<QList<QSharedPointer<T> > >(converter);
@@ -194,7 +202,7 @@ template<typename ... Args> void unpackTemplateParameters(Args ...) {
 template<class T, class ... Superclasses>
 void QpStorage::registerClass()
 {
-    QpDao<T> *dao = new QpDao<T>(this);
+    QpDataAccessObject<T> *dao = new QpDataAccessObject<T>(this);
     registerDataAccessObject(dao, &T::staticMetaObject);
 
     registerMetaType<T>();
@@ -227,9 +235,9 @@ QSharedPointer<T> QpStorage::create()
 }
 
 template<class T>
-QpDao<T> *QpStorage::dataAccessObject()
+QpDataAccessObject<T> *QpStorage::dataAccessObject()
 {
-    return static_cast<QpDao<T> *>(dataAccessObject(T::staticMetaObject));
+    return static_cast<QpDataAccessObject<T> *>(dataAccessObject(T::staticMetaObject));
 }
 
 #ifndef QP_NO_TIMESTAMPS

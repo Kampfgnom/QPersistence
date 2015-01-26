@@ -3,16 +3,16 @@
 
 #include "defines.h"
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
-#include <QtCore/QFlags>
+#include <QtCore/QObject>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpStorage;
 
 class QpUserManagement
 {
-public:
+#ifdef QP_NO_USERMANAGEMENT
     QpUserManagement();
-
+#endif
 #ifndef QP_NO_USERMANAGEMENT
 public:
     enum Permission {
@@ -25,7 +25,7 @@ public:
     };
     Q_DECLARE_FLAGS(Permissions, Permission)
 
-    explicit QpUserManagement(QpStorage *s);
+    explicit QpUserManagement(QpStorage *storage);
 
     bool createUser(const QString &username, const QString &password);
     bool deleteUser(const QString &username);

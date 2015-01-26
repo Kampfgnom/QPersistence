@@ -1,7 +1,7 @@
 #include "relation_hasone.h"
 
 #include "metaproperty.h"
-#include "propertydependencies.h"
+#include "propertydependencieshelper.h"
 #include "qpersistence.h"
 #include "relationresolver.h"
 #include "storage.h"
@@ -66,8 +66,7 @@ QSharedPointer<QObject> QpHasOneBase::object() const
     data->object = QpRelationResolver::resolveToOneRelation(data->metaProperty.name(), data->owner);
     data->resolved = true;
 
-    QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
-    dependecies.initDependencies(data->owner, data->object, data->metaProperty);
+    QpStorage::forObject(data->owner)->propertyDependenciesHelper()->initDependencies(data->owner, data->object, data->metaProperty);
 
     return data->object;
 }
@@ -81,17 +80,17 @@ void QpHasOneBase::setObject(const QSharedPointer<QObject> newObject) const
 
     QpMetaProperty reverse = data->metaProperty.reverseRelation();
     data->object = newObject;
-    QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
+    QpPropertyDependenciesHelper *dependeciesHelper = QpStorage::forObject(data->owner)->propertyDependenciesHelper();
 
     QSharedPointer<QObject> sharedOwner = Qp::sharedFrom(data->owner);
     if (previousObject) {
         reverse.remove(previousObject, sharedOwner);
-        dependecies.removeDependencies(data->owner, previousObject, data->metaProperty);
+        dependeciesHelper->removeDependencies(data->owner, previousObject, data->metaProperty);
     }
 
     if (newObject) {
         reverse.add(newObject, sharedOwner);
-        dependecies.initDependencies(data->owner, newObject, data->metaProperty);
+        dependeciesHelper->initDependencies(data->owner, newObject, data->metaProperty);
     }
 
     // Set again, because it may (will) happen, that setting the reverse relations has also changed this value.

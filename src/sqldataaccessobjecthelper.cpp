@@ -48,7 +48,6 @@ public:
  * QpSqlDataAccessObjectHelper
  */
 QpSqlDataAccessObjectHelper::QpSqlDataAccessObjectHelper(QpStorage *storage) :
-    QObject(storage),
     data(new QpSqlDataAccessObjectHelperData)
 {
     data->storage = storage;

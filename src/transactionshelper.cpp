@@ -6,9 +6,6 @@
 #include <QSqlDatabase>
 #include <QSqlError>
 
-typedef QHash<const QpStorage *, QpTransactionsHelper> HashStorageToTransactions;
-QP_DEFINE_STATIC_LOCAL(HashStorageToTransactions, TransactionsForStorage)
-
 /******************************************************************************
  * QpTransactionsData
  */
@@ -89,24 +86,8 @@ bool QpTransactionsHelperData::rollback()
 /******************************************************************************
  * QpTransactions
  */
-
-QpTransactionsHelper QpTransactionsHelper::forStorage(QpStorage *storage)
-{
-    if (TransactionsForStorage()->contains(storage))
-        return TransactionsForStorage()->value(storage, QpTransactionsHelper());
-
-    QpTransactionsHelper transactions(storage);
-    TransactionsForStorage()->insert(storage, transactions);
-    return transactions;
-}
-
-QpTransactionsHelper::QpTransactionsHelper() :
-    data(new QpTransactionsHelperData)
-{
-}
-
 QpTransactionsHelper::QpTransactionsHelper(QpStorage *storage) :
-    QpTransactionsHelper()
+    data(new QpTransactionsHelperData)
 {
     data->storage = storage;
 }

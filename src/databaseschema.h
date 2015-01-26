@@ -15,9 +15,8 @@ class QpSqlQuery;
 class QpStorage;
 
 class QpDatabaseSchemaData;
-class QpDatabaseSchema : public QObject
+class QpDatabaseSchema
 {
-    Q_OBJECT
 public:
     static const char* COLUMN_NAME_DELETEDFLAG;
     static const char* COLUMN_NAME_PRIMARY_KEY;

@@ -1,4 +1,4 @@
-#include "propertydependencies.h"
+#include "propertydependencieshelper.h"
 
 #include "metaproperty.h"
 #include "storage.h"
@@ -148,23 +148,18 @@ QMetaMethod QpPropertyDependenciesData::changeDependency(QObject *object,
     return recalculateMethod;
 }
 
-QpPropertyDependencies::QpPropertyDependencies() :
+QpPropertyDependenciesHelper::QpPropertyDependenciesHelper(QpStorage *storage) :
     data(new QpPropertyDependenciesData)
-{
-}
-
-QpPropertyDependencies::QpPropertyDependencies(QpStorage *storage) :
-    QpPropertyDependencies()
 {
     data->storage = storage;
 }
 
-QpPropertyDependencies::QpPropertyDependencies(const QpPropertyDependencies &other) :
+QpPropertyDependenciesHelper::QpPropertyDependenciesHelper(const QpPropertyDependenciesHelper &other) :
     data(other.data)
 {
 }
 
-QpPropertyDependencies &QpPropertyDependencies::operator =(const QpPropertyDependencies &other)
+QpPropertyDependenciesHelper &QpPropertyDependenciesHelper::operator =(const QpPropertyDependenciesHelper &other)
 {
     if (this != &other) {
         data.operator =(other.data);
@@ -173,11 +168,11 @@ QpPropertyDependencies &QpPropertyDependencies::operator =(const QpPropertyDepen
     return *this;
 }
 
-QpPropertyDependencies::~QpPropertyDependencies()
+QpPropertyDependenciesHelper::~QpPropertyDependenciesHelper()
 {
 }
 
-void QpPropertyDependencies::initSelfDependencies(QSharedPointer<QObject> object) const
+void QpPropertyDependenciesHelper::initSelfDependencies(QSharedPointer<QObject> object) const
 {
     Q_ASSERT(object);
     if (!object)
@@ -186,7 +181,7 @@ void QpPropertyDependencies::initSelfDependencies(QSharedPointer<QObject> object
     data->initSelfDependencies(object);
 }
 
-void QpPropertyDependencies::initDependencies(QObject *object,
+void QpPropertyDependenciesHelper::initDependencies(QObject *object,
                                               QList<QSharedPointer<QObject> > relatedObjects,
                                               const QpMetaProperty &relation) const
 {
@@ -204,7 +199,7 @@ void QpPropertyDependencies::initDependencies(QObject *object,
     }
 }
 
-void QpPropertyDependencies::initDependencies(QObject *object,
+void QpPropertyDependenciesHelper::initDependencies(QObject *object,
                                               QSharedPointer<QObject> related,
                                               const QpMetaProperty &relation) const
 {
@@ -221,7 +216,7 @@ void QpPropertyDependencies::initDependencies(QObject *object,
     }
 }
 
-void QpPropertyDependencies::removeDependencies(QObject *object,
+void QpPropertyDependenciesHelper::removeDependencies(QObject *object,
                                                 QSharedPointer<QObject> related,
                                                 const QpMetaProperty &relation) const
 {

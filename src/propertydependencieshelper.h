@@ -1,5 +1,5 @@
-#ifndef QPPROPERTYDEPENDENCIES_H
-#define QPPROPERTYDEPENDENCIES_H
+#ifndef QPERSISTENCE_PROPERTYDEPENDENCIESHELPER_H
+#define QPERSISTENCE_PROPERTYDEPENDENCIESHELPER_H
 
 #include "defines.h"
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
@@ -11,14 +11,13 @@ class QpMetaProperty;
 class QpStorage;
 
 class QpPropertyDependenciesData;
-class QpPropertyDependencies
+class QpPropertyDependenciesHelper
 {
 public:
-    QpPropertyDependencies();
-    QpPropertyDependencies(QpStorage *storage);
-    ~QpPropertyDependencies();
-    QpPropertyDependencies(const QpPropertyDependencies &other);
-    QpPropertyDependencies &operator = (const QpPropertyDependencies &other);
+    QpPropertyDependenciesHelper(QpStorage *storage);
+    ~QpPropertyDependenciesHelper();
+    QpPropertyDependenciesHelper(const QpPropertyDependenciesHelper &other);
+    QpPropertyDependenciesHelper &operator = (const QpPropertyDependenciesHelper &other);
 
     void initSelfDependencies(QSharedPointer<QObject> object) const;
     void initDependencies(QObject *object,
@@ -35,4 +34,4 @@ private:
     QExplicitlySharedDataPointer<QpPropertyDependenciesData> data;
 };
 
-#endif // QPPROPERTYDEPENDENCIES_H
+#endif // QPPROPERTYDEPENDENCIESHELPER_H

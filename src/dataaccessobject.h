@@ -17,7 +17,6 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QSqlQuery;
 class QpCache;
-class QpSqlDataAccessObjectHelper;
 class QpStorage;
 
 namespace Qp {
@@ -26,12 +25,12 @@ enum UpdateResult : short;
 }
 
 
-class QpDaoBaseData;
-class QpDaoBase : public QObject
+class QpDataAccessObjectBaseData;
+class QpDataAccessObjectBase : public QObject
 {
     Q_OBJECT
 public:
-    ~QpDaoBase();
+    ~QpDataAccessObjectBase();
 
     QpMetaObject qpMetaObject() const;
 
@@ -79,21 +78,19 @@ Q_SIGNALS:
     void objectSynchronized(QSharedPointer<QObject>);
 
 protected:
-    explicit QpDaoBase(const QMetaObject &metaObject,
+    explicit QpDataAccessObjectBase(const QMetaObject &metaObject,
                        QpStorage *parent = 0);
 
     virtual QObject *createInstance() const = 0;
 
 private:
-    QSharedDataPointer<QpDaoBaseData> data;
+    QSharedDataPointer<QpDataAccessObjectBaseData> data;
 
     void unlinkRelations(QSharedPointer<QObject> object) const;
 
     QSharedPointer<QObject> setupSharedObject(QObject *object, int id) const;
 
     Qp::SynchronizeResult sync(QSharedPointer<QObject> object);
-
-    Q_DISABLE_COPY(QpDaoBase)
 };
 
 namespace Qp {
@@ -102,7 +99,7 @@ QList<QSharedPointer<T> > castList(const QList<QSharedPointer<Source> >&);
 }
 
 template<class T>
-class QpDao : public QpDaoBase
+class QpDataAccessObject : public QpDataAccessObjectBase
 {
 public:
     QSharedPointer<T> read(int id) {
@@ -113,12 +110,12 @@ public:
                                              const QpSqlCondition &condition = QpSqlCondition(),
                                              QList<QpSqlQuery::OrderField> orders = QList<QpSqlQuery::OrderField>()) const
     {
-        return Qp::castList<T>(QpDaoBase::readAllObjects(skip, count, condition, orders));
+        return Qp::castList<T>(QpDataAccessObjectBase::readAllObjects(skip, count, condition, orders));
     }
 
 protected:
-    QpDao(QpStorage *parent) :
-        QpDaoBase(T::staticMetaObject, parent)
+    QpDataAccessObject(QpStorage *parent) :
+        QpDataAccessObjectBase(T::staticMetaObject, parent)
     {
     }
 
@@ -128,7 +125,6 @@ protected:
 
 private:
     friend class QpStorage;
-    Q_DISABLE_COPY(QpDao)
 };
 
 #endif // QPERSISTENCE_DATAACCESSOBJECT_H

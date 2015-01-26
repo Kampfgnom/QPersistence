@@ -2,8 +2,8 @@
 #define QPERSISTENCE_TRANSACTIONSHELPER_H
 
 #include "defines.h"
-
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QtCore/QObject>
 #include <QtCore/QExplicitlySharedDataPointer>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
@@ -14,8 +14,7 @@ class QpTransactionsHelperData;
 class QpTransactionsHelper
 {
 public:
-    static QpTransactionsHelper forStorage(QpStorage *storage);
-    QpTransactionsHelper();
+    explicit QpTransactionsHelper(QpStorage *storage);
     QpTransactionsHelper(const QpTransactionsHelper &other);
     QpTransactionsHelper &operator =(const QpTransactionsHelper &other);
     ~QpTransactionsHelper();
@@ -27,7 +26,6 @@ public:
 private:
     QExplicitlySharedDataPointer<QpTransactionsHelperData> data;
 
-    explicit QpTransactionsHelper(QpStorage *storage);
 };
 
 #endif // QPERSISTENCE_TRANSACTIONSHELPER_H

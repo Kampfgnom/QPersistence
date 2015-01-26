@@ -97,7 +97,7 @@ QList<QSharedPointer<QObject> > QpRelationResolver::resolveToManyRelation(const 
 
 
     QpMetaObject foreignMetaObject = relation.reverseMetaObject();
-    QpDaoBase *dao = storage->dataAccessObject(foreignMetaObject.metaObject());
+    QpDataAccessObjectBase *dao = storage->dataAccessObject(foreignMetaObject.metaObject());
 
     QList<QSharedPointer<QObject> > relatedObjects;
     relatedObjects.reserve(foreignKeys.size());

@@ -18,7 +18,7 @@ public:
     int fetchCount;
     mutable QHash<QSharedPointer<QObject>, int> rows;
     QList<QSharedPointer<QObject> > objects;
-    QpDaoBase *dao;
+    QpDataAccessObjectBase *dao;
     bool objectsFromDao;
     QpSqlCondition condition;
 };
@@ -27,16 +27,16 @@ public:
 /******************************************************************************
  * QpObjectListModelBase
  */
-QpObjectListModelBase::QpObjectListModelBase(QpDaoBase *dao, QObject *parent) :
+QpObjectListModelBase::QpObjectListModelBase(QpDataAccessObjectBase *dao, QObject *parent) :
     QAbstractListModel(parent),
     d(new QpObjectListModelBaseData)
 {
     d->dao = dao;
-    connect(dao, &QpDaoBase::objectCreated, this, &QpObjectListModelBase::objectInserted);
-    connect(dao, &QpDaoBase::objectRemoved, this, &QpObjectListModelBase::objectRemoved);
-    connect(dao, &QpDaoBase::objectUpdated, this, &QpObjectListModelBase::objectUpdated);
-    connect(dao, &QpDaoBase::objectMarkedAsDeleted, this, &QpObjectListModelBase::objectMarkedAsDeleted);
-    connect(dao, &QpDaoBase::objectUndeleted, this, &QpObjectListModelBase::objectUndeleted);
+    connect(dao, &QpDataAccessObjectBase::objectCreated, this, &QpObjectListModelBase::objectInserted);
+    connect(dao, &QpDataAccessObjectBase::objectRemoved, this, &QpObjectListModelBase::objectRemoved);
+    connect(dao, &QpDataAccessObjectBase::objectUpdated, this, &QpObjectListModelBase::objectUpdated);
+    connect(dao, &QpDataAccessObjectBase::objectMarkedAsDeleted, this, &QpObjectListModelBase::objectMarkedAsDeleted);
+    connect(dao, &QpDataAccessObjectBase::objectUndeleted, this, &QpObjectListModelBase::objectUndeleted);
 }
 
 QpObjectListModelBase::~QpObjectListModelBase()
@@ -56,7 +56,7 @@ void QpObjectListModelBase::setFetchCount(int fetchCount)
         d->fetchCount = fetchCount;
 }
 
-QpDaoBase *QpObjectListModelBase::dataAccessObject() const
+QpDataAccessObjectBase *QpObjectListModelBase::dataAccessObject() const
 {
     return d->dao;
 }
@@ -221,7 +221,7 @@ void QpObjectListModelBase::objectMarkedAsDeleted(QSharedPointer<QObject> object
 {
     objectUpdated(object);
 
-    if (Qp::isDeleted(object))
+    if (Qp::Private::isDeleted(object.data()))
         objectRemoved(object);
 }
 
@@ -231,7 +231,7 @@ void QpObjectListModelBase::objectUndeleted(QSharedPointer<QObject> object)
         return;
 
     int index = d->dao->count(d->condition
-                              && QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, QpSqlCondition::LessThan, Qp::primaryKey(object)));
+                              && QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, QpSqlCondition::LessThan, Qp::Private::primaryKey(object.data())));
 
     beginInsertRows(QModelIndex(), index, index);
 

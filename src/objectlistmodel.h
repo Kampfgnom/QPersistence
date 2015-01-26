@@ -19,7 +19,7 @@ class QpObjectListModelBase : public QAbstractListModel, public QpModelBase
 {
     Q_OBJECT
 public:
-    QpObjectListModelBase(QpDaoBase *dao, QObject *parent);
+    QpObjectListModelBase(QpDataAccessObjectBase *dao, QObject *parent);
     ~QpObjectListModelBase();
 
     bool canFetchMore(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
@@ -39,7 +39,7 @@ public:
     QSharedPointer<QObject> objectByIndexBase(const QModelIndex &index) const Q_DECL_OVERRIDE;
     QModelIndex indexForObjectBase(QSharedPointer<QObject> object) const Q_DECL_OVERRIDE;
 
-    QpDaoBase *dataAccessObject() const;
+    QpDataAccessObjectBase *dataAccessObject() const;
 
     void setCondition(const QpSqlCondition &condition);
 
@@ -64,7 +64,7 @@ public:
 
 template<class T>
 QpObjectListModel<T>::QpObjectListModel(QObject *parent) :
-    QpObjectListModel<T>(QpStorage::defaultStorage(), parent)
+    QpObjectListModel<T>(Qp::defaultStorage(), parent)
 {
 }
 

@@ -9,7 +9,6 @@ namespace Qp {
 
 namespace Private {
 
-QObject *GlobalGuard();
 void enableSharedFromThis(QSharedPointer<QObject> object);
 QSharedPointer<QObject> sharedFrom(const QObject *object);
 

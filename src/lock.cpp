@@ -1,5 +1,11 @@
 #include "lock.h"
 
+#ifdef QP_NO_LOCKS
+QpLock::QpLock()
+{
+}
+#endif
+
 #ifndef QP_NO_LOCKS
 
 #include "databaseschema.h"
@@ -173,20 +179,15 @@ void QpLockData::removeLock(QpStorage *storage, int id, QSharedPointer<QObject> 
         return;
     }
 }
-#endif
 
 
 /**********************************************************
  *  QpLock
  */
 QpLock::QpLock()
-#ifndef QP_NO_LOCKS
     : data(new QpLockData)
-#endif
 {
 }
-
-#ifndef QP_NO_LOCKS
 
 bool QpLock::isLocked(QSharedPointer<QObject> object)
 {

@@ -1,7 +1,8 @@
 #include "storage.h"
 
-#include "sqlbackend.h"
 #include "error.h"
+#include "propertydependencieshelper.h"
+#include "sqlbackend.h"
 #include "sqlquery.h"
 #include "transactionshelper.h"
 
@@ -31,42 +32,42 @@ public:
     bool locksEnabled;
     QHash<QSharedPointer<QObject>, QpLock> localLocks;
     QHash<QString, QVariant::Type> additionalLockFields;
-    QHash<QString, QpDaoBase *> dataAccessObjects;
+    QHash<QString, QpDataAccessObjectBase *> dataAccessObjects;
     QList<QpAbstractErrorHandler *> errorHandlers;
-    QpTransactionsHelper transactions;
+    QpTransactionsHelper *transactionsHelper;
+    QpPropertyDependenciesHelper *propertyDependenciesHelper;
 
     static QpStorage *defaultStorage;
 };
-
-QpStorage *QpStorageData::defaultStorage(nullptr);
 
 
 /******************************************************************************
  * QpStorage
  */
-QpStorage *QpStorage::defaultStorage()
-{
-    if (!QpStorageData::defaultStorage)
-        QpStorageData::defaultStorage = new QpStorage(Qp::Private::GlobalGuard());
-
-    return QpStorageData::defaultStorage;
-}
-
 QpStorage::QpStorage(QObject *parent) :
     QObject(parent),
     data(new QpStorageData)
 {
     data->sqlDataAccessObjectHelper = new QpSqlDataAccessObjectHelper(this);
-    data->transactions = QpTransactionsHelper::forStorage(this);
+    data->transactionsHelper = new QpTransactionsHelper(this);
+    data->propertyDependenciesHelper = new QpPropertyDependenciesHelper(this);
 }
 
 QpStorage::~QpStorage()
 {
+    delete data->sqlDataAccessObjectHelper;
+    delete data->transactionsHelper;
+    delete data->propertyDependenciesHelper;
 }
 
 QpSqlDataAccessObjectHelper *QpStorage::sqlDataAccessObjectHelper() const
 {
     return data->sqlDataAccessObjectHelper;
+}
+
+QpPropertyDependenciesHelper *QpStorage::propertyDependenciesHelper() const
+{
+    return data->propertyDependenciesHelper;
 }
 
 void QpStorage::enableStorageFrom(QObject *object)
@@ -89,7 +90,7 @@ int QpStorage::revisionInDatabase(QObject *object)
     return sqlDataAccessObjectHelper()->objectRevision(object);
 }
 
-void QpStorage::registerDataAccessObject(QpDaoBase *dao, const QMetaObject *objectInClassHierarchy)
+void QpStorage::registerDataAccessObject(QpDataAccessObjectBase *dao, const QMetaObject *objectInClassHierarchy)
 {
     do {
         QString className = QpMetaObject::removeNamespaces(objectInClassHierarchy->className());
@@ -177,22 +178,22 @@ void QpStorage::clearErrorHandlers()
 
 bool QpStorage::beginTransaction()
 {
-    return data->transactions.begin();
+    return data->transactionsHelper->begin();
 }
 
 bool QpStorage::commitOrRollbackTransaction()
 {
-    return data->transactions.commitOrRollback();
+    return data->transactionsHelper->commitOrRollback();
 }
 
 bool QpStorage::rollbackTransaction()
 {
-    return data->transactions.rollback();
+    return data->transactionsHelper->rollback();
 }
 
 void QpStorage::resetAllLastKnownSynchronizations()
 {
-    foreach (QpDaoBase *dao, data->dataAccessObjects.values()) {
+    foreach (QpDataAccessObjectBase *dao, data->dataAccessObjects.values()) {
         dao->resetLastKnownSynchronization();
     }
 }
@@ -202,23 +203,23 @@ void QpStorage::setSqlDebugEnabled(bool enable)
     QpSqlQuery::setDebugEnabled(enable);
 }
 
-QList<QpDaoBase *> QpStorage::dataAccessObjects()
+QList<QpDataAccessObjectBase *> QpStorage::dataAccessObjects()
 {
     return data->dataAccessObjects.values();
 }
 
-QpDaoBase *QpStorage::dataAccessObject(const QMetaObject metaObject) const
+QpDataAccessObjectBase *QpStorage::dataAccessObject(const QMetaObject metaObject) const
 {
     return dataAccessObject(metaObject.className());
 }
 
-QpDaoBase *QpStorage::dataAccessObject(const QString &className) const
+QpDataAccessObjectBase *QpStorage::dataAccessObject(const QString &className) const
 {
     Q_ASSERT(data->dataAccessObjects.contains(className));
     return data->dataAccessObjects.value(className);
 }
 
-QpDaoBase *QpStorage::dataAccessObject(int userType) const
+QpDataAccessObjectBase *QpStorage::dataAccessObject(int userType) const
 {
     return dataAccessObject(Qp::Private::classNameForUserType(userType));
 }
@@ -264,18 +265,18 @@ int QpStorage::revisionInObject(QObject *object)
     return object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt();
 }
 
-QpDaoBase *QpStorage::dataAccessObject(QSharedPointer<QObject> object) const
+QpDataAccessObjectBase *QpStorage::dataAccessObject(QSharedPointer<QObject> object) const
 {
     return dataAccessObject(*object->metaObject());
 }
 
 bool QpStorage::incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName)
 {
-    QpDaoBase *dao = dataAccessObject(object);
+    QpDataAccessObjectBase *dao = dataAccessObject(object);
     if (!dao->incrementNumericColumn(object, fieldName))
         return false;
 
-    return dao->synchronizeObject(object, QpDaoBase::IgnoreRevision) == Qp::Updated;
+    return dao->synchronizeObject(object, QpDataAccessObjectBase::IgnoreRevision) == Qp::Updated;
 }
 
 Qp::UpdateResult QpStorage::update(QSharedPointer<QObject> object)
@@ -285,7 +286,7 @@ Qp::UpdateResult QpStorage::update(QSharedPointer<QObject> object)
     return result;
 }
 
-Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<QObject> object, QpDaoBase::SynchronizeMode mode)
+Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<QObject> object, QpDataAccessObjectBase::SynchronizeMode mode)
 {
     return dataAccessObject(object)->synchronizeObject(object, mode);
 }

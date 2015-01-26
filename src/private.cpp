@@ -19,8 +19,6 @@ namespace Qp {
 
 namespace Private {
 
-QP_DEFINE_STATIC_LOCAL(QObject, GlobalGuard)
-
 int primaryKey(const QObject *object)
 {
     return object->property(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY).toInt();

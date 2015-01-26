@@ -18,13 +18,11 @@ class QpSqlQuery;
 class QpStorage;
 
 class QpSqlDataAccessObjectHelperData;
-class QpSqlDataAccessObjectHelper : public QObject
+class QpSqlDataAccessObjectHelper
 {
-    Q_OBJECT
 public:
-    ~QpSqlDataAccessObjectHelper();
-
     explicit QpSqlDataAccessObjectHelper(QpStorage *storage);
+    ~QpSqlDataAccessObjectHelper();
 
     int count(const QpMetaObject &metaObject, const QpSqlCondition &condition) const;
     QList<int> allKeys(const QpMetaObject &metaObject, int skip, int count) const;

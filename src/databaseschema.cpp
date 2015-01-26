@@ -68,7 +68,6 @@ public:
  * QpDatabaseSchema
  */
 QpDatabaseSchema::QpDatabaseSchema(QpStorage *storage) :
-    QObject(storage),
     data(new QpDatabaseSchemaData)
 {
     data->storage = storage;

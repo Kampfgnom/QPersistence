@@ -2,12 +2,11 @@
 
 #include "storage.h"
 
+#ifdef QP_NO_USERMANAGEMENT
 QpUserManagement::QpUserManagement()
-#ifndef QP_NO_USERMANAGEMENT
-    : storage(QpStorage::defaultStorage())
-#endif
 {
 }
+#endif
 
 #ifndef QP_NO_USERMANAGEMENT
 

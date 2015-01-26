@@ -88,13 +88,7 @@ QpSchemaVersioning::Version QpSchemaVersioning::parseVersionString(const QString
 /******************************************************************************
  * QpSchemaVersioning
  */
-QpSchemaVersioning::QpSchemaVersioning(QObject *parent) :
-    QpSchemaVersioning(QpStorage::defaultStorage(), parent)
-{
-}
-
-QpSchemaVersioning::QpSchemaVersioning(QpStorage *storage, QObject *parent) :
-    QObject(parent),
+QpSchemaVersioning::QpSchemaVersioning(QpStorage *storage) :
     data(new QpSchemaVersioningData)
 {
     data->storage = storage;
