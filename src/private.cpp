@@ -47,7 +47,7 @@ void undelete(QObject *object)
 }
 
 
-typedef QHash<const QObject *, QWeakPointer<QObject>> WeakPointerHash;
+typedef QHash<const QObject *, QWeakPointer<QObject> > WeakPointerHash;
 QP_DEFINE_STATIC_LOCAL(WeakPointerHash, WeakPointers)
 
 void enableSharedFromThis(QSharedPointer<QObject> object)

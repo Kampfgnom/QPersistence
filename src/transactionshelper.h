@@ -7,7 +7,6 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QExplicitlySharedDataPointer>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-class QpError;
 class QpStorage;
 class QSqlDatabase;
 
@@ -15,7 +14,7 @@ class QpTransactionsHelperData;
 class QpTransactionsHelper
 {
 public:
-    static QpTransactionsHelper forStorage(const QpStorage *storage);
+    static QpTransactionsHelper forStorage(QpStorage *storage);
     QpTransactionsHelper();
     QpTransactionsHelper(const QpTransactionsHelper &other);
     QpTransactionsHelper &operator =(const QpTransactionsHelper &other);
@@ -25,12 +24,10 @@ public:
     bool commitOrRollback();
     bool rollback();
 
-    QpError lastError() const;
-
 private:
     QExplicitlySharedDataPointer<QpTransactionsHelperData> data;
 
-    explicit QpTransactionsHelper(const QpStorage *storage);
+    explicit QpTransactionsHelper(QpStorage *storage);
 };
 
 #endif // QPERSISTENCE_TRANSACTIONSHELPER_H

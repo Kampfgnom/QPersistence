@@ -24,7 +24,7 @@ public:
     }
 
     bool resolved;
-    QList<QWeakPointer<QObject>> objects;
+    QList<QWeakPointer<QObject> > objects;
     QpMetaProperty metaProperty;
     QObject *owner;
 };
@@ -53,7 +53,7 @@ bool QpBelongsToManyBase::operator ==(const QList<QSharedPointer<QObject> > &obj
 QList<QSharedPointer<QObject> > QpBelongsToManyBase::objects() const
 {
     if (Qp::Private::primaryKey(data->owner) == 0)
-        return QList<QSharedPointer<QObject>>();
+        return QList<QSharedPointer<QObject> >();
 
     if (data->resolved) {
         bool ok = false;
@@ -74,7 +74,7 @@ QList<QSharedPointer<QObject> > QpBelongsToManyBase::objects() const
 
 void QpBelongsToManyBase::add(QSharedPointer<QObject> object)
 {
-    QList<QSharedPointer<QObject>> obj = objects(); Q_UNUSED(obj); // resolve and keep a strong ref, while we're working here
+    QList<QSharedPointer<QObject> > obj = objects(); Q_UNUSED(obj); // resolve and keep a strong ref, while we're working here
 
     QWeakPointer<QObject> weakRef = object.toWeakRef();
     if (data->objects.contains(weakRef))
@@ -91,9 +91,9 @@ void QpBelongsToManyBase::add(QSharedPointer<QObject> object)
 
 void QpBelongsToManyBase::remove(QSharedPointer<QObject> object)
 {
-    QList<QSharedPointer<QObject>> obj = objects(); Q_UNUSED(obj); // resolve and keep a strong ref, while we're working here
+    QList<QSharedPointer<QObject> > obj = objects(); Q_UNUSED(obj); // resolve and keep a strong ref, while we're working here
 
-    if(!data->objects.removeOne(object.toWeakRef()))
+    if (!data->objects.removeOne(object.toWeakRef()))
         return;
 
     if (object) {

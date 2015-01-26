@@ -64,7 +64,7 @@ QpLock QpLockData::insertLock(QpStorage *storage, QSharedPointer<QObject> object
 
     query.prepareInsert();
 
-    if (!query.exec() || query.lastError().isValid()) {
+    if (!query.exec()) {
         QpLock lock = QpLock(QpError(query.lastError()));
         storage->setLastError(lock.error());
         return lock;
@@ -87,7 +87,7 @@ QpLock QpLockData::insertLock(QpStorage *storage, QSharedPointer<QObject> object
                                            Qp::Private::primaryKey(object.data())));
     query.prepareUpdate();
 
-    if (!query.exec() || query.lastError().isValid()) {
+    if (!query.exec()) {
         lock = QpLock(QpError(query.lastError()));
         storage->setLastError(lock.error());
         return lock;
@@ -111,8 +111,7 @@ QpLock QpLockData::selectLock(QpStorage *storage, int id, QSharedPointer<QObject
     query.prepareSelect();
 
     if (!query.exec()
-        || !query.first()
-        || query.lastError().isValid()) {
+        || !query.first()) {
         QpLock lock = QpLock(QpError(query.lastError()));
         storage->setLastError(lock.error());
         return lock;
@@ -146,8 +145,7 @@ int QpLockData::selectLockId(QpStorage *storage, QSharedPointer<QObject> object,
     query.setForUpdate(forUpdate);
     query.prepareSelect();
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
+    if (!query.exec()) {
         storage->setLastError(QpError(query.lastError()));
         return -1;
     }
@@ -170,8 +168,7 @@ void QpLockData::removeLock(QpStorage *storage, int id, QSharedPointer<QObject> 
                                            id));
     query.prepareDelete();
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
+    if (!query.exec()) {
         storage->setLastError(QpError(query.lastError()));
         return;
     }

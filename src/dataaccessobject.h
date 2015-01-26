@@ -17,7 +17,6 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QSqlQuery;
 class QpCache;
-class QpError;
 class QpSqlDataAccessObjectHelper;
 class QpStorage;
 

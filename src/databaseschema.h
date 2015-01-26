@@ -10,7 +10,6 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QSqlQuery;
-class QpError;
 class QpMetaProperty;
 class QpSqlQuery;
 class QpStorage;
@@ -49,36 +48,34 @@ public:
 
     bool existsTable(const QMetaObject &metaObject);
     bool existsTable(const QString &table);
-    void createTable(const QMetaObject &metaObject);
-    void createTableIfNotExists(const QMetaObject &metaObject);
-    void dropTable(const QMetaObject &metaObject);
-    void dropTable(const QString &table);
+    bool createTable(const QMetaObject &metaObject);
+    bool createTableIfNotExists(const QMetaObject &metaObject);
+    bool dropTable(const QMetaObject &metaObject);
+    bool dropTable(const QString &table);
     bool addMissingColumns(const QMetaObject &metaObject);
-    void addColumn(const QpMetaProperty &metaProperty);
-    void addColumn(const QString &table, const QString &column, const QString &type);
+    bool addColumn(const QpMetaProperty &metaProperty);
+    bool addColumn(const QString &table, const QString &column, const QString &type);
     bool dropColumns(const QString &table, const QStringList &columns);
 
     bool enableHistoryTracking();
     bool enableHistoryTracking(const QMetaObject &metaObject);
     bool enableHistoryTracking(const QString &table);
 
-    void cleanSchema();
+    bool cleanSchema();
     bool createCleanSchema();
     bool adjustSchema();
 
-    void setForeignKeyChecks(bool check);
+    bool setForeignKeyChecks(bool check);
 
-    void createManyToManyRelationTables(const QMetaObject &metaObject);
+    bool createManyToManyRelationTables(const QMetaObject &metaObject);
 
 #ifndef QP_NO_LOCKS
-    void createLocksTable();
+    bool createLocksTable();
 #endif
 
 #ifndef QP_NO_SCHEMAVERSIONING
-    void createSchemaVersioningTable();
+    bool createSchemaVersioningTable();
 #endif
-
-    QpError lastError() const;
 
     bool renameColumn(const QString &tableName, const QString &oldColumnName, const QString &newColumnName);
     bool renameTable(const QString &oldTableName, const QString &newTableName);
@@ -88,10 +85,6 @@ public:
 
 private:
     QSharedDataPointer<QpDatabaseSchemaData> data;
-
-    void setLastError(const QpError &error) const;
-    void setLastError(const QSqlQuery &query) const;
-
 
     QString metaPropertyToColumnDefinition(const QpMetaProperty &metaProperty);
 };

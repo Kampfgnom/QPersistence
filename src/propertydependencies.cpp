@@ -25,79 +25,79 @@ public:
 
     QSet<QMetaMethod> initSelfDependencies(QSharedPointer<QObject> object);
     QSet<QMetaMethod> changeRelationDependencies(QObject *object,
-                                    QSharedPointer<QObject> related,
-                                    const QpMetaProperty &relation,
-                                    ChangeAction changeAction);
+                                                 QSharedPointer<QObject> related,
+                                                 const QpMetaProperty &relation,
+                                                 ChangeAction changeAction);
     QSet<QMetaMethod> changeDependencies(QObject *object,
-                            QSharedPointer<QObject> other,
-                            const QpMetaProperty &property,
-                            const QString &relationName,
-                            ChangeAction changeAction);
+                                         QSharedPointer<QObject> other,
+                                         const QpMetaProperty &property,
+                                         const QString &relationName,
+                                         ChangeAction changeAction);
     QMetaMethod changeDependency(QObject *object,
-                          QSharedPointer<QObject> other,
-                          const QpMetaProperty &property,
-                          const QString &dependency,
-                          const QString &relationName,
-                          ChangeAction changeAction);
+                                 QSharedPointer<QObject> other,
+                                 const QpMetaProperty &property,
+                                 const QString &dependency,
+                                 const QString &relationName,
+                                 ChangeAction changeAction);
     QMetaMethod changeDependency(QObject *object,
-                          QSharedPointer<QObject> other,
-                          const QpMetaProperty &property,
-                          const QString &dependencyPropertyName,
-                          ChangeAction changeAction);
+                                 QSharedPointer<QObject> other,
+                                 const QpMetaProperty &property,
+                                 const QString &dependencyPropertyName,
+                                 ChangeAction changeAction);
 };
 
 QSet<QMetaMethod> QpPropertyDependenciesData::initSelfDependencies(QSharedPointer<QObject> object)
 {
     QSet<QMetaMethod> result;
     QpMetaObject metaObject = QpMetaObject::forObject(object);
-    foreach(QpMetaProperty property, metaObject.calculatedProperties()) {
+    foreach (QpMetaProperty property, metaObject.calculatedProperties()) {
         result.unite(changeDependencies(object.data(), object, property, QString::fromLatin1("this"), ConnectAction));
     }
     return result;
 }
 
 QSet<QMetaMethod> QpPropertyDependenciesData::changeRelationDependencies(QObject *object,
-                                                            QSharedPointer<QObject> related,
-                                                            const QpMetaProperty &relation,
-                                                            ChangeAction changeAction)
+                                                                         QSharedPointer<QObject> related,
+                                                                         const QpMetaProperty &relation,
+                                                                         ChangeAction changeAction)
 {
     QSet<QMetaMethod> result;
     QString relationName = relation.name();
     QpMetaObject metaObject = QpMetaObject::forObject(object);
-    foreach(QpMetaProperty property, metaObject.calculatedProperties()) {
+    foreach (QpMetaProperty property, metaObject.calculatedProperties()) {
         result.unite(changeDependencies(object, related, property, relationName, changeAction));
     }
     return result;
 }
 
 QSet<QMetaMethod> QpPropertyDependenciesData::changeDependencies(QObject *object,
-                                                    QSharedPointer<QObject> other,
-                                                    const QpMetaProperty &property,
-                                                    const QString &relationName,
-                                                    ChangeAction changeAction)
+                                                                 QSharedPointer<QObject> other,
+                                                                 const QpMetaProperty &property,
+                                                                 const QString &relationName,
+                                                                 ChangeAction changeAction)
 {
     QSet<QMetaMethod> result;
-    foreach(QString dependecy, property.dependencies()) {
+    foreach (QString dependecy, property.dependencies()) {
         QMetaMethod recalculateMethod = changeDependency(object, other, property, dependecy, relationName, changeAction);
-        if(recalculateMethod.isValid())
+        if (recalculateMethod.isValid())
             result.insert(recalculateMethod);
     }
     return result;
 }
 
 QMetaMethod QpPropertyDependenciesData::changeDependency(QObject *object,
-                                                  QSharedPointer<QObject> other,
-                                                  const QpMetaProperty &property,
-                                                  const QString &dependency,
-                                                  const QString &relationName,
-                                                  ChangeAction changeAction)
+                                                         QSharedPointer<QObject> other,
+                                                         const QpMetaProperty &property,
+                                                         const QString &dependency,
+                                                         const QString &relationName,
+                                                         ChangeAction changeAction)
 {
     QStringList dependencySplit = dependency.split('.');
     Q_ASSERT(dependencySplit.size() == 2);
     QString dependencyRelation = dependencySplit.first();
     QString dependencySignalName = dependencySplit.last();
 
-    if(dependencyRelation != relationName) {
+    if (dependencyRelation != relationName) {
         return QMetaMethod();
     }
 
@@ -105,10 +105,10 @@ QMetaMethod QpPropertyDependenciesData::changeDependency(QObject *object,
 }
 
 QMetaMethod QpPropertyDependenciesData::changeDependency(QObject *object,
-                                                  QSharedPointer<QObject> other,
-                                                  const QpMetaProperty &property,
-                                                  const QString &dependencySignalName,
-                                                  ChangeAction changeAction)
+                                                         QSharedPointer<QObject> other,
+                                                         const QpMetaProperty &property,
+                                                         const QString &dependencySignalName,
+                                                         ChangeAction changeAction)
 {
     QString methodName = property.name();
     methodName[0] = methodName.at(0).toTitleCase();
@@ -180,7 +180,7 @@ QpPropertyDependencies::~QpPropertyDependencies()
 void QpPropertyDependencies::initSelfDependencies(QSharedPointer<QObject> object) const
 {
     Q_ASSERT(object);
-    if(!object)
+    if (!object)
         return;
 
     data->initSelfDependencies(object);
@@ -192,14 +192,14 @@ void QpPropertyDependencies::initDependencies(QObject *object,
 {
     Q_ASSERT(object);
     QSet<QMetaMethod> recalculateMethods;
-    foreach(QSharedPointer<QObject> related, relatedObjects) {
+    foreach (QSharedPointer<QObject> related, relatedObjects) {
         recalculateMethods.unite(data->changeRelationDependencies(object,
                                                                   related,
                                                                   relation,
                                                                   QpPropertyDependenciesData::ConnectAction));
     }
 
-    foreach(QMetaMethod method, recalculateMethods) {
+    foreach (QMetaMethod method, recalculateMethods) {
         method.invoke(object);
     }
 }
@@ -209,14 +209,14 @@ void QpPropertyDependencies::initDependencies(QObject *object,
                                               const QpMetaProperty &relation) const
 {
     Q_ASSERT(object);
-    if(!related)
+    if (!related)
         return;
 
     QSet<QMetaMethod> recalculateMethods = data->changeRelationDependencies(object,
                                                                             related,
                                                                             relation,
                                                                             QpPropertyDependenciesData::ConnectAction);
-    foreach(QMetaMethod method, recalculateMethods) {
+    foreach (QMetaMethod method, recalculateMethods) {
         method.invoke(object);
     }
 }
@@ -226,13 +226,13 @@ void QpPropertyDependencies::removeDependencies(QObject *object,
                                                 const QpMetaProperty &relation) const
 {
     Q_ASSERT(object);
-    if(!related)
+    if (!related)
         return;
     QSet<QMetaMethod> recalculateMethods = data->changeRelationDependencies(object,
                                                                             related,
                                                                             relation,
                                                                             QpPropertyDependenciesData::DisconnectAction);
-    foreach(QMetaMethod method, recalculateMethods) {
+    foreach (QMetaMethod method, recalculateMethods) {
         method.invoke(object);
     }
 }

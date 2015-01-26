@@ -140,19 +140,27 @@ QpError QpStorage::lastError() const
     return data->lastError;
 }
 
+void QpStorage::setLastError(const QSqlQuery &query)
+{
+    setLastError(QpError(query.lastError()));
+}
+
 #ifdef __clang__
-_Pragma("clang diagnostic push")
-_Pragma("clang diagnostic ignored \"-Wmissing-noreturn\"")
+_Pragma("clang diagnostic push");
+_Pragma("clang diagnostic ignored \"-Wmissing-noreturn\"");
 #endif
-void QpStorage::setLastError(QpError error)
+void QpStorage::setLastError(const QpError &error)
 {
     data->lastError = error;
+    if (!error.isValid())
+        return;
+
     foreach (QpAbstractErrorHandler *handler, data->errorHandlers) {
         handler->handleError(error);
     }
 }
 #ifdef __clang__
-_Pragma("clang diagnostic pop")
+_Pragma("clang diagnostic pop");
 #endif
 
 void QpStorage::addErrorHandler(QpAbstractErrorHandler *handler)
@@ -184,7 +192,7 @@ bool QpStorage::rollbackTransaction()
 
 void QpStorage::resetAllLastKnownSynchronizations()
 {
-    foreach(QpDaoBase *dao, data->dataAccessObjects.values()) {
+    foreach (QpDaoBase *dao, data->dataAccessObjects.values()) {
         dao->resetLastKnownSynchronization();
     }
 }
@@ -227,8 +235,7 @@ bool QpStorage::unlockAllLocks()
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
     query.prepareDelete();
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
+    if (!query.exec()) {
         setLastError(query.lastError());
         return false;
     }

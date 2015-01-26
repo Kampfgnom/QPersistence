@@ -11,7 +11,6 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include "sqlquery.h"
 
 class QSqlQuery;
-class QpError;
 class QpMetaObject;
 class QpMetaProperty;
 class QpSqlCondition;
@@ -57,9 +56,6 @@ public:
 
 private:
     QExplicitlySharedDataPointer<QpSqlDataAccessObjectHelperData> data;
-
-    void setLastError(const QpError &error) const;
-    void setLastError(const QSqlQuery &query) const;
 
     void fillValuesIntoQuery(const QpMetaObject &metaObject,
                              const QObject *object,

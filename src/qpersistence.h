@@ -12,7 +12,6 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 template<class T>
 class QpDao;
 class QpDaoBase;
-class QpError;
 class QpLock;
 class QpMetaObject;
 

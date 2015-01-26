@@ -24,7 +24,7 @@ public:
     }
 
     bool resolved;
-    QList<QSharedPointer<QObject>> objects;
+    QList<QSharedPointer<QObject> > objects;
     QpMetaProperty metaProperty;
     QObject *owner;
 };
@@ -90,7 +90,7 @@ void QpHasManyBase::add(QSharedPointer<QObject> object)
 void QpHasManyBase::remove(QSharedPointer<QObject> object)
 {
     objects(); // resolve
-    if(!data->objects.removeOne(object))
+    if (!data->objects.removeOne(object))
         return;
 
     if (object) {
@@ -101,7 +101,7 @@ void QpHasManyBase::remove(QSharedPointer<QObject> object)
     }
 }
 
-void QpHasManyBase::setObjects(const QList<QSharedPointer<QObject>> objects) const
+void QpHasManyBase::setObjects(const QList<QSharedPointer<QObject> > objects) const
 {
     data->objects = objects;
     data->resolved = true;

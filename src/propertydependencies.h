@@ -22,7 +22,7 @@ public:
 
     void initSelfDependencies(QSharedPointer<QObject> object) const;
     void initDependencies(QObject *object,
-                          QList<QSharedPointer<QObject>> relatedObjects,
+                          QList<QSharedPointer<QObject> > relatedObjects,
                           const QpMetaProperty &relation) const;
     void initDependencies(QObject *object,
                           QSharedPointer<QObject> related,

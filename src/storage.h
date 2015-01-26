@@ -36,7 +36,8 @@ public:
     bool createCleanSchema();
 
     QpError lastError() const;
-    void setLastError(QpError error);
+    void setLastError(const QpError &error);
+    void setLastError(const QSqlQuery &query);
     void addErrorHandler(QpAbstractErrorHandler *handler);
     void clearErrorHandlers();
 

@@ -109,9 +109,8 @@ bool QpUserManagement::revokeAll(const QString &username)
 bool QpUserManagement::exec(const QString &query)
 {
     QpSqlQuery q(storage->database());
-    if (!q.exec(query) ||
-        q.lastError().isValid()) {
-        storage->setLastError(QpError(q.lastError()));
+    if (!q.exec(query)) {
+        storage->setLastError(q);
         return false;
     }
     return true;

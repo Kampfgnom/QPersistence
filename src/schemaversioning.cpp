@@ -37,8 +37,8 @@ public:
 void QpSchemaVersioningData::applyScript(const QString &script)
 {
     QpSqlQuery query(storage->database());
-    if (!query.exec(script) || query.lastError().isValid()) {
-        storage->setLastError(QpError(query.lastError()));
+    if (!query.exec(script)) {
+        storage->setLastError(query);
         return;
     }
 }
@@ -54,8 +54,8 @@ void QpSchemaVersioningData::insertVersion(const QpSchemaVersioning::Version &ve
     query.addRawField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_DATEAPPLIED, QpSqlBackend::forDatabase(storage->database())->nowTimestamp());
     query.prepareInsert();
 
-    if (!query.exec() || query.lastError().isValid()) {
-        storage->setLastError(QpError(query.lastError()));
+    if (!query.exec()) {
+        storage->setLastError(query);
         return;
     }
 }
@@ -130,8 +130,8 @@ QpSchemaVersioning::Version QpSchemaVersioning::currentDatabaseVersion() const
     query.addField(QpDatabaseSchema::COLUMN_NAME_SCHEMAVERSION_DOT);
     query.prepareSelect();
 
-    if (!query.exec() || !query.first() ||  query.lastError().isValid()) {
-        data->storage->setLastError(QpError(query.lastError()));
+    if (!query.exec() || !query.first()) {
+        data->storage->setLastError(query);
         return QpSchemaVersioning::NullVersion;
     }
 
@@ -147,9 +147,9 @@ void QpSchemaVersioning::registerUpgradeScript(const Version &version, const QSt
 {
     registerUpgradeFunction(version, script, [this, script] {
         foreach (QString query, script.split(';')) {
-            if (QString(query).remove(QRegularExpression("[\\s]")).isEmpty())
+                if (QString(query).remove(QRegularExpression("[\\s]")).isEmpty())
                 continue;
-            data->applyScript(query);
+                data->applyScript(query);
         }
     });
 }

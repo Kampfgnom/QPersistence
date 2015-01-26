@@ -302,7 +302,7 @@ void QpSqlQuery::addJoin(const QString &direction, const QpSqlQuery &subSelect, 
 {
     QString joinName = subSelect.data->tableName.isEmpty()
                        ? QString::fromLatin1("sub_select_%1").arg(data->joins.size())
-                       : subSelect.data->tableName;
+               : subSelect.data->tableName;
     addJoin(direction,
             QString::fromLatin1("(%1) as %2").arg(subSelect.data->constructSelectQuery()).arg(joinName),
             on);

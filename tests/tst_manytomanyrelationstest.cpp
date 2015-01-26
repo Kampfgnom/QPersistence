@@ -474,6 +474,8 @@ void ManyToManyRelationsTest::testChildFks(QSharedPointer<TestNameSpace::ParentO
 
 void ManyToManyRelationsTest::testTree(ManyToManyRelationsTest::Tree tree)
 {
+    _Pragma("GCC diagnostic push");
+    _Pragma("GCC diagnostic ignored \"-Wshadow\"");
     foreach(QSharedPointer<TestNameSpace::ParentObject> parent, tree.parents) {
         testChildFks(parent);
         foreach(QSharedPointer<TestNameSpace::ChildObject> child2, parent->childObjectsManyToMany()) {
@@ -486,12 +488,15 @@ void ManyToManyRelationsTest::testTree(ManyToManyRelationsTest::Tree tree)
             testChildFks(parent);
         }
     }
+    _Pragma("GCC diagnostic pop");
 }
 
 #ifndef QP_NO_TIMESTAMPS
 void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime newTime,
                                               ManyToManyRelationsTest::Tree changed, ManyToManyRelationsTest::Tree completeTree)
 {
+    _Pragma("GCC diagnostic push");
+    _Pragma("GCC diagnostic ignored \"-Wshadow\"");
     foreach(QSharedPointer<TestNameSpace::ParentObject> parent, completeTree.parents) {
         if(changed.parents.contains(parent)) {
             QCOMPARE(Qp::updateTimeInDatabase(parent), newTime);
@@ -527,6 +532,7 @@ void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime 
             }
         }
     }
+    _Pragma("GCC diagnostic pop");
 }
 #endif
 

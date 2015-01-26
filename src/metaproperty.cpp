@@ -201,7 +201,7 @@ QMetaMethod QpMetaProperty::recalculateMethod(QSharedPointer<QObject> object) co
     methodName[0] = methodName.at(0).toTitleCase();
     methodName.prepend("recalculate");
 
-    for(int i = 0, c = metaObject->methodCount(); i < c; ++i) {
+    for (int i = 0, c = metaObject->methodCount(); i < c; ++i) {
         qDebug() << metaObject->method(i).name();
     }
 

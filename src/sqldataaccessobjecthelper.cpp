@@ -73,10 +73,8 @@ int QpSqlDataAccessObjectHelper::count(const QpMetaObject &metaObject, const QpS
 
     query.prepare(q);
 
-    if (!query.exec()
-        || !query.first()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec() || !query.first()) {
+        data->storage->setLastError(query);
         return 0;
     }
 
@@ -99,9 +97,8 @@ QList<int> QpSqlDataAccessObjectHelper::allKeys(const QpMetaObject &metaObject, 
         query.setWhereCondition(QpSqlCondition(filter));
 
     QList<int> result;
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec()) {
+        data->storage->setLastError(query);
         return result;
     }
 
@@ -128,9 +125,8 @@ bool QpSqlDataAccessObjectHelper::readObject(const QpMetaObject &metaObject,
                                            key));
     query.prepareSelect();
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec()) {
+        data->storage->setLastError(query);
         return false;
     }
 
@@ -155,9 +151,8 @@ QpSqlQuery QpSqlDataAccessObjectHelper::readAllObjects(const QpMetaObject &metaO
     }
     query.prepareSelect();
 
-    if ( !query.exec()
-         || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec()) {
+        data->storage->setLastError(query);
     }
 
     return query;
@@ -181,9 +176,8 @@ QpSqlQuery QpSqlDataAccessObjectHelper::readObjectsUpdatedAfterRevision(const Qp
     query.setForwardOnly(true);
     query.prepareSelect();
 
-    if ( !query.exec()
-         || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec()) {
+        data->storage->setLastError(query);
     }
 
     return query;
@@ -207,9 +201,8 @@ bool QpSqlDataAccessObjectHelper::insertObject(const QpMetaObject &metaObject, Q
 
     // Insert the object itself
     query.prepareInsert();
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec()) {
+        data->storage->setLastError(query);
         return false;
     }
 
@@ -244,9 +237,8 @@ bool QpSqlDataAccessObjectHelper::updateObject(const QpMetaObject &metaObject, Q
 
     // Insert the object itself
     query.prepareUpdate();
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec()) {
+        data->storage->setLastError(query);
         return false;
     }
 
@@ -450,9 +442,8 @@ bool QpSqlDataAccessObjectHelper::adjustRelationsInDatabase(const QpMetaObject &
     }
 
     foreach (QpSqlQuery query, queries) {
-        if (!query.exec()
-            || query.lastError().isValid()) {
-            setLastError(query);
+        if (!query.exec()) {
+            data->storage->setLastError(query);
             return false;
         }
     }
@@ -614,9 +605,8 @@ QList<QpSqlQuery> QpSqlDataAccessObjectHelper::queriesThatAdjustToOneRelation(co
                                                                           QpSqlCondition::EqualTo,
                                                                           primaryKey));
     selectPreviouslyRelatedObjectPKQuery.prepareSelect();
-    if (!selectPreviouslyRelatedObjectPKQuery.exec()
-        || selectPreviouslyRelatedObjectPKQuery.lastError().isValid()) {
-        setLastError(selectPreviouslyRelatedObjectPKQuery);
+    if (!selectPreviouslyRelatedObjectPKQuery.exec()) {
+        data->storage->setLastError(selectPreviouslyRelatedObjectPKQuery);
         return queries;
     }
 
@@ -798,9 +788,8 @@ bool QpSqlDataAccessObjectHelper::removeObject(const QpMetaObject &metaObject, Q
                                            Qp::Private::primaryKey(object)));
     query.prepareDelete();
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec()) {
+        data->storage->setLastError(query);
         return false;
     }
 
@@ -825,8 +814,7 @@ bool QpSqlDataAccessObjectHelper::incrementNumericColumn(QObject *object, const 
                                                Qp::Private::primaryKey(object)));
         query.prepareincrementNumericColumn();
 
-        if (!query.exec()
-            || query.lastError().isValid()) {
+        if (!query.exec()) {
             data->storage->database().rollback();
 
             if (tryCount < TRY_COUNT_MAX && query.lastError().nativeErrorCode() == QLatin1String("1213")) {
@@ -837,7 +825,7 @@ bool QpSqlDataAccessObjectHelper::incrementNumericColumn(QObject *object, const 
                 continue;
             }
 
-            setLastError(query);
+            data->storage->setLastError(query);
             return false;
         }
 
@@ -858,9 +846,8 @@ int QpSqlDataAccessObjectHelper::latestRevision(const QpMetaObject &metaObject) 
                             "AND   TABLE_NAME   = '%2';")
                     .arg(data->storage->database().databaseName())
                     .arg(QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(metaObject.tableName())))
-        || !query.first()
-        || query.lastError().isValid()) {
-        setLastError(query);
+        || !query.first()) {
+        data->storage->setLastError(query);
         return -1;
     }
 
@@ -881,9 +868,8 @@ int QpSqlDataAccessObjectHelper::objectRevision(QObject *object) const
                                            Qp::Private::primaryKey(object)));
     query.prepareSelect();
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec()) {
+        data->storage->setLastError(query);
         return -1;
     }
 
@@ -901,9 +887,8 @@ int QpSqlDataAccessObjectHelper::maxPrimaryKey(const QpMetaObject &metaObject) c
                             "FROM  %2")
                     .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
                     .arg(QpSqlQuery::escapeField(metaObject.tableName())))
-        || !query.first()
-        || query.lastError().isValid()) {
-        setLastError(query);
+        || !query.first()) {
+        data->storage->setLastError(query);
         return -1;
     }
 
@@ -923,10 +908,8 @@ QPixmap QpSqlDataAccessObjectHelper::readPixmap(QObject *object, const QString &
                                            Qp::Private::primaryKey(object)));
     query.prepareSelect();
 
-    if (!query.exec()
-        || !query.first()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec() || !query.first()) {
+        data->storage->setLastError(query);
         return QPixmap();
     }
 
@@ -949,9 +932,8 @@ double QpSqlDataAccessObjectHelper::readUpdateTime(QObject *object)
                                            Qp::Private::primaryKey(object)));
     query.prepareSelect();
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec()) {
+        data->storage->setLastError(query);
         return -1.0;
     }
 
@@ -974,9 +956,8 @@ double QpSqlDataAccessObjectHelper::readCreationTime(QObject *object)
                                            Qp::Private::primaryKey(object)));
     query.prepareSelect();
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec()) {
+        data->storage->setLastError(query);
         return -1.0;
     }
 
@@ -1059,9 +1040,8 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
     int pk = Qp::Private::primaryKey(object);
     query.bindValue(QString(":keyColumn"), QVariant(pk));
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec()) {
+        data->storage->setLastError(query);
         return QList<int>();
     }
 
@@ -1075,18 +1055,6 @@ QList<int> QpSqlDataAccessObjectHelper::foreignKeys(const QpMetaProperty relatio
     }
 
     return keys;
-}
-
-void QpSqlDataAccessObjectHelper::setLastError(const QpError &error) const
-{
-    data->storage->setLastError(error);
-}
-
-void QpSqlDataAccessObjectHelper::setLastError(const QSqlQuery &query) const
-{
-    setLastError(QpError(QString("%1: %2")
-                         .arg(query.lastError().text())
-                         .arg(query.executedQuery()), QpError::SqlError));
 }
 
 

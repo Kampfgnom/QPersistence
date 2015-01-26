@@ -187,7 +187,7 @@ void QpMetaObject::initProperties() const
         QMetaProperty p = data->metaObject.property(i);
 
         QpMetaProperty mp = QpMetaProperty(p, *this);
-        if(mp.isCalculated()) {
+        if (mp.isCalculated()) {
             data->calculatedProperties.append(mp);
         }
 

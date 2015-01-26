@@ -22,14 +22,12 @@ public:
     {
     }
 
-    const QpStorage *storage;
+    QpStorage *storage;
     int transactionLevel;
-    QpError lastError;
 
     bool transactionRecursive();
     bool commitRecursive();
     bool rollback();
-    void setLastError(const QpError error);
 };
 
 bool QpTransactionsHelperData::transactionRecursive()
@@ -42,11 +40,12 @@ bool QpTransactionsHelperData::transactionRecursive()
 
     Q_ASSERT(transactionLevel == 1);
 
-    if (storage->database().transaction())
-        return true;
+    if (!storage->database().transaction()) {
+        storage->setLastError(storage->database().lastError());
+        return false;
+    }
 
-    setLastError(QpError(storage->database().lastError()));
-    return false;
+    return true;
 }
 
 bool QpTransactionsHelperData::commitRecursive()
@@ -60,11 +59,12 @@ bool QpTransactionsHelperData::commitRecursive()
 
     Q_ASSERT(transactionLevel == 0);
 
-    if (storage->database().commit())
-        return true;
+    if (!storage->database().commit()) {
+        storage->setLastError(storage->database().lastError());
+        return false;
+    }
 
-    setLastError(QpError(storage->database().lastError()));
-    return false;
+    return true;
 }
 
 bool QpTransactionsHelperData::rollback()
@@ -78,26 +78,19 @@ bool QpTransactionsHelperData::rollback()
 
     Q_ASSERT(transactionLevel == 0);
 
-    if (storage->database().rollback())
-        return true;
+    if (!storage->database().rollback()) {
+        storage->setLastError(storage->database().lastError());
+        return false;
+    }
 
-    setLastError(QpError(storage->database().lastError()));
-    return false;
+    return true;
 }
-
-void QpTransactionsHelperData::setLastError(const QpError error)
-{
-    lastError = error;
-    if (storage)
-        const_cast<QpStorage *>(storage)->setLastError(error);
-}
-
 
 /******************************************************************************
  * QpTransactions
  */
 
-QpTransactionsHelper QpTransactionsHelper::forStorage(const QpStorage *storage)
+QpTransactionsHelper QpTransactionsHelper::forStorage(QpStorage *storage)
 {
     if (TransactionsForStorage()->contains(storage))
         return TransactionsForStorage()->value(storage, QpTransactionsHelper());
@@ -112,7 +105,7 @@ QpTransactionsHelper::QpTransactionsHelper() :
 {
 }
 
-QpTransactionsHelper::QpTransactionsHelper(const QpStorage *storage) :
+QpTransactionsHelper::QpTransactionsHelper(QpStorage *storage) :
     QpTransactionsHelper()
 {
     data->storage = storage;
@@ -141,8 +134,7 @@ bool QpTransactionsHelper::begin()
 
 bool QpTransactionsHelper::commitOrRollback()
 {
-    if (!data->lastError.isValid()
-        && !data->storage->lastError().isValid())
+    if (!data->storage->lastError().isValid())
         return data->commitRecursive();
 
     data->rollback();
@@ -151,11 +143,6 @@ bool QpTransactionsHelper::commitOrRollback()
 
 bool QpTransactionsHelper::rollback()
 {
-    data->lastError = QpError("Application code requested rollback", QpError::TransactionRequestedByApplication);
+    data->storage->setLastError(QpError("Application code requested rollback", QpError::TransactionRequestedByApplication));
     return data->rollback();
-}
-
-QpError QpTransactionsHelper::lastError() const
-{
-    return data->lastError;
 }

@@ -10,7 +10,7 @@
 
 void QpRelationResolver::readRelationFromDatabase(const QpMetaProperty &relation, QObject *object)
 {
-    QList<QSharedPointer<QObject>> relatedObjects = resolveRelation(relation.name(), object);
+    QList<QSharedPointer<QObject> > relatedObjects = resolveRelation(relation.name(), object);
 
     QVariant variant;
     QpMetaProperty::Cardinality cardinality = relation.cardinality();

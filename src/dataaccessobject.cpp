@@ -171,7 +171,7 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
                                                                             currentObject.data());
         }
 
-        if(isNewObject) {
+        if (isNewObject) {
             currentObject->blockSignals(false);
             emit objectInstanceCreated(currentObject);
         }
