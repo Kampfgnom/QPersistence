@@ -12,8 +12,9 @@ UserManagementTest::UserManagementTest(QObject *parent) :
 
 void UserManagementTest::initDatabase()
 {
+    m_userManagement = new QpUserManagement(Qp::defaultStorage());
     QSqlDatabase db = Qp::database();
-    Qp::setSqlDebugEnabled(true);
+
     if(!db.isOpen()) {
         db = QSqlDatabase::addDatabase("QMYSQL");
         db.setHostName("192.168.100.2");
@@ -22,11 +23,10 @@ void UserManagementTest::initDatabase()
         db.setPassword("niklas");
 
         Qp::setDatabase(db);
-        m_userManagement = new QpUserManagement(Qp::defaultStorage());
     }
 }
 
-void UserManagementTest::cleanup()
+void UserManagementTest::cleanupTestCase()
 {
     delete m_userManagement;
 }

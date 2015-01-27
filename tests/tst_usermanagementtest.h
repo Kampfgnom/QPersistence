@@ -12,7 +12,7 @@ public:
 
 private slots:
     void initDatabase();
-    void cleanup();
+    void cleanupTestCase();
 
     void testCreateUser();
     void testGrandAll();
