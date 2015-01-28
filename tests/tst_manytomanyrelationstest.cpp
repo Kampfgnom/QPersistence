@@ -406,8 +406,8 @@ QVariantList ManyToManyRelationsTest::childFKs(QSharedPointer<TestNameSpace::Par
     QpSqlQuery select(Qp::database());
     select.setTable(m_childToParentRelation.tableName());
     select.addField(m_childToParentRelation.columnName());
-    select.setWhereCondition(QpSqlCondition(m_childToParentRelation.reverseRelation().columnName(),
-                                            QpSqlCondition::EqualTo,
+    select.setWhereCondition(QpCondition(m_childToParentRelation.reverseRelation().columnName(),
+                                            QpCondition::EqualTo,
                                             Qp::primaryKey(parent)));
     select.prepareSelect();
 
@@ -427,8 +427,8 @@ QVariantList ManyToManyRelationsTest::parentFKs(QSharedPointer<TestNameSpace::Ch
     QpSqlQuery select(Qp::database());
     select.setTable(m_parentToChildRelation.tableName());
     select.addField(m_parentToChildRelation.columnName());
-    select.setWhereCondition(QpSqlCondition(m_parentToChildRelation.reverseRelation().columnName(),
-                                            QpSqlCondition::EqualTo,
+    select.setWhereCondition(QpCondition(m_parentToChildRelation.reverseRelation().columnName(),
+                                            QpCondition::EqualTo,
                                             Qp::primaryKey(child)));
     select.prepareSelect();
 

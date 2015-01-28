@@ -41,7 +41,7 @@ public:
 
     QpDataAccessObjectBase *dataAccessObject() const;
 
-    void setCondition(const QpSqlCondition &condition);
+    void setCondition(const QpCondition &condition);
 
 protected slots:
     void objectInserted(QSharedPointer<QObject>);

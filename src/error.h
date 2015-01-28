@@ -26,6 +26,7 @@ public:
     QpError(const QString &text = QString(),
             ErrorType type = NoError,
             QVariantMap additionalInformation = QVariantMap());
+    QpError(const QSqlQuery &query);
     QpError(const QSqlError &error);
     ~QpError();
     QpError(const QpError &other);

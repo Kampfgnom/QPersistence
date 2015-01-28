@@ -20,7 +20,7 @@ public:
     QList<QSharedPointer<QObject> > objects;
     QpDataAccessObjectBase *dao;
     bool objectsFromDao;
-    QpSqlCondition condition;
+    QpCondition condition;
 };
 
 
@@ -61,7 +61,7 @@ QpDataAccessObjectBase *QpObjectListModelBase::dataAccessObject() const
     return d->dao;
 }
 
-void QpObjectListModelBase::setCondition(const QpSqlCondition &condition)
+void QpObjectListModelBase::setCondition(const QpCondition &condition)
 {
     beginResetModel();
     d->condition = condition;
@@ -231,7 +231,7 @@ void QpObjectListModelBase::objectUndeleted(QSharedPointer<QObject> object)
         return;
 
     int index = d->dao->count(d->condition
-                              && QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, QpSqlCondition::LessThan, Qp::Private::primaryKey(object.data())));
+                              && QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, QpCondition::LessThan, Qp::Private::primaryKey(object.data())));
 
     beginInsertRows(QModelIndex(), index, index);
 

@@ -2,7 +2,7 @@
 
 #include "databaseschema.h"
 #include "qpersistence.h"
-#include "sqlcondition.h"
+#include "condition.h"
 #include "sqlbackend.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
@@ -29,7 +29,7 @@ class QpSqlQueryData : public QSharedData {
 public:
     QpSqlQueryData() :
         QSharedData(),
-        count(-1),
+        limit(-1),
         skip(-1),
         ignore(false),
         forUpdate(false)
@@ -42,7 +42,7 @@ public:
         QString on;
     };
 
-    int count;
+    int limit;
     QSqlDatabase database;
     QpSqlBackend *backend;
     QString table;
@@ -50,7 +50,7 @@ public:
     QHash<QString, QVariant> fields;
     // inserted directly into query instead of using bindValue
     QHash<QString, QString> rawFields;
-    QpSqlCondition whereCondition;
+    QpCondition whereCondition;
     QList<QPair<QString, QpSqlQuery::Order> > orderBy;
     QList<QStringList> foreignKeys;
     QHash<QString, QStringList> keys;
@@ -157,9 +157,9 @@ void QpSqlQuery::clear()
 
     data->table = QString();
     data->fields.clear();
-    data->count = -1;
+    data->limit = -1;
     data->skip = -1;
-    data->whereCondition = QpSqlCondition();
+    data->whereCondition = QpCondition();
     data->orderBy.clear();
     data->foreignKeys.clear();
     data->keys.clear();
@@ -263,9 +263,9 @@ void QpSqlQuery::addForeignKey(const QString &columnName,
     data->foreignKeys.append(QStringList() << columnName << keyName << foreignTableName << onDelete << onUpdate);
 }
 
-void QpSqlQuery::setCount(int count)
+void QpSqlQuery::setLimit(int count)
 {
-    data->count = count;
+    data->limit = count;
 }
 
 void QpSqlQuery::setSkip(int skip)
@@ -273,7 +273,7 @@ void QpSqlQuery::setSkip(int skip)
     data->skip = skip;
 }
 
-void QpSqlQuery::setWhereCondition(const QpSqlCondition &condition)
+void QpSqlQuery::setWhereCondition(const QpCondition &condition)
 {
     data->whereCondition = condition;
     data->whereCondition.setTable(data->tableName.isEmpty() ? data->table : data->tableName);
@@ -420,7 +420,7 @@ QString QpSqlQueryData::constructSelectQuery() const
     }
 
     if (whereCondition.isValid()) {
-        query.append("\n\tWHERE ").append(whereCondition.toWhereClause());
+        query.append("\n\tWHERE ").append(whereCondition.toSqlClause());
     }
 
     if (!groups.isEmpty()) {
@@ -443,12 +443,12 @@ QString QpSqlQueryData::constructSelectQuery() const
         query.append(orderClauses.join(','));
     }
 
-    if (count >= 0) {
+    if (limit >= 0) {
         query.append(QString("\n\tLIMIT "));
         if (skip >= 0) {
             query.append(QString("%1, ").arg(skip));
         }
-        query.append(QString("%1").arg(count));
+        query.append(QString("%1").arg(limit));
     }
 
     if (forUpdate) {
@@ -488,7 +488,7 @@ bool QpSqlQuery::prepareUpdate()
     query.append(fields.join(",\n\t"));
 
     if (data->whereCondition.isValid()) {
-        query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
+        query.append("\n\tWHERE ").append(data->whereCondition.toSqlClause());
     }
 
     QSqlQuery::prepare(query);
@@ -539,7 +539,7 @@ void QpSqlQuery::prepareInsert()
     query.append(") ");
 
     if (data->whereCondition.isValid()) {
-        query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
+        query.append("\n\tWHERE ").append(data->whereCondition.toSqlClause());
     }
 
     QSqlQuery::prepare(query);
@@ -559,7 +559,7 @@ void QpSqlQuery::prepareDelete()
 
     if (data->whereCondition.isValid()) {
         query.append("\n\tWHERE ");
-        query.append(data->whereCondition.toWhereClause());
+        query.append(data->whereCondition.toSqlClause());
     }
 
     query.append(';');
@@ -583,7 +583,7 @@ void QpSqlQuery::prepareincrementNumericColumn()
     query.append(QString::fromLatin1("%1 = %2")
                  .arg(QpDatabaseSchema::COLUMN_NAME_UPDATE_TIME)
                  .arg(QpSqlBackend::forDatabase(data->database)->nowTimestamp()));
-    query.append("\n\tWHERE ").append(data->whereCondition.toWhereClause());
+    query.append("\n\tWHERE ").append(data->whereCondition.toSqlClause());
 
     QSqlQuery::prepare(query);
 

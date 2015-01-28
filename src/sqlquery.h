@@ -8,7 +8,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtSql/QSqlQuery>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-class QpSqlCondition;
+class QpCondition;
 
 class QpSqlQueryData;
 class QpSqlQuery : public QSqlQuery
@@ -48,9 +48,9 @@ public:
                        const QString &foreignTableName,
                        const QString &onDelete = QString(),
                        const QString &onUpdate = QString());
-    void setCount(int limit);
+    void setLimit(int limit);
     void setSkip(int skip);
-    void setWhereCondition(const QpSqlCondition &condition);
+    void setWhereCondition(const QpCondition &condition);
     void addOrder(const QString &field, Order order = Ascending);
     void setForUpdate(bool forUpdate);
     void addJoin(const QString &direction, const QString &table, const QString &on);

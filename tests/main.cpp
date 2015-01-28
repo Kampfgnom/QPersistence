@@ -18,6 +18,8 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include "parentobject.h"
 #include "childobject.h"
 
+#include <QPersistence/legacysqldatasource.h>
+
 #define RUNTEST(TestClass) { \
     TestClass t; \
     int ret = QTest::qExec(&t, argc, argv); \
@@ -44,6 +46,10 @@ int main(int argc, char *argv[])
         qDebug() << db.lastError().text().toUtf8();
         return -1;
     }
+
+    QpLegacySqlDatasource *ds = new QpLegacySqlDatasource(Qp::defaultStorage());
+    ds->setSqlDatabase(db);
+    Qp::defaultStorage()->setDatasource(ds);
 
 #ifndef QP_NO_LOCKS
     foreach(QString field, LockTest::additionalLockInfo().keys()) {

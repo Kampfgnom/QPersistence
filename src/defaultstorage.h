@@ -37,10 +37,10 @@ template<class T> QpDataAccessObject<T> *dataAccessObject() {
 template<class T> QSharedPointer<T> read(int id) {
     return Qp::defaultStorage()->read<T>(id);
 }
-template<class T> QList<QSharedPointer<T> > readAll(const QpSqlCondition &condition = QpSqlCondition()) {
+template<class T> QList<QSharedPointer<T> > readAll(const QpCondition &condition = QpCondition()) {
     return Qp::defaultStorage()->readAll<T>(condition);
 }
-template<class T> int count(const QpSqlCondition &condition = QpSqlCondition()) {
+template<class T> int count(const QpCondition &condition = QpCondition()) {
     return Qp::defaultStorage()->count<T>(condition);
 }
 template<class T> QSharedPointer<T> create() {

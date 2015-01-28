@@ -15,6 +15,7 @@ QT              += sql
 CONFIG          += static c++11
 macx:QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
 INCLUDEPATH     += $$QPERSISTENCE_INCLUDEPATH
+INCLUDEPATH += ../include
 
 macx {
     QMAKE_MAC_SDK = macosx10.9
@@ -36,7 +37,6 @@ HEADERS += \
     qpersistence.h \
     relationresolver.h \
     sortfilterproxyobjectmodel.h \
-    sqlcondition.h \
     sqldataaccessobjecthelper.h \
     sqlquery.h \
     sqlbackend.h \
@@ -53,8 +53,12 @@ HEADERS += \
     schemaversioning.h \
     lazyPixmap.h \
     model.h \
-    propertydependencies.h \
-    transactionshelper.h
+    transactionshelper.h \
+    propertydependencieshelper.h \
+    datasource.h \
+    condition.h \
+    datasourceresult.h \
+    legacysqldatasource.h
 
 SOURCES += \
         cache.cpp \
@@ -68,7 +72,6 @@ SOURCES += \
     private.cpp \
     relationresolver.cpp \
     sortfilterproxyobjectmodel.cpp \
-    sqlcondition.cpp \
     sqldataaccessobjecthelper.cpp \
     sqlquery.cpp \
     sqlbackend.cpp \
@@ -84,8 +87,12 @@ SOURCES += \
     schemaversioning.cpp \
     lazyPixmap.cpp \
     model.cpp \
-    propertydependencies.cpp \
-    transactionshelper.cpp
+    transactionshelper.cpp \
+    propertydependencieshelper.cpp \
+    datasource.cpp \
+    condition.cpp \
+    datasourceresult.cpp \
+    legacysqldatasource.cpp
 
 OTHER_FILES += \
     uncrustify.cfg

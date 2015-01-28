@@ -11,7 +11,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include "childobject.h"
 #include "parentobject.h"
 #include "../src/sqlquery.h"
-#include "../src/sqlcondition.h"
+#include "../src/condition.h"
 
 class SynchronizeTest : public QObject
 {

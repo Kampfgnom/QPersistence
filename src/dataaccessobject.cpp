@@ -2,6 +2,8 @@
 
 #include "cache.h"
 #include "databaseschema.h"
+#include "datasource.h"
+#include "datasourceresult.h"
 #include "error.h"
 #include "metaobject.h"
 #include "metaproperty.h"
@@ -61,28 +63,46 @@ QpCache QpDataAccessObjectBase::cache() const
     return data->cache;
 }
 
+QpStorage *QpDataAccessObjectBase::storage() const
+{
+    return data->storage;
+}
+
 void QpDataAccessObjectBase::resetLastKnownSynchronization()
 {
     if (!data->storage->beginTransaction())
         return;
-    data->lastSynchronizedCreatedId = data->storage->sqlDataAccessObjectHelper()->maxPrimaryKey(data->metaObject);
-    data->lastSynchronizedRevision = data->storage->sqlDataAccessObjectHelper()->latestRevision(data->metaObject);
+
+    QpDatasourceResult result;
+    data->storage->datasource()->latestRevision(&result, data->metaObject);
+    data->lastSynchronizedRevision = result.integerResult();
+    result.reset();
+    data->storage->datasource()->maxPrimaryKey(&result, data->metaObject);
+    data->lastSynchronizedCreatedId = result.integerResult();
+
     data->storage->commitOrRollbackTransaction();
 }
 
 Qp::SynchronizeResult QpDataAccessObjectBase::sync(QSharedPointer<QObject> object)
 {
     QObject *obj = object.data();
-    int id = data->storage->primaryKey(object);
-    if (!data->storage->sqlDataAccessObjectHelper()->readObject(data->metaObject, id, obj)) {
-        if (data->storage->lastError().isValid())
-            return Qp::Error;
+    int primaryKey = Qp::Private::primaryKey(obj);
+    QpDatasourceResult result;
+    data->storage->datasource()->objectByPrimaryKey(&result, data->metaObject, primaryKey);
 
+    if (result.error().isValid() || result.size() == 0) {
         data->cache.remove(data->storage->primaryKey(object));
         emit objectRemoved(object);
-        return Qp::Removed;
-    }
 
+        if (data->storage->lastError().isValid())
+            return Qp::Error;
+        else
+            return Qp::Removed;
+    }
+    Q_ASSERT(result.size() == 1);
+    result.writeObjectProperties(obj, result.records().first());
+
+#pragma message("QpRelationResolver")
     foreach (QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
         QpRelationResolver::readRelationFromDatabase(relation, obj);
     }
@@ -103,45 +123,32 @@ QpMetaObject QpDataAccessObjectBase::qpMetaObject() const
     return data->metaObject;
 }
 
-int QpDataAccessObjectBase::count(const QpSqlCondition &condition) const
+int QpDataAccessObjectBase::count(const QpCondition &condition) const
 {
-    return data->storage->sqlDataAccessObjectHelper()->count(data->metaObject, condition);
+    QpDatasourceResult result;
+    data->storage->datasource()->count(&result, data->metaObject, condition);
+    return result.integerResult();
 }
 
-QList<int> QpDataAccessObjectBase::allKeys(int skip, int count) const
+QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(int skip, int limit, const QpCondition &condition, QList<QpDatasource::OrderField> orders) const
 {
-    QList<int> result = data->storage->sqlDataAccessObjectHelper()->allKeys(data->metaObject, skip, count);
-
-    if (data->storage->lastError().isValid())
-        return {};
-
-    return result;
-}
-
-QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(int skip, int count, const QpSqlCondition &condition, QList<QpSqlQuery::OrderField> orders) const
-{
-    QpSqlQuery query = data->storage->sqlDataAccessObjectHelper()->readAllObjects(data->metaObject, skip, count, condition, orders);
-    return readAllObjects(query);
+    QpDatasourceResult result;
+    data->storage->datasource()->objects(&result, data->metaObject, skip, limit, condition, orders);
+    return readAllObjects(result);
 }
 
 QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readObjectsUpdatedAfterRevision(int revision) const
 {
-    QpSqlQuery query = data->storage->sqlDataAccessObjectHelper()->readObjectsUpdatedAfterRevision(data->metaObject, revision);
-    return readAllObjects(query);
+    QpDatasourceResult result;
+    data->storage->datasource()->objectsUpdatedAfterRevision(&result, data->metaObject, revision);
+    return readAllObjects(result);
 }
 
-QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(QpSqlQuery &query) const
+QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(const QpDatasourceResult &datasourceResult) const
 {
-    if (data->storage->lastError().isValid())
-        return {};
-
     QList<QSharedPointer<QObject> > result;
-    QSqlRecord record = query.record();
-    int primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
-    int revisionRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_REVISION);
-
-    while (query.next()) {
-        int key = query.value(primaryKeyRecordIndex).toInt();
+    foreach(const QpDatasourceResult::Record record, datasourceResult.records()) {
+        int key = record.primaryKey;
 
         QSharedPointer<QObject> currentObject;
         if (data->cache.contains(key)) {
@@ -156,18 +163,7 @@ QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(QpSqlQuer
             currentObject->blockSignals(true);
         }
 
-        int localRevision = data->storage->revisionInObject(currentObject.data());
-        int remoteRevision = query.value(revisionRecordIndex).toInt();
-
-        // A revision of 0 means the object has no revision.
-        // This should only be the case for objects, which have been created before enabling the history tracking.
-        // We have to read these objects:
-        if (remoteRevision <= 0
-            || localRevision < remoteRevision) {
-            data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query,
-                                                                            record,
-                                                                            currentObject.data());
-        }
+        datasourceResult.writeObjectProperties(currentObject.data(), record);
 
         if (isNewObject) {
             currentObject->blockSignals(false);
@@ -183,13 +179,13 @@ QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(QpSqlQuer
     return result;
 }
 
-QSharedPointer<QObject> QpDataAccessObjectBase::readObject(int id) const
+QSharedPointer<QObject> QpDataAccessObjectBase::readObject(int primaryKey) const
 {
-    if (id <= 0) {
+    if (primaryKey <= 0) {
         return QSharedPointer<QObject>();
     }
 
-    QSharedPointer<QObject> p = data->cache.get(id);
+    QSharedPointer<QObject> p = data->cache.get(primaryKey);
 
     if (p)
         return p;
@@ -198,12 +194,18 @@ QSharedPointer<QObject> QpDataAccessObjectBase::readObject(int id) const
     // Block signals, so that no signals are emitted for partly-initialized objects
     object->blockSignals(true);
 
-    if (!data->storage->sqlDataAccessObjectHelper()->readObject(data->metaObject, id, object)) {
+    QpDatasourceResult result;
+    data->storage->datasource()->objectByPrimaryKey(&result, data->metaObject, primaryKey);
+
+    if (result.error().isValid()) {
         delete object;
         return QSharedPointer<QObject>();
     }
 
-    QSharedPointer<QObject> obj = setupSharedObject(object, id);
+    Q_ASSERT(result.size() == 1);
+    result.writeObjectProperties(object, result.records().first());
+
+    QSharedPointer<QObject> obj = setupSharedObject(object, primaryKey);
     object->blockSignals(false);
     emit objectInstanceCreated(obj);
     return obj;
@@ -215,10 +217,16 @@ QSharedPointer<QObject> QpDataAccessObjectBase::createObject()
     // Block signals, so that no signals are emitted for partly-initialized objects
     object->blockSignals(true);
 
-    if (!data->storage->sqlDataAccessObjectHelper()->insertObject(data->metaObject, object)) {
+    QpDatasourceResult result;
+    data->storage->datasource()->insertObject(&result, object);
+
+    if (result.error().isValid()) {
         delete object;
         return QSharedPointer<QObject>();
     }
+
+    Q_ASSERT(result.size() == 1);
+    result.writeObjectProperties(object, result.records().first());
 
     QSharedPointer<QObject> obj = setupSharedObject(object, Qp::Private::primaryKey(object));
     object->blockSignals(false);
@@ -230,34 +238,43 @@ QSharedPointer<QObject> QpDataAccessObjectBase::createObject()
 Qp::UpdateResult QpDataAccessObjectBase::updateObject(QSharedPointer<QObject> object)
 {
     QObject *obj = object.data();
-    int localRevision = data->storage->revisionInObject(obj);
-    int remoteRevision = data->storage->revisionInDatabase(obj);
+    int localRevision = Qp::Private::revisionInObject(obj);
+    int remoteRevision = revisionInDatabase(object);
 
     if (localRevision < remoteRevision)
         return Qp::UpdateConflict;
 
     Q_ASSERT(localRevision == remoteRevision);
 
-    if (!data->storage->sqlDataAccessObjectHelper()->updateObject(data->metaObject, object.data()))
+    QpDatasourceResult result;
+    data->storage->datasource()->updateObject(&result, obj);
+    if(result.error().isValid())
         return Qp::UpdateError;
 
     emit objectUpdated(object);
+
+    Q_ASSERT(result.size() == 1);
+    result.writeObjectProperties(obj, result.records().first());
+
     return Qp::UpdateSuccess;
 }
 
 bool QpDataAccessObjectBase::removeObject(QSharedPointer<QObject> object)
 {
-    if (!data->storage->sqlDataAccessObjectHelper()->removeObject(data->metaObject, object.data()))
-        return false;
-
     // We have to unlink all related objects, because otherwise the
     // object will still be referenced by all strong relations.
     // If I ever want to delete this line (again), I will have a look at the
     // libdBase2::Material::amount, which does not show the right value,
     // after removing storage contents, and reconsider deleting this line.
     unlinkRelations(object);
-
     data->cache.remove(data->storage->primaryKey(object));
+
+    QpDatasourceResult result;
+    data->storage->datasource()->removeObject(&result, object.data());
+
+    if (result.error().isValid())
+        return false;
+
     emit objectRemoved(object);
     return true;
 }
@@ -320,8 +337,8 @@ Qp::SynchronizeResult QpDataAccessObjectBase::synchronizeObject(QSharedPointer<Q
         return sync(object);
 
     QObject *obj = object.data();
-    int localRevision = data->storage->revisionInObject(obj);
-    int remoteRevision = data->storage->revisionInDatabase(obj);
+    int localRevision = Qp::Private::revisionInObject(obj);
+    int remoteRevision = revisionInDatabase(object);
 
     if (localRevision == remoteRevision)
         return Qp::Unchanged;
@@ -331,30 +348,40 @@ Qp::SynchronizeResult QpDataAccessObjectBase::synchronizeObject(QSharedPointer<Q
     return sync(object);
 }
 
+int QpDataAccessObjectBase::revisionInDatabase(QSharedPointer<QObject> object)
+{
+    QpDatasourceResult result;
+    data->storage->datasource()->objectRevision(&result, object.data());
+    if(result.error().isValid())
+        return -1;
+    return result.integerResult();
+}
+
 bool QpDataAccessObjectBase::synchronizeAllObjects()
 {
     if (!data->storage->beginTransaction())
         return false;
 
-    foreach (QSharedPointer<QObject> object, readAllObjects(-1, -1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                                                                   QpSqlCondition::GreaterThan,
+    foreach (QSharedPointer<QObject> object, readAllObjects(-1, -1, QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                                                   QpCondition::GreaterThan,
                                                                                    data->lastSynchronizedCreatedId))) {
         data->lastSynchronizedCreatedId = qMax(data->lastSynchronizedCreatedId, Qp::Private::primaryKey(object.data()));
         emit objectCreated(object);
     }
 
     foreach (QSharedPointer<QObject> object, readObjectsUpdatedAfterRevision(data->lastSynchronizedRevision)) {
-        data->lastSynchronizedRevision = qMax(data->lastSynchronizedRevision, data->storage->revisionInObject(object.data()));
+        QObject *obj = object.data();
+        data->lastSynchronizedRevision = qMax(data->lastSynchronizedRevision, Qp::Private::revisionInObject(obj));
 
         QList<QpMetaProperty> rs = QpMetaObject::forObject(object).relationProperties();
         for (int i = 0, c = rs.size(); i < c; ++i) {
             QpMetaProperty relation = rs.at(i);
-            QpRelationResolver::readRelationFromDatabase(relation, object.data());
+            QpRelationResolver::readRelationFromDatabase(relation, obj);
         }
 
         emit objectSynchronized(object);
 
-        if (Qp::Private::isDeleted(object.data()))
+        if (Qp::Private::isDeleted(obj))
             emit objectMarkedAsDeleted(object);
         else
             emit objectUpdated(object);
@@ -369,12 +396,12 @@ bool QpDataAccessObjectBase::synchronizeAllObjects()
 
 bool QpDataAccessObjectBase::incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName)
 {
-    return data->storage->sqlDataAccessObjectHelper()->incrementNumericColumn(object.data(), fieldName);
-}
+    QpDatasourceResult result;
+    data->storage->datasource()->incrementNumericColumn(&result, object.data(), fieldName);
+    if(result.error().isValid())
+        return false;
 
-int QpDataAccessObjectBase::latestRevision() const
-{
-    return data->storage->sqlDataAccessObjectHelper()->latestRevision(data->metaObject);
+    return true;
 }
 
 #ifndef QP_NO_TIMESTAMPS

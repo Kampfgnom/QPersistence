@@ -1,5 +1,6 @@
 #include "storage.h"
 
+#include "datasource.h"
 #include "error.h"
 #include "propertydependencieshelper.h"
 #include "sqlbackend.h"
@@ -21,7 +22,8 @@ class QpStorageData : public QSharedData
 public:
     QpStorageData() :
         QSharedData(),
-        locksEnabled(false)
+        locksEnabled(false),
+        datasource(nullptr)
     {
     }
 
@@ -36,6 +38,7 @@ public:
     QList<QpAbstractErrorHandler *> errorHandlers;
     QpTransactionsHelper *transactionsHelper;
     QpPropertyDependenciesHelper *propertyDependenciesHelper;
+    QpDatasource *datasource;
 
     static QpStorage *defaultStorage;
 };
@@ -83,11 +86,6 @@ QpStorage *QpStorage::forObject(const QObject *object)
 QpStorage *QpStorage::forObject(QSharedPointer<QObject> object)
 {
     return object->property(PROPERTY_STORAGE).value<QpStorage *>();
-}
-
-int QpStorage::revisionInDatabase(QObject *object)
-{
-    return sqlDataAccessObjectHelper()->objectRevision(object);
 }
 
 void QpStorage::registerDataAccessObject(QpDataAccessObjectBase *dao, const QMetaObject *objectInClassHierarchy)
@@ -198,6 +196,20 @@ void QpStorage::resetAllLastKnownSynchronizations()
     }
 }
 
+QpDatasource *QpStorage::datasource() const
+{
+    return data->datasource;
+}
+
+void QpStorage::setDatasource(QpDatasource *datasource)
+{
+    if(data->datasource)
+        data->datasource->deleteLater();
+
+#pragma message("warnen, wenn keine ds gesetzt ist")
+    data->datasource = datasource;
+}
+
 void QpStorage::setSqlDebugEnabled(bool enable)
 {
     QpSqlQuery::setDebugEnabled(enable);
@@ -259,11 +271,6 @@ void QpStorage::enableLocks()
     data->locksEnabled = true;
 }
 #endif
-
-int QpStorage::revisionInObject(QObject *object)
-{
-    return object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt();
-}
 
 QpDataAccessObjectBase *QpStorage::dataAccessObject(QSharedPointer<QObject> object) const
 {

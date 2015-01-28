@@ -4,6 +4,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QCoreApplication>
 #include <QDebug>
 #include <QSqlError>
+#include <QSqlQuery>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 
@@ -43,6 +44,11 @@ QpError::QpError(const QString &text,
     data->type = type;
     data->additionalInformation = additionalInformation;
     data->isValid = (type != NoError && !text.isEmpty());
+}
+
+QpError::QpError(const QSqlQuery &query) :
+    QpError(query.lastError())
+{
 }
 
 QpError::QpError(const QSqlError &error) :

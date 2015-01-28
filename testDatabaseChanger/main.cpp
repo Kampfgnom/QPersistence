@@ -2,13 +2,15 @@
 #include "childobject.h"
 #include "parentobject.h"
 #include "../src/sqlquery.h"
-#include "../src/sqlcondition.h"
+#include "../src/condition.h"
 #include "../tests/tst_synchronizetest.h"
 #include "../tests/tst_locktest.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtTest>
 #include <QGuiApplication>
+
+#include <QPersistence/legacysqldatasource.h>
 
 #ifndef QP_NO_LOCKS
 void lockedCounter(QSharedPointer<TestNameSpace::ParentObject> parent);
@@ -49,6 +51,10 @@ int main(int argc, char *argv[])
             qWarning() << db.lastError();
             return -1;
         }
+
+        QpLegacySqlDatasource *ds = new QpLegacySqlDatasource(Qp::defaultStorage());
+        ds->setSqlDatabase(db);
+        Qp::defaultStorage()->setDatasource(ds);
 
         foreach(QString field, LockTest::additionalLockInfo().keys()) {
             Qp::addAdditionalLockInformationField(field);

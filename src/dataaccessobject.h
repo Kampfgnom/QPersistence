@@ -12,12 +12,13 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "conversion.h"
 #include "metaobject.h"
-#include "sqlcondition.h"
-#include "sqlquery.h"
+#include "condition.h"
+#include "datasource.h"
 
 class QSqlQuery;
 class QpCache;
 class QpStorage;
+class QpDatasourceResult;
 
 namespace Qp {
 enum SynchronizeResult : short;
@@ -34,14 +35,14 @@ public:
 
     QpMetaObject qpMetaObject() const;
 
-    int count(const QpSqlCondition &condition = QpSqlCondition()) const;
+    int count(const QpCondition &condition = QpCondition()) const;
     QList<int> allKeys(int skip = -1, int count = -1) const;
     QList<QSharedPointer<QObject> > readAllObjects(int skip = -1,
-                                                   int count = -1,
-                                                   const QpSqlCondition &condition = QpSqlCondition(),
-                                                   QList<QpSqlQuery::OrderField> orders = QList<QpSqlQuery::OrderField>()) const;
+                                                   int limit = -1,
+                                                   const QpCondition &condition = QpCondition(),
+                                                   QList<QpDatasource::OrderField> orders = QList<QpDatasource::OrderField>()) const;
     QList<QSharedPointer<QObject> > readObjectsUpdatedAfterRevision(int revision) const;
-    QList<QSharedPointer<QObject> > readAllObjects(QpSqlQuery &query) const;
+    QList<QSharedPointer<QObject> > readAllObjects(const QpDatasourceResult &datasourceResult) const;
     QSharedPointer<QObject> readObject(int id) const;
     QSharedPointer<QObject> createObject();
     Qp::UpdateResult updateObject(QSharedPointer<QObject> object);
@@ -50,9 +51,8 @@ public:
     bool undelete(QSharedPointer<QObject> object);
     enum SynchronizeMode { NormalMode, IgnoreRevision };
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode = NormalMode);
+    int revisionInDatabase(QSharedPointer<QObject> object);
     bool incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName);
-
-    int latestRevision() const;
 
 #ifndef QP_NO_TIMESTAMPS
     QList<QSharedPointer<QObject> > createdSince(const QDateTime &time);
@@ -62,6 +62,8 @@ public:
 #endif
 
     QpCache cache() const;
+
+    QpStorage *storage() const;
 
     void resetLastKnownSynchronization();
 
@@ -107,8 +109,8 @@ public:
     }
     QList<QSharedPointer<T> > readAllObjects(int skip = -1,
                                              int count = -1,
-                                             const QpSqlCondition &condition = QpSqlCondition(),
-                                             QList<QpSqlQuery::OrderField> orders = QList<QpSqlQuery::OrderField>()) const
+                                             const QpCondition &condition = QpCondition(),
+                                             QList<QpDatasource::OrderField> orders = QList<QpDatasource::OrderField>()) const
     {
         return Qp::castList<T>(QpDataAccessObjectBase::readAllObjects(skip, count, condition, orders));
     }

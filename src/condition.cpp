@@ -1,4 +1,4 @@
-#include "sqlcondition.h"
+#include "condition.h"
 
 #include "databaseschema.h"
 #include "sqlquery.h"
@@ -13,11 +13,11 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 
 /******************************************************************************
- * QpSqlConditionData
+ * QpConditionData
  */
-class QpSqlConditionData : public QSharedData {
+class QpConditionData : public QSharedData {
 public:
-    QpSqlConditionData() :
+    QpConditionData() :
         QSharedData(),
         bindValues(false)
     {
@@ -26,42 +26,42 @@ public:
     QString rawString;
     QString field;
     QVariant value;
-    QpSqlCondition::BooleanOperator booleanOperator;
-    QpSqlCondition::ComparisonOperator comparisonOperator;
-    QList<QpSqlCondition> conditions;
+    QpCondition::BooleanOperator booleanOperator;
+    QpCondition::ComparisonOperator comparisonOperator;
+    QList<QpCondition> conditions;
     QString table;
 };
 
 
 /******************************************************************************
- * QpSqlCondition
+ * QpCondition
  */
-QpSqlCondition QpSqlCondition::notDeletedAnd(const QpSqlCondition &additionalConditions)
+QpCondition QpCondition::notDeletedAnd(const QpCondition &additionalConditions)
 {
-    QpSqlCondition notDeleted = QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG, NotEqualTo, "1");
+    QpCondition notDeleted = QpCondition(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG, NotEqualTo, "1");
     if (!additionalConditions.isValid())
         return notDeleted;
 
-    QpSqlCondition cond = QpSqlCondition(And, QList<QpSqlCondition>()
+    QpCondition cond = QpCondition(And, QList<QpCondition>()
                                          << notDeleted
                                          << additionalConditions);
     cond.setBindValuesAsString(additionalConditions.data->bindValues);
     return cond;
 }
 
-QpSqlCondition::QpSqlCondition() :
-    data(new QpSqlConditionData)
+QpCondition::QpCondition() :
+    data(new QpConditionData)
 {
 }
 
-QpSqlCondition::QpSqlCondition(const QString &rawString) :
-    data(new QpSqlConditionData)
+QpCondition::QpCondition(const QString &rawString) :
+    data(new QpConditionData)
 {
     data->rawString = rawString;
 }
 
-QpSqlCondition::QpSqlCondition(const QString &field, QpSqlCondition::ComparisonOperator op, const QVariant &value) :
-    data(new QpSqlConditionData)
+QpCondition::QpCondition(const QString &field, QpCondition::ComparisonOperator op, const QVariant &value) :
+    data(new QpConditionData)
 {
     data->field = field;
     data->booleanOperator = And;
@@ -69,23 +69,23 @@ QpSqlCondition::QpSqlCondition(const QString &field, QpSqlCondition::ComparisonO
     data->value = value;
 }
 
-QpSqlCondition::QpSqlCondition(QpSqlCondition::BooleanOperator op, QpSqlCondition &condition) :
-    data(new QpSqlConditionData)
+QpCondition::QpCondition(QpCondition::BooleanOperator op, QpCondition &condition) :
+    data(new QpConditionData)
 {
     data->booleanOperator = op;
     data->conditions << condition;
     data->comparisonOperator = EqualTo;
 }
 
-QpSqlCondition::QpSqlCondition(QpSqlCondition::BooleanOperator op, const QList<QpSqlCondition> &conditions) :
-    data(new QpSqlConditionData)
+QpCondition::QpCondition(QpCondition::BooleanOperator op, const QList<QpCondition> &conditions) :
+    data(new QpConditionData)
 {
     data->booleanOperator = op;
     data->conditions = conditions;
     data->comparisonOperator = EqualTo;
 }
 
-bool QpSqlCondition::isValid() const
+bool QpCondition::isValid() const
 {
     return !data->field.isEmpty()
            || !data->rawString.isEmpty()
@@ -94,7 +94,7 @@ bool QpSqlCondition::isValid() const
            || !data->conditions.isEmpty();
 }
 
-void QpSqlCondition::setBindValuesAsString(bool bindValues)
+void QpCondition::setBindValuesAsString(bool bindValues)
 {
     data->bindValues = bindValues;
 
@@ -103,17 +103,17 @@ void QpSqlCondition::setBindValuesAsString(bool bindValues)
     }
 }
 
-bool QpSqlCondition::bindValuesAsString() const
+bool QpCondition::bindValuesAsString() const
 {
     return data->bindValues;
 }
 
-QpSqlCondition::QpSqlCondition(const QpSqlCondition &rhs) :
+QpCondition::QpCondition(const QpCondition &rhs) :
     data(rhs.data)
 {
 }
 
-QpSqlCondition &QpSqlCondition::operator=(const QpSqlCondition &rhs)
+QpCondition &QpCondition::operator=(const QpCondition &rhs)
 {
     if (this != &rhs)
         data.operator=(rhs.data);
@@ -121,17 +121,17 @@ QpSqlCondition &QpSqlCondition::operator=(const QpSqlCondition &rhs)
     return *this;
 }
 
-QpSqlCondition::~QpSqlCondition()
+QpCondition::~QpCondition()
 {
 }
 
-QpSqlCondition QpSqlCondition::operator !()
+QpCondition QpCondition::operator !()
 {
-    QpSqlCondition result(QpSqlCondition::Not, QList<QpSqlCondition>() << *this);
+    QpCondition result(QpCondition::Not, QList<QpCondition>() << *this);
     return result;
 }
 
-QpSqlCondition QpSqlCondition::operator ||(const QpSqlCondition &rhs)
+QpCondition QpCondition::operator ||(const QpCondition &rhs)
 {
     if (!isValid())
         return rhs;
@@ -139,10 +139,10 @@ QpSqlCondition QpSqlCondition::operator ||(const QpSqlCondition &rhs)
     if (!rhs.isValid())
         return *this;
 
-    return QpSqlCondition(QpSqlCondition::Or, QList<QpSqlCondition>() << *this << rhs);
+    return QpCondition(QpCondition::Or, QList<QpCondition>() << *this << rhs);
 }
 
-QpSqlCondition QpSqlCondition::operator &&(const QpSqlCondition &rhs)
+QpCondition QpCondition::operator &&(const QpCondition &rhs)
 {
     if (!isValid())
         return rhs;
@@ -150,10 +150,10 @@ QpSqlCondition QpSqlCondition::operator &&(const QpSqlCondition &rhs)
     if (!rhs.isValid())
         return *this;
 
-    return QpSqlCondition(QpSqlCondition::And, QList<QpSqlCondition>() << *this << rhs);
+    return QpCondition(QpCondition::And, QList<QpCondition>() << *this << rhs);
 }
 
-QString QpSqlCondition::toWhereClause() const
+QString QpCondition::toSqlClause() const
 {
     if (!data->rawString.isEmpty())
         return data->rawString;
@@ -161,16 +161,16 @@ QString QpSqlCondition::toWhereClause() const
     if (data->booleanOperator == Not) {
         Q_ASSERT(data->conditions.size() == 1);
 
-        return booleanOperator().append(data->conditions.first().toWhereClause());
+        return booleanOperatorSqlString().append(data->conditions.first().toSqlClause());
     }
 
     if (!data->conditions.isEmpty()) {
         QStringList conditions;
-        foreach (const QpSqlCondition &condition, data->conditions) {
-            conditions.append(condition.toWhereClause());
+        foreach (const QpCondition &condition, data->conditions) {
+            conditions.append(condition.toSqlClause());
         }
 
-        QString result = conditions.join(booleanOperator());
+        QString result = conditions.join(booleanOperatorSqlString());
         if (data->conditions.size() > 1)
             result = result.prepend('(').append(')');
 
@@ -185,19 +185,19 @@ QString QpSqlCondition::toWhereClause() const
 
     if (!data->table.isEmpty()
         && !data->field.contains('.')) {
-        return comparisonOperator()
+        return comparisonOperatorSqlString()
                .prepend(QString("%1.%2")
                         .arg(QpSqlQuery::escapeField(data->table))
                         .arg(QpSqlQuery::escapeField(data->field)))
                .append(value);
     }
 
-    return comparisonOperator()
+    return comparisonOperatorSqlString()
            .prepend(QpSqlQuery::escapeField(data->field))
            .append(value);
 }
 
-QVariantList QpSqlCondition::bindValues() const
+QVariantList QpCondition::bindValues() const
 {
     QVariantList result;
 
@@ -207,7 +207,7 @@ QVariantList QpSqlCondition::bindValues() const
     if (!data->rawString.isEmpty())
         return result;
 
-    foreach (const QpSqlCondition& condition, data->conditions) {
+    foreach (const QpCondition& condition, data->conditions) {
         result.append(condition.bindValues());
     }
 
@@ -217,7 +217,12 @@ QVariantList QpSqlCondition::bindValues() const
     return result;
 }
 
-QString QpSqlCondition::booleanOperator() const
+QpCondition::BooleanOperator QpCondition::booleanOperator() const
+{
+    return data->booleanOperator;
+}
+
+QString QpCondition::booleanOperatorSqlString() const
 {
     switch (data->booleanOperator) {
     case And:
@@ -232,7 +237,12 @@ QString QpSqlCondition::booleanOperator() const
     return QString();
 }
 
-QString QpSqlCondition::comparisonOperator() const
+QpCondition::ComparisonOperator QpCondition::comparisonOperator() const
+{
+    return data->comparisonOperator;
+}
+
+QString QpCondition::comparisonOperatorSqlString() const
 {
     switch (data->comparisonOperator) {
     case EqualTo:
@@ -253,10 +263,10 @@ QString QpSqlCondition::comparisonOperator() const
     return QString();
 }
 
-void QpSqlCondition::setTable(const QString &table)
+void QpCondition::setTable(const QString &table)
 {
-    QList<QpSqlCondition> newData;
-    foreach (QpSqlCondition c, data->conditions) {
+    QList<QpCondition> newData;
+    foreach (QpCondition c, data->conditions) {
         c.setTable(table);
         newData << c;
     }

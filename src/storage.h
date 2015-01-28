@@ -16,6 +16,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QSqlDatabase;
 class QpAbstractErrorHandler;
+class QpDatasource;
 class QpError;
 class QpPropertyDependenciesHelper;
 class QpTransactionsHelper;
@@ -49,6 +50,9 @@ public:
 
     void resetAllLastKnownSynchronizations();
 
+    QpDatasource *datasource() const;
+    void setDatasource(QpDatasource *datasource);
+
     QList<QpDataAccessObjectBase *> dataAccessObjects();
     QpDataAccessObjectBase *dataAccessObject(const QMetaObject metaObject) const;
     QpDataAccessObjectBase *dataAccessObject(const QString &className) const;
@@ -70,17 +74,14 @@ public:
     static QpStorage *forObject(const QObject *object);
     static QpStorage *forObject(QSharedPointer<QObject> object);
 
-    int revisionInDatabase(QObject *object);
-    int revisionInObject(QObject *object);
-
     template<class T, class ... Superclasses> void registerClass();
 
     template<class T> QpDataAccessObject<T> *dataAccessObject();
     template<class T> QpDataAccessObjectBase *dataAccessObject(QSharedPointer<T> object) const;
     template<class T> int primaryKey(QSharedPointer<T> object);
     template<class T> QSharedPointer<T> read(int id);
-    template<class T> QList<QSharedPointer<T> > readAll(const QpSqlCondition &condition = QpSqlCondition());
-    template<class T> int count(const QpSqlCondition &condition = QpSqlCondition());
+    template<class T> QList<QSharedPointer<T> > readAll(const QpCondition &condition = QpCondition());
+    template<class T> int count(const QpCondition &condition = QpCondition());
     template<class T> QSharedPointer<T> create();
     template<class T> Qp::UpdateResult update(QSharedPointer<T> object);
     template<class T> bool remove(QSharedPointer<T> object);
@@ -217,13 +218,13 @@ template<class T> QSharedPointer<T> QpStorage::read(int id)
 }
 
 template<class T>
-QList<QSharedPointer<T> > QpStorage::readAll(const QpSqlCondition &condition)
+QList<QSharedPointer<T> > QpStorage::readAll(const QpCondition &condition)
 {
     return dataAccessObject<T>()->readAllObjects(-1, -1, QpSqlCondition::notDeletedAnd(condition));
 }
 
 template<class T>
-int QpStorage::count(const QpSqlCondition &condition)
+int QpStorage::count(const QpCondition &condition)
 {
     return dataAccessObject<T>()->count(QpSqlCondition::notDeletedAnd(condition));
 }

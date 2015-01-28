@@ -29,7 +29,12 @@ void setPrimaryKey(QObject *object, int key)
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,key);
 }
 
-bool isDeleted(QObject *object)
+int revisionInObject(const QObject *object)
+{
+    return object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt();
+}
+
+bool isDeleted(const QObject *object)
 {
     return object->property(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG).toBool();
 }
@@ -43,7 +48,6 @@ void undelete(QObject *object)
 {
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG,false);
 }
-
 
 typedef QHash<const QObject *, QWeakPointer<QObject> > WeakPointerHash;
 QP_DEFINE_STATIC_LOCAL(WeakPointerHash, WeakPointers)

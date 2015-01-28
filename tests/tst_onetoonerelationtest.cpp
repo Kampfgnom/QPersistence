@@ -49,8 +49,8 @@ QVariant OneToOneRelationTest::childFK(QSharedPointer<TestNameSpace::ParentObjec
     QpSqlQuery select(Qp::database());
     select.setTable(m_childToParentRelation.tableName());
     select.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
-    select.setWhereCondition(QpSqlCondition(m_childToParentRelation.columnName(),
-                                            QpSqlCondition::EqualTo,
+    select.setWhereCondition(QpCondition(m_childToParentRelation.columnName(),
+                                            QpCondition::EqualTo,
                                             Qp::primaryKey(parent)));
     select.prepareSelect();
 
@@ -70,8 +70,8 @@ QVariant OneToOneRelationTest::parentFK(QSharedPointer<TestNameSpace::ChildObjec
     QpSqlQuery select(Qp::database());
     select.setTable(m_childToParentRelation.tableName());
     select.addField(m_childToParentRelation.columnName());
-    select.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                            QpSqlCondition::EqualTo,
+    select.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                            QpCondition::EqualTo,
                                             Qp::primaryKey(child)));
     select.prepareSelect();
 

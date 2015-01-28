@@ -14,8 +14,9 @@ QSharedPointer<QObject> sharedFrom(const QObject *object);
 
 int primaryKey(const QObject *object);
 void setPrimaryKey(QObject *object, int key);
+int revisionInObject(const QObject *object);
 
-bool isDeleted(QObject *object);
+bool isDeleted(const QObject *object);
 void markAsDeleted(QObject *object);
 void undelete(QObject *object);
 

@@ -13,7 +13,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 class QSqlQuery;
 class QpMetaObject;
 class QpMetaProperty;
-class QpSqlCondition;
+class QpCondition;
 class QpSqlQuery;
 class QpStorage;
 
@@ -24,10 +24,9 @@ public:
     explicit QpSqlDataAccessObjectHelper(QpStorage *storage);
     ~QpSqlDataAccessObjectHelper();
 
-    int count(const QpMetaObject &metaObject, const QpSqlCondition &condition) const;
-    QList<int> allKeys(const QpMetaObject &metaObject, int skip, int count) const;
+    int count(const QpMetaObject &metaObject, const QpCondition &condition) const;
     bool readObject(const QpMetaObject &metaObject, const QVariant &key, QObject *object);
-    QpSqlQuery readAllObjects(const QpMetaObject &metaObject, int skip, int count, const QpSqlCondition &condition, QList<QpSqlQuery::OrderField> orders);
+    QpSqlQuery readAllObjects(const QpMetaObject &metaObject, int skip, int count, const QpCondition &condition, QList<QpSqlQuery::OrderField> orders);
     QpSqlQuery readObjectsUpdatedAfterRevision(const QpMetaObject &metaObject, int objectRevision);
     bool insertObject(const QpMetaObject &metaObject, QObject *object);
     bool updateObject(const QpMetaObject &metaObject, QObject *object);
@@ -70,7 +69,6 @@ private:
     QList<QpSqlQuery> queriesThatAdjustOneToOneRelation(const QpMetaProperty &relation, QObject *object);
     QList<QpSqlQuery> queriesThatAdjustToOneRelation(const QpMetaProperty &relation, QObject *object);
     QList<QpSqlQuery> queriesThatAdjustManyToManyRelation(const QpMetaProperty &relation, QObject *object);
-
 };
 
 #endif // SQLDATAACCESSOBJECTHELPER_H

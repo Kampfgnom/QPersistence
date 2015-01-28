@@ -12,7 +12,7 @@ QpLock::QpLock()
 #include "error.h"
 #include "qpersistence.h"
 #include "sqlbackend.h"
-#include "sqlcondition.h"
+#include "condition.h"
 #include "sqlquery.h"
 #include "storage.h"
 #include "transactionshelper.h"
@@ -88,8 +88,8 @@ QpLock QpLockData::insertLock(QpStorage *storage, QSharedPointer<QObject> object
     query.clear();
     query.setTable(metaObject.tableName());
     query.addField(QpDatabaseSchema::COLUMN_LOCK, lock.data->id);
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                           QpSqlCondition::EqualTo,
+    query.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpCondition::EqualTo,
                                            Qp::Private::primaryKey(object.data())));
     query.prepareUpdate();
 
@@ -111,8 +111,8 @@ QpLock QpLockData::selectLock(QpStorage *storage, int id, QSharedPointer<QObject
     foreach (QString field, storage->additionalLockInformationFields().keys()) {
         query.addField(field);
     }
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                           QpSqlCondition::EqualTo,
+    query.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpCondition::EqualTo,
                                            id));
     query.prepareSelect();
 
@@ -145,8 +145,8 @@ int QpLockData::selectLockId(QpStorage *storage, QSharedPointer<QObject> object,
     QpSqlQuery query(storage->database());
     query.setTable(metaObject.tableName());
     query.addField(QpDatabaseSchema::COLUMN_LOCK);
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                           QpSqlCondition::EqualTo,
+    query.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpCondition::EqualTo,
                                            Qp::Private::primaryKey(object.data())));
     query.setForUpdate(forUpdate);
     query.prepareSelect();
@@ -169,8 +169,8 @@ void QpLockData::removeLock(QpStorage *storage, int id, QSharedPointer<QObject> 
     QpSqlQuery query(storage->database());
     query.clear();
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                           QpSqlCondition::EqualTo,
+    query.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpCondition::EqualTo,
                                            id));
     query.prepareDelete();
 
