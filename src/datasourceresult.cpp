@@ -17,7 +17,8 @@ public:
     bool valid;
     int integerResult;
     QpError error;
-    QList<QpDatasourceResult::Record> records;
+    QHash<int, QpDataTransferObject> dataTransferObjectsById;
+    QList<QpDataTransferObject> dataTransferObjects;
 };
 
 QpDatasourceResultPrivate::QpDatasourceResultPrivate() :
@@ -47,7 +48,8 @@ void QpDatasourceResult::reset()
     data->valid = false;
     data->integerResult = -1;
     data->error = QpError();
-    data->records.clear();
+    data->dataTransferObjects.clear();
+    data->dataTransferObjectsById.clear();
 }
 
 bool QpDatasourceResult::isValid() const
@@ -74,7 +76,6 @@ int QpDatasourceResult::integerResult() const
 void QpDatasourceResult::setIntegerResult(int result)
 {
     data->integerResult = result;
-    setValid(true);
 }
 
 QpError QpDatasourceResult::error() const
@@ -94,34 +95,50 @@ void QpDatasourceResult::setError(const QpError &error)
 
 int QpDatasourceResult::size() const
 {
-    return data->records.size();
+    return data->dataTransferObjects.size();
 }
 
-QList<QpDatasourceResult::Record> QpDatasourceResult::records() const
+QList<QpDataTransferObject> QpDatasourceResult::dataTransferObjects() const
 {
-    return data->records;
+    return data->dataTransferObjects;
 }
 
-void QpDatasourceResult::setRecords(const QList<Record> &records)
+QHash<int, QpDataTransferObject> QpDatasourceResult::dataTransferObjectsById() const
 {
-    data->records = records;
-    setValid(true);
+    return data->dataTransferObjectsById;
 }
 
-void QpDatasourceResult::addRecord(const Record &record)
+void QpDatasourceResult::setDataTransferObjects(const QHash<int, QpDataTransferObject> &dataTransferObjects)
 {
-    data->records.append(record);
-    setValid(true);
+    data->dataTransferObjects = dataTransferObjects.values();
+    data->dataTransferObjectsById = dataTransferObjects;
 }
 
-void QpDatasourceResult::writeObjectProperties(QObject *object, const Record &record) const
+void QpDatasourceResult::addDataTransferObject(const QpDataTransferObject &dataTransferObject)
 {
-    foreach(RecordField field, record.fields) {
-        if(field.propertyIndex > 0) {
-            record.metaObject.property(field.propertyIndex).write(object, field.value);
-        }
-        else{
-            object->setProperty(field.name.toLatin1(), field.value);
-        }
+    data->dataTransferObjects << dataTransferObject;
+    data->dataTransferObjectsById.insert(dataTransferObject.primaryKey, dataTransferObject);
+}
+
+QpDataTransferObject::QpDataTransferObject() :
+    primaryKey(0)
+{
+}
+
+void QpDataTransferObject::write(QObject *object) const
+{
+    object->setProperty("_Qp_dataTransferObject", QVariant::fromValue<QpDataTransferObject>(*this));
+
+    foreach(int propertyIndex, properties.keys()) {
+        metaObject.property(propertyIndex).write(object, properties.value(propertyIndex));
     }
+
+    foreach(QString propertyName, dynamicProperties.keys()) {
+        object->setProperty(propertyName.toLatin1(), dynamicProperties.value(propertyName));
+    }
+}
+
+QpDataTransferObject QpDataTransferObject::fromObject(const QObject *object)
+{
+    return object->property("_Qp_dataTransferObject").value<QpDataTransferObject>();
 }

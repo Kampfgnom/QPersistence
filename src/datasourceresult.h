@@ -11,6 +11,21 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 class QpError;
 class QpDataAccessObjectBase;
 
+class QpDataTransferObject
+{
+public:
+    QpDataTransferObject();
+    int primaryKey;
+    QMetaObject metaObject;
+    QHash<int, QVariant> properties;
+    QHash<QString, QVariant> dynamicProperties;
+    QHash<int, int> toOneRelationFKs;
+    QHash<int, QList<int>> toManyRelationFKs;
+
+    void write(QObject *object) const;
+    static QpDataTransferObject fromObject(const QObject *object); //! The "_Qp_dataTransferObject" dynamic property
+};
+
 class QpDatasourceResultPrivate;
 class QpDatasourceResult : public QObject
 {
@@ -18,18 +33,6 @@ class QpDatasourceResult : public QObject
 public:
     explicit QpDatasourceResult(QpDataAccessObjectBase *dao = 0);
     ~QpDatasourceResult();
-
-    struct RecordField {
-        int propertyIndex;
-        QString name;
-        QVariant value;
-    };
-
-    struct Record {
-        int primaryKey;
-        QMetaObject metaObject;
-        QList<RecordField> fields;
-    };
 
     void reset();
 
@@ -44,15 +47,16 @@ public:
     void setError(const QpError &error);
 
     int size() const;
-    QList<Record> records() const;
-    void setRecords(const QList<Record> &records);
-    void addRecord(const Record &record);
-
-    void writeObjectProperties(QObject *object, const Record &record) const;
+    QList<QpDataTransferObject> dataTransferObjects() const;
+    QHash<int, QpDataTransferObject> dataTransferObjectsById() const;
+    void setDataTransferObjects(const QHash<int, QpDataTransferObject> &dataTransferObjects);
+    void addDataTransferObject(const QpDataTransferObject &dataTransferObject);
 
 private:
     QExplicitlySharedDataPointer<QpDatasourceResultPrivate> data;
 
 };
+
+Q_DECLARE_METATYPE(QpDataTransferObject)
 
 #endif // QPERSISTENCE_DATASOURCERESULT_H

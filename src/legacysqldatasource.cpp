@@ -21,16 +21,28 @@ public:
     QSqlDatabase database;
 
     void selectFields(const QpMetaObject &metaObject, QpSqlQuery &query) const;
-    void readQueryIntoResult(QpDatasourceResult *result, QpSqlQuery &query, const QSqlRecord &record, const QpMetaObject &metaObject) const;
+    QHash<int, QpDataTransferObject> readQuery(QpSqlQuery &query,
+                                               const QSqlRecord &record,
+                                               const QpMetaObject &metaObject) const;
     void fillValuesIntoQuery(const QObject *object, QpSqlQuery &query) const;
     int objectRevision(QpDatasourceResult *result, const QObject *object) const;
     void adjustRelationsInDatabase(QpDatasourceResult *result, const QObject *object) const;
+
+    void readToManyRelations(QHash<int, QpDataTransferObject> &dataTransferObjects,
+                             const QpMetaObject &metaObject,
+                             const QpCondition &condition,
+                             QpError &error) const;
 
 private:
     QList<QpSqlQuery> queriesThatAdjustOneToOneRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const;
     QList<QpSqlQuery> queriesThatAdjustOneToManyRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const;
     QList<QpSqlQuery> queriesThatAdjustToOneRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const;
     QList<QpSqlQuery> queriesThatAdjustManyToManyRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const;
+
+    void readToManyRelation(QHash<int, QpDataTransferObject> &dataTransferObjects,
+                            const QpMetaProperty &relation,
+                            const QpCondition &condition,
+                            QpError &error) const;
 };
 
 void QpLegacySqlDatasourceData::selectFields(const QpMetaObject &metaObject, QpSqlQuery &query) const
@@ -142,66 +154,60 @@ void QpLegacySqlDatasourceData::selectFields(const QpMetaObject &metaObject, QpS
 }
 
 
-void QpLegacySqlDatasourceData::readQueryIntoResult(QpDatasourceResult *result,
-                                                    QpSqlQuery &query,
-                                                    const QSqlRecord &record,
-                                                    const QpMetaObject &metaObject) const
+QHash<int, QpDataTransferObject> QpLegacySqlDatasourceData::readQuery(QpSqlQuery &query,
+                                                                      const QSqlRecord &record,
+                                                                      const QpMetaObject &metaObject) const
 {
-    QList<QpDatasourceResult::Record> resultRecords;
-    resultRecords.reserve(query.size());
-
+    QHash<int, QpDataTransferObject> result;
+    result.reserve(query.size());
     while (query.next()) {
-        QpDatasourceResult::Record resultRecord;
+        QpDataTransferObject dto;
+        dto.metaObject = metaObject.metaObject();
         int fieldCount = record.count();
-        resultRecord.metaObject = metaObject.metaObject();
-        resultRecord.fields.reserve(fieldCount);
 
         for (int i = 0; i < fieldCount; ++i) {
-            QpDatasourceResult::RecordField currentField;
-            currentField.name = record.fieldName(i);
-            QMetaProperty metaProperty = query.propertyForIndex(record, &resultRecord.metaObject, i);
-            currentField.propertyIndex = -1;
-            currentField.value = QVariant();
+            QString name = record.fieldName(i);
+            QMetaProperty metaProperty = query.propertyForIndex(record, &dto.metaObject, i);
 
             if (!metaProperty.isValid()) {
-                if (currentField.name == QLatin1String("_Qp_ID")) {
-                    resultRecord.primaryKey = query.value(i).toInt();
-                    currentField.value = resultRecord.primaryKey;
+
+                // To-one relations
+                if (name.startsWith("_Qp_FK")) {
+                    QString propertyName = name.right(name.length() - 7); // remove _Qp_FK_
+                    int propertyIndex = dto.metaObject.indexOfProperty(propertyName.toLatin1());
+                    dto.toOneRelationFKs.insert(propertyIndex, query.value(i).toInt());
                 }
-                else if (currentField.name == QLatin1String("revision")) {
-                    currentField.value = query.value(i).toInt();
-                }
-                else if (!currentField.name.startsWith("_Qp_")) {
-                    continue;
+
+                // dynamic properties including the primary key
+                else if (name.startsWith("_Qp_")) { // ignore all columns, which do not start with _Qp_
+                    QVariant value = query.value(i);
+                    dto.dynamicProperties.insert(name, value);
+
+                    if (name == QLatin1String("_Qp_ID"))
+                        dto.primaryKey = value.toInt();
                 }
             }
+
+            // Properties
             else {
-                currentField.propertyIndex = metaProperty.propertyIndex();
-                currentField.value = query.value(i);
+                int propertyIndex = metaProperty.propertyIndex();
+                QVariant value = query.value(i);
 
                 if (metaProperty.isFlagType()) {
-                    currentField.value = currentField.value.toInt();
+                    value = value.toInt();
+                } else if (metaProperty.isEnumType()) {
+                    value = metaProperty.enumerator().value(value.toInt());
+                } else {
+                    QMetaType::Type type = static_cast<QMetaType::Type>(value.userType());
+                    value = QpSqlQuery::variantFromSqlStorableVariant(value, type);
                 }
-                else if (metaProperty.isEnumType()) {
-#ifdef QP_FOR_MYSQL
-                    currentField.value = metaProperty.enumerator().value(currentField.value.toInt());
-#elif defined QP_FOR_SQLITE
-                    currentField.value = currentField.value.toInt();
-#endif
-                }
-                else {
-                    QMetaType::Type type = static_cast<QMetaType::Type>(currentField.value.userType());
-                    currentField.value = QpSqlQuery::variantFromSqlStorableVariant(currentField.value, type);
-                }
+                dto.properties.insert(propertyIndex, value);
             }
-
-            resultRecord.fields.append(currentField);
         }
-
-        resultRecords.append(resultRecord);
+        result.insert(dto.primaryKey, dto);
     }
 
-    result->setRecords(resultRecords);
+    return result;
 }
 
 void QpLegacySqlDatasourceData::fillValuesIntoQuery(const QObject *object,
@@ -229,7 +235,6 @@ void QpLegacySqlDatasourceData::fillValuesIntoQuery(const QObject *object,
 
             query.addField(property.columnName(), value);
         }
-
     }
 }
 
@@ -426,29 +431,17 @@ QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustOneToManyRelation(
 
 QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustToOneRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const
 {
+    Q_UNUSED(result);
+
     QVariant primaryKey = Qp::Private::primaryKey(object);
 
     QVariant relatedPrimary;
-    QSharedPointer<QObject> relatedObject = Qp::Private::objectCast(relation.metaProperty().read(object));
-    if (relatedObject) {
+    QSharedPointer<QObject> relatedObject = relation.readOne(object);
+    if (relatedObject)
         relatedPrimary = Qp::Private::primaryKey(relatedObject.data());
-    }
 
-    QpSqlQuery selectPreviouslyRelatedObjectPKQuery(database);
-    selectPreviouslyRelatedObjectPKQuery.setTable(relation.tableName());
-    selectPreviouslyRelatedObjectPKQuery.addField(relation.columnName());
-    selectPreviouslyRelatedObjectPKQuery.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                                                       QpCondition::EqualTo,
-                                                                       primaryKey));
-    selectPreviouslyRelatedObjectPKQuery.prepareSelect();
-    if (!selectPreviouslyRelatedObjectPKQuery.exec()) {
-        result->setError(selectPreviouslyRelatedObjectPKQuery);
-        return {};
-    }
-
-    QVariant previousRelatedPK;
-    if (selectPreviouslyRelatedObjectPKQuery.first())
-        previousRelatedPK = selectPreviouslyRelatedObjectPKQuery.value(0);
+    QpDataTransferObject dto = QpDataTransferObject::fromObject(object);
+    QVariant previousRelatedPK = dto.toOneRelationFKs.value(relation.metaProperty().propertyIndex());
 
     if (previousRelatedPK == relatedPrimary)
         return {};
@@ -617,6 +610,88 @@ QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustManyToManyRelation
     return queries;
 }
 
+
+void QpLegacySqlDatasourceData::readToManyRelations(QHash<int, QpDataTransferObject> &dataTransferObjects,
+                                                    const QpMetaObject &metaObject,
+                                                    const QpCondition &condition,
+                                                    QpError &error) const
+{
+    foreach (QpMetaProperty relation, metaObject.relationProperties()) {
+        if (!relation.isToManyRelationProperty())
+            continue;
+
+        readToManyRelation(dataTransferObjects, relation, condition, error);
+    }
+}
+
+void QpLegacySqlDatasourceData::readToManyRelation(QHash<int, QpDataTransferObject> &dataTransferObjects,
+                                                   const QpMetaProperty &relation,
+                                                   const QpCondition &condition,
+                                                   QpError &error) const
+{
+    // For many-to-many relations:
+    // SELECT `primaryTable`.`_Qp_ID`, `foreignTable`.`_Qp_ID` FROM `primaryTable`
+    // JOIN `joinTable` ON `primaryTable`.`_Qp_ID` = `joinTable`.`primaryJoinKey`
+    // LEFT JOIN `foreignTable` ON  `foreignTable`.`_Qp_ID` = `joinTable`.`foreignJoinKey`
+    // WHERE "condition"
+    // AND `primaryTable`.`_Qp_deleted` = 0
+    // AND `foreignTable`.`_Qp_deleted` = 0
+
+    // For one-to-many relations:
+    // SELECT `primaryTable`.`_Qp_ID`, `foreignTable`.`_Qp_ID` FROM `primaryTable`
+    // LEFT JOIN `foreignTable` ON `primaryTable`.`_Qp_ID` = `foreignTable`.`foreignJoinKey`
+    // WHERE "condition"
+    // AND `primaryTable`.`_Qp_deleted` = 0
+    // AND `foreignTable`.`_Qp_deleted` = 0
+
+    QString primaryTable = relation.metaObject().tableName();
+    QString primaryKeyQualified = QpSqlQuery::escapeField(primaryTable, QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    QString foreignTable = relation.reverseMetaObject().tableName();
+    QString foreignKeyQualified = QpSqlQuery::escapeField(foreignTable, QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+
+    QpSqlQuery query(database);
+    query.setTable(primaryTable);
+    query.addField(QString("%1 AS `__pk`").arg(primaryKeyQualified));
+    query.addField(QString("%1 AS `__fk`").arg(foreignKeyQualified));
+
+    if (relation.cardinality() == QpMetaProperty::ManyToManyCardinality) {
+        QString joinTable = relation.tableName();
+        QString primaryJoinKey = QpSqlQuery::escapeField(joinTable, relation.columnName());
+        QString foreignJoinKey = QpSqlQuery::escapeField(joinTable, relation.reverseRelation().columnName());
+        query.addJoin("", joinTable, primaryKeyQualified, primaryJoinKey);
+        query.addJoin("", foreignTable, foreignJoinKey, foreignKeyQualified);
+    }
+    else {
+        QString foreignJoinKey = QpSqlQuery::escapeField(foreignTable, relation.columnName());
+        query.addJoin("", foreignTable, primaryKeyQualified, foreignJoinKey);
+    }
+
+    QpCondition c1 = condition;
+    c1.setTable(primaryTable);
+    QpCondition primaryNotDeleted = QpCondition(QpSqlQuery::escapeField(primaryTable, QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG), QpCondition::NotEqualTo, "1");
+    QpCondition foreignNotDeleted = QpCondition(QpSqlQuery::escapeField(foreignTable, QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG), QpCondition::NotEqualTo, "1");
+
+    query.setWhereCondition(primaryNotDeleted && foreignNotDeleted && c1);
+    query.prepareSelect();
+    if (!query.exec()) {
+        error = QpError(query);
+        return;
+    }
+
+    int relationPropertyIndex = relation.metaProperty().propertyIndex();
+    QSqlRecord record = query.record();
+    int pkIndex = record.indexOf("__pk");
+    int fkIndex = record.indexOf("__fk");
+
+    while (query.next()) {
+        int primaryKey = query.value(pkIndex).toInt();
+        int foreignKey = query.value(fkIndex).toInt();
+        Q_ASSERT(dataTransferObjects.contains(primaryKey));
+
+        dataTransferObjects[primaryKey].toManyRelationFKs[relationPropertyIndex] << foreignKey;
+    }
+}
+
 /******************************************************************************
  * QpLegacySqlDatasource
  */
@@ -699,21 +774,13 @@ void QpLegacySqlDatasource::maxPrimaryKey(QpDatasourceResult *result, const QpMe
 
 void QpLegacySqlDatasource::objectByPrimaryKey(QpDatasourceResult *result, const QpMetaObject &metaObject, int primaryKey) const
 {
-    QpSqlQuery query(data->database);
-    query.setTable(metaObject.tableName());
-    data->selectFields(metaObject, query);
-    query.setLimit(1);
-    query.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                        QpCondition::EqualTo,
-                                        primaryKey));
-    query.prepareSelect();
-
-    if (!query.exec()) {
-        result->setError(query);
-        return;
-    }
-
-    data->readQueryIntoResult(result, query, query.record(), metaObject);
+    objects(result,
+            metaObject,
+            -1, 1,
+            QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                        QpCondition::EqualTo,
+                        primaryKey),
+            {});
 }
 
 void QpLegacySqlDatasource::objects(QpDatasourceResult *result, const QpMetaObject &metaObject, int skip, int limit, const QpCondition &condition, QList<QpDatasource::OrderField> orders) const
@@ -735,7 +802,15 @@ void QpLegacySqlDatasource::objects(QpDatasourceResult *result, const QpMetaObje
         return;
     }
 
-    data->readQueryIntoResult(result, query, query.record(), metaObject);
+    QHash<int, QpDataTransferObject> dtos = data->readQuery(query, query.record(), metaObject);
+    QpError error;
+    data->readToManyRelations(dtos, metaObject, condition, error);
+    if (error.isValid()) {
+        result->setError(error);
+        return;
+    }
+
+    result->setDataTransferObjects(dtos);
 }
 
 void QpLegacySqlDatasource::objectsUpdatedAfterRevision(QpDatasourceResult *result, const QpMetaObject &metaObject, int revision) const

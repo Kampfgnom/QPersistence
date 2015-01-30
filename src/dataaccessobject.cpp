@@ -100,12 +100,12 @@ Qp::SynchronizeResult QpDataAccessObjectBase::sync(QSharedPointer<QObject> objec
             return Qp::Removed;
     }
     Q_ASSERT(result.size() == 1);
-    result.writeObjectProperties(obj, result.records().first());
 
 #pragma message("QpRelationResolver")
     foreach (QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
         QpRelationResolver::readRelationFromDatabase(relation, obj);
     }
+    result.dataTransferObjects().first().write(obj);
 
     emit objectSynchronized(object);
 
@@ -156,8 +156,8 @@ QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readObjectsUpdatedAfterR
 QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(const QpDatasourceResult &datasourceResult) const
 {
     QList<QSharedPointer<QObject> > result;
-    foreach(const QpDatasourceResult::Record record, datasourceResult.records()) {
-        int key = record.primaryKey;
+    foreach(const QpDataTransferObject &dto, datasourceResult.dataTransferObjects()) {
+        int key = dto.primaryKey;
 
         QSharedPointer<QObject> currentObject;
         if (data->cache.contains(key)) {
@@ -172,7 +172,7 @@ QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(const QpD
             currentObject->blockSignals(true);
         }
 
-        datasourceResult.writeObjectProperties(currentObject.data(), record);
+        dto.write(currentObject.data());
 
         if (isNewObject) {
             currentObject->blockSignals(false);
@@ -212,7 +212,7 @@ QSharedPointer<QObject> QpDataAccessObjectBase::readObject(int primaryKey) const
     }
 
     Q_ASSERT(result.size() == 1);
-    result.writeObjectProperties(object, result.records().first());
+    result.dataTransferObjects().first().write(object);
 
     QSharedPointer<QObject> obj = setupSharedObject(object, primaryKey);
     object->blockSignals(false);
@@ -235,7 +235,7 @@ QSharedPointer<QObject> QpDataAccessObjectBase::createObject()
     }
 
     Q_ASSERT(result.size() == 1);
-    result.writeObjectProperties(object, result.records().first());
+    result.dataTransferObjects().first().write(object);
 
     QSharedPointer<QObject> obj = setupSharedObject(object, Qp::Private::primaryKey(object));
     object->blockSignals(false);
@@ -263,7 +263,7 @@ Qp::UpdateResult QpDataAccessObjectBase::updateObject(QSharedPointer<QObject> ob
     emit objectUpdated(object);
 
     Q_ASSERT(result.size() == 1);
-    result.writeObjectProperties(obj, result.records().first());
+    result.dataTransferObjects().first().write(obj);
 
     return Qp::UpdateSuccess;
 }
