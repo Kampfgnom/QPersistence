@@ -137,6 +137,15 @@ QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(int skip,
     return readAllObjects(result);
 }
 
+
+QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(const QList<int> primaryKeys) const
+{
+    if(primaryKeys.isEmpty())
+        return {};
+
+    return readAllObjects(-1, -1, QpCondition::primaryKeys(primaryKeys));
+}
+
 QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readObjectsUpdatedAfterRevision(int revision) const
 {
     QpDatasourceResult result;

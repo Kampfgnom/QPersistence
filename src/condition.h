@@ -30,6 +30,7 @@ public:
     };
 
     static QpCondition notDeletedAnd(const QpCondition &additionalConditions = QpCondition());
+    static QpCondition primaryKeys(const QList<int> &primaryKeys);
     QpCondition();
     QpCondition(const QString &rawString);
     QpCondition(const QString &field, ComparisonOperator op, const QVariant &value);
@@ -57,6 +58,7 @@ public:
     ComparisonOperator comparisonOperator() const;
     QString comparisonOperatorSqlString() const;
 
+    QString table() const;
     void setTable(const QString &table);
 
 private:

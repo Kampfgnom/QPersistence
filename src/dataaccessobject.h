@@ -43,6 +43,7 @@ public:
                                                    QList<QpDatasource::OrderField> orders = QList<QpDatasource::OrderField>()) const;
     QList<QSharedPointer<QObject> > readObjectsUpdatedAfterRevision(int revision) const;
     QList<QSharedPointer<QObject> > readAllObjects(const QpDatasourceResult &datasourceResult) const;
+    QList<QSharedPointer<QObject> > readAllObjects(const QList<int> primaryKeys) const;
     QSharedPointer<QObject> readObject(int id) const;
     QSharedPointer<QObject> createObject();
     Qp::UpdateResult updateObject(QSharedPointer<QObject> object);

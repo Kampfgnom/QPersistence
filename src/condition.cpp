@@ -43,10 +43,22 @@ QpCondition QpCondition::notDeletedAnd(const QpCondition &additionalConditions)
         return notDeleted;
 
     QpCondition cond = QpCondition(And, QList<QpCondition>()
-                                         << notDeleted
-                                         << additionalConditions);
+                                   << notDeleted
+                                   << additionalConditions);
+    if (additionalConditions.isValid())
+        cond.setTable(additionalConditions.data->table);
+
     cond.setBindValuesAsString(additionalConditions.data->bindValues);
     return cond;
+}
+
+QpCondition QpCondition::primaryKeys(const QList<int> &primaryKeys)
+{
+    QList<QpCondition> conditions;
+    foreach(int primaryKey, primaryKeys) {
+        conditions << QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, EqualTo, primaryKey);
+    }
+    return QpCondition(Or, conditions);
 }
 
 QpCondition::QpCondition() :
@@ -261,6 +273,11 @@ QString QpCondition::comparisonOperatorSqlString() const
 
     Q_ASSERT(false);
     return QString();
+}
+
+QString QpCondition::table() const
+{
+    return data->table;
 }
 
 void QpCondition::setTable(const QString &table)
