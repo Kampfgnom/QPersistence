@@ -60,6 +60,7 @@ void UserManagementTest::testGrandTable()
     QSqlQuery query(Qp::database());
     QVERIFY(query.exec("CREATE TABLE `testTable` (id INTEGER PRIMARY KEY)"));
     QVERIFY(m_userManagement->grandTable("testTable", "testUser", QpUserManagement::Insert));
+    QVERIFY(query.exec("DROP TABLE `testTable`"));
 
     // TODO: Verify correct permissions of QpUserManagement::grandTable
     // How would I test that?
