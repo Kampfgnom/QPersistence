@@ -616,6 +616,9 @@ void QpLegacySqlDatasourceData::readToManyRelations(QHash<int, QpDataTransferObj
                                                     const QpCondition &condition,
                                                     QpError &error) const
 {
+    if(dataTransferObjects.isEmpty())
+        return;
+
     foreach (QpMetaProperty relation, metaObject.relationProperties()) {
         if (!relation.isToManyRelationProperty())
             continue;
@@ -645,33 +648,35 @@ void QpLegacySqlDatasourceData::readToManyRelation(QHash<int, QpDataTransferObje
     // AND `foreignTable`.`_Qp_deleted` = 0
 
     QString primaryTable = relation.metaObject().tableName();
-    QString primaryKeyQualified = QpSqlQuery::escapeField(primaryTable, QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    QString primaryTableAlias("__primaryTable");
+    QString primaryKeyQualified = QpSqlQuery::escapeField(primaryTableAlias, QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
     QString foreignTable = relation.reverseMetaObject().tableName();
-    QString foreignKeyQualified = QpSqlQuery::escapeField(foreignTable, QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
+    QString foreignTableAlias("__foreignTable");
+    QString foreignKeyQualified = QpSqlQuery::escapeField(foreignTableAlias, QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
 
     QpSqlQuery query(database);
     query.setTable(primaryTable);
+    query.setTableName(primaryTableAlias);
     query.addField(QString("%1 AS `__pk`").arg(primaryKeyQualified));
     query.addField(QString("%1 AS `__fk`").arg(foreignKeyQualified));
 
     if (relation.cardinality() == QpMetaProperty::ManyToManyCardinality) {
         QString joinTable = relation.tableName();
-        QString primaryJoinKey = QpSqlQuery::escapeField(joinTable, relation.columnName());
-        QString foreignJoinKey = QpSqlQuery::escapeField(joinTable, relation.reverseRelation().columnName());
-        query.addJoin("", joinTable, primaryKeyQualified, primaryJoinKey);
-        query.addJoin("", foreignTable, foreignJoinKey, foreignKeyQualified);
+        QString joinTableTableAlias("__joinTable");
+        QString primaryJoinKey = QpSqlQuery::escapeField(joinTableTableAlias, relation.columnName());
+        QString foreignJoinKey = QpSqlQuery::escapeField(joinTableTableAlias, relation.reverseRelation().columnName());
+        query.addJoin("", QString("`%1` AS `%2`").arg(joinTable).arg(joinTableTableAlias), primaryKeyQualified, primaryJoinKey);
+        query.addJoin("", QString("`%1` AS `%2`").arg(foreignTable).arg(foreignTableAlias), foreignJoinKey, foreignKeyQualified);
     }
     else {
-        QString foreignJoinKey = QpSqlQuery::escapeField(foreignTable, relation.columnName());
-        query.addJoin("", foreignTable, primaryKeyQualified, foreignJoinKey);
+        QString foreignJoinKey = QpSqlQuery::escapeField(foreignTableAlias, relation.columnName());
+        query.addJoin("", QString("`%1` AS `%2`").arg(foreignTable).arg(foreignTableAlias), primaryKeyQualified, foreignJoinKey);
     }
 
-    QpCondition c1 = condition;
-    c1.setTable(primaryTable);
-    QpCondition primaryNotDeleted = QpCondition(QpSqlQuery::escapeField(primaryTable, QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG), QpCondition::NotEqualTo, "1");
-    QpCondition foreignNotDeleted = QpCondition(QpSqlQuery::escapeField(foreignTable, QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG), QpCondition::NotEqualTo, "1");
+    QpCondition primaryNotDeleted = QpCondition(QpSqlQuery::escapeField(primaryTableAlias, QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG), QpCondition::NotEqualTo, "1");
+    QpCondition foreignNotDeleted = QpCondition(QpSqlQuery::escapeField(foreignTableAlias, QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG), QpCondition::NotEqualTo, "1");
 
-    query.setWhereCondition(primaryNotDeleted && foreignNotDeleted && c1);
+    query.setWhereCondition(primaryNotDeleted && foreignNotDeleted && condition);
     query.prepareSelect();
     if (!query.exec()) {
         error = QpError(query);
@@ -804,7 +809,7 @@ void QpLegacySqlDatasource::objects(QpDatasourceResult *result, const QpMetaObje
 
     QHash<int, QpDataTransferObject> dtos = data->readQuery(query, query.record(), metaObject);
     QpError error;
-    data->readToManyRelations(dtos, metaObject, condition, error);
+    data->readToManyRelations(dtos, metaObject, QpCondition::primaryKeys(dtos.keys()), error);
     if (error.isValid()) {
         result->setError(error);
         return;
