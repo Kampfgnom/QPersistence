@@ -469,22 +469,42 @@ void QpMetaProperty::add(QSharedPointer<QObject> object, QSharedPointer<QObject>
     }
 }
 
-QList<QSharedPointer<QObject> > QpMetaProperty::read(QSharedPointer<QObject> object) const
+QSharedPointer<QObject> QpMetaProperty::readOne(const QObject *object) const
+{
+    QList<QSharedPointer<QObject> > os = read(object);
+    if(os.isEmpty())
+        return QSharedPointer<QObject>();
+
+    Q_ASSERT(os.size() == 1);
+    return os.first();
+}
+
+QSharedPointer<QObject> QpMetaProperty::readOne(QSharedPointer<QObject> object) const
+{
+    return readOne(object.data());
+}
+
+QList<QSharedPointer<QObject> > QpMetaProperty::read(const QObject *object) const
 {
     switch (cardinality()) {
     case QpMetaProperty::OneToOneCardinality:
     case QpMetaProperty::ManyToOneCardinality:
-        return { Qp::Private::objectCast(data->metaProperty.read(object.data())) };
+        return { Qp::Private::objectCast(data->metaProperty.read(object)) };
 
     case QpMetaProperty::OneToManyCardinality:
     case QpMetaProperty::ManyToManyCardinality:
-        return Qp::Private::objectListCast(data->metaProperty.read(object.data()));
+        return Qp::Private::objectListCast(data->metaProperty.read(object));
 
     case QpMetaProperty::UnknownCardinality:
         return {};
     }
 
     return {};
+}
+
+QList<QSharedPointer<QObject> > QpMetaProperty::read(QSharedPointer<QObject> object) const
+{
+    return read(object.data());
 }
 
 bool QpMetaProperty::isRelated(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const

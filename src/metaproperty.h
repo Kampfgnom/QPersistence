@@ -67,7 +67,10 @@ public:
 
     void remove(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const;
     void add(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const;
-    QList<QSharedPointer<QObject > > read(QSharedPointer<QObject> object) const;
+    QList<QSharedPointer<QObject> > read(const QObject *object) const;
+    QList<QSharedPointer<QObject> > read(QSharedPointer<QObject> object) const;
+    QSharedPointer<QObject> readOne(const QObject *object) const;
+    QSharedPointer<QObject> readOne(QSharedPointer<QObject> object) const;
 
     bool isRelated(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const;
 
