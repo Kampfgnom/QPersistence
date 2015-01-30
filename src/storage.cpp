@@ -27,7 +27,6 @@ public:
     {
     }
 
-    QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper;
     QSqlDatabase database;
 
     QpError lastError;
@@ -51,21 +50,14 @@ QpStorage::QpStorage(QObject *parent) :
     QObject(parent),
     data(new QpStorageData)
 {
-    data->sqlDataAccessObjectHelper = new QpSqlDataAccessObjectHelper(this);
     data->transactionsHelper = new QpTransactionsHelper(this);
     data->propertyDependenciesHelper = new QpPropertyDependenciesHelper(this);
 }
 
 QpStorage::~QpStorage()
 {
-    delete data->sqlDataAccessObjectHelper;
     delete data->transactionsHelper;
     delete data->propertyDependenciesHelper;
-}
-
-QpSqlDataAccessObjectHelper *QpStorage::sqlDataAccessObjectHelper() const
-{
-    return data->sqlDataAccessObjectHelper;
 }
 
 QpPropertyDependenciesHelper *QpStorage::propertyDependenciesHelper() const
@@ -198,6 +190,7 @@ void QpStorage::resetAllLastKnownSynchronizations()
 
 QpDatasource *QpStorage::datasource() const
 {
+    Q_ASSERT_X(data->datasource, Q_FUNC_INFO, "you have to set a datasource");
     return data->datasource;
 }
 
@@ -206,7 +199,6 @@ void QpStorage::setDatasource(QpDatasource *datasource)
     if(data->datasource)
         data->datasource->deleteLater();
 
-#pragma message("warnen, wenn keine ds gesetzt ist")
     data->datasource = datasource;
 }
 
@@ -336,34 +328,9 @@ double QpStorage::databaseTimeInternal()
     return query.value(0).toDouble();
 }
 
-double QpStorage::creationTime(QObject *object)
-{
-    double time = creationTimeInInObject(object);
-#ifdef __clang__
-    _Pragma("GCC diagnostic push");
-    _Pragma("GCC diagnostic ignored \"-Wused-but-marked-unused\"");
-#endif
-    if (qFuzzyCompare(0.0, time))
-        return creationTimeInDatabase(object);
-#ifdef __clang__
-    _Pragma("GCC diagnostic pop");
-#endif
-    return time;
-}
-
-double QpStorage::creationTimeInDatabase(QObject *object)
-{
-    return sqlDataAccessObjectHelper()->readCreationTime(object);
-}
-
 double QpStorage::creationTimeInInObject(QObject *object)
 {
     return object->property(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME).toDouble();
-}
-
-double QpStorage::updateTimeInDatabase(QObject *object)
-{
-    return sqlDataAccessObjectHelper()->readUpdateTime(object);
 }
 
 double QpStorage::updateTimeInObject(QObject *object)

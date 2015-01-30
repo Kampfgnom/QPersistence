@@ -77,14 +77,8 @@ template<class T> QList<QSharedPointer<T> > updatedSince(const QDateTime &time) 
 template<class T> QDateTime creationTime(QSharedPointer<T> object) {
     return Qp::defaultStorage()->creationTime(object);
 }
-template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object) {
-    return Qp::defaultStorage()->creationTimeInDatabase(object);
-}
 template<class T> QDateTime creationTimeInInObject(QSharedPointer<T> object) {
     return Qp::defaultStorage()->creationTimeInInObject(object);
-}
-template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object) {
-    return Qp::defaultStorage()->updateTimeInDatabase(object);
 }
 template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object) {
     return Qp::defaultStorage()->updateTimeInObject(object);

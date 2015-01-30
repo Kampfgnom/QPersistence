@@ -67,7 +67,6 @@ public:
     bool undelete(QSharedPointer<QObject> object);
     QpDataAccessObjectBase *dataAccessObject(QSharedPointer<QObject> object) const;
 
-    QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
     QpPropertyDependenciesHelper *propertyDependenciesHelper() const;
 
     void enableStorageFrom(QObject *object);
@@ -97,14 +96,10 @@ public:
     template<class T> QList<QSharedPointer<T> > createdSince(const QDateTime &time);
     template<class T> QList<QSharedPointer<T> > updatedSince(const QDateTime &time);
     template<class T> QDateTime creationTime(QSharedPointer<T> object);
-    template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object);
     template<class T> QDateTime creationTimeInInObject(QSharedPointer<T> object);
-    template<class T> QDateTime updateTimeInDatabase(QSharedPointer<T> object);
     template<class T> QDateTime updateTimeInObject(QSharedPointer<T> object);
     double creationTime(QObject *object);
-    double creationTimeInDatabase(QObject *object);
     double creationTimeInInObject(QObject *object);
-    double updateTimeInDatabase(QObject *object);
     double updateTimeInObject(QObject *object);
 #endif
 #ifndef QP_NO_LOCKS
@@ -256,24 +251,9 @@ QList<QSharedPointer<T> > QpStorage::updatedSince(const QDateTime &time)
     return Qp::castList<T>(dataAccessObject<T>()->updatedSince(time));
 }
 
-template<class T> QDateTime QpStorage::creationTime(QSharedPointer<T> object)
-{
-    return dateFromDouble(creationTime(object.data()));
-}
-
-template<class T> QDateTime QpStorage::creationTimeInDatabase(QSharedPointer<T> object)
-{
-    return dateFromDouble(creationTimeInDatabase(object.data()));
-}
-
 template<class T> QDateTime QpStorage::creationTimeInInObject(QSharedPointer<T> object)
 {
     return dateFromDouble(creationTimeInInObject(object.data()));
-}
-
-template<class T> QDateTime QpStorage::updateTimeInDatabase(QSharedPointer<T> object)
-{
-    return dateFromDouble(updateTimeInDatabase(object.data()));
 }
 
 template<class T> QDateTime QpStorage::updateTimeInObject(QSharedPointer<T> object)
