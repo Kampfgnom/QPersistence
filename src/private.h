@@ -13,6 +13,8 @@ void enableSharedFromThis(QSharedPointer<QObject> object);
 QSharedPointer<QObject> sharedFrom(const QObject *object);
 
 int primaryKey(const QObject *object);
+int primaryKey(QSharedPointer<QObject> object);
+QList<int> primaryKeys(const QList<QSharedPointer<QObject> > &objects);
 void setPrimaryKey(QObject *object, int key);
 int revisionInObject(const QObject *object);
 

@@ -24,6 +24,20 @@ int primaryKey(const QObject *object)
     return object->property(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY).toInt();
 }
 
+int primaryKey(QSharedPointer<QObject> object)
+{
+    return object->property(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY).toInt();
+}
+
+QList<int> primaryKeys(const QList<QSharedPointer<QObject> > &objects)
+{
+    QList<int> result;
+    foreach(QSharedPointer<QObject> object, objects) {
+        result << primaryKey(object.data());
+    }
+    return result;
+}
+
 void setPrimaryKey(QObject *object, int key)
 {
     object->setProperty(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,key);
