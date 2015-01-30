@@ -7,8 +7,6 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include "tst_onetoonerelationtest.h"
 #include "tst_onetomanyrelationtest.h"
 #include "tst_manytomanyrelationstest.h"
-#include "tst_creationandupdatetimestest.h"
-#include "tst_synchronizetest.h"
 #include "tst_locktest.h"
 #include "tst_enumerationtest.h"
 #include "tst_flagstest.h"
@@ -71,11 +69,6 @@ int main(int argc, char *argv[])
     RUNTEST(OneToOneRelationTest);
     RUNTEST(OneToManyRelationTest);
     RUNTEST(ManyToManyRelationsTest);
-
-#ifndef QP_NO_TIMESTAMPS
-    RUNTEST(CreationAndUpdateTimesTest);
-    RUNTEST(SynchronizeTest);
-#endif
 
 #ifndef QP_NO_LOCKS
     RUNTEST(LockTest);

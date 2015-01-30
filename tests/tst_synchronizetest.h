@@ -30,36 +30,11 @@ public:
 
     explicit SynchronizeTest(QObject *parent = 0);
 
-#ifndef QP_FOR_SQLITE
     static QList<int> childInts()
     {
         return QList<int>() << 1 << 2 << 3;
     }
 
-    static void cleanup(QProcess *process);
-
-    void testSynchronizeCounter();
-
-private slots:
-    void init();
-    void testCreatedSince();
-    void testUpdatedSince();
-
-    void testUpdateTimeChangesFromOtherProcess();
-    void testUnchangedSynchronizeResult();
-    void testSynchronizeOneToOneRelation();
-    void testSynchronizeOneToManyRelation();
-    void testSynchronizeManyToManyRelation();
-
-    void testUpdateConflict();
-    void testSynchronizeToSolveConflict();
-
-    void startProcess();
-
-private:
-    QProcess *startChangerProcess(int id, ChangerMode mode);
-    static QProcess *m_currentProcess;
-#endif
 };
 
 #endif // TST_SYNCHRONIZETEST_H

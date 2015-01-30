@@ -21,10 +21,6 @@ private slots:
     void testDatabaseFKClearFromParent();
     void testDatabaseFKClearFromChild();
 
-#ifndef QP_NO_TIMESTAMPS
-    void testDatabaseUpdateTimes();
-#endif
-
 private:
     QpMetaProperty m_parentToChildRelation;
     QpMetaProperty m_childToParentRelation;

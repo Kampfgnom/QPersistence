@@ -24,12 +24,11 @@ INCLUDEPATH     += $$TESTMODEL_INCLUDEPATH
 SOURCES +=  \
     main.cpp \
     tst_cachetest.cpp \
-    tst_creationandupdatetimestest.cpp \
     tst_onetoonerelationtest.cpp \
     tst_onetomanyrelationtest.cpp \
     tst_manytomanyrelationstest.cpp \
-    tst_synchronizetest.cpp \
     tst_locktest.cpp \
+    tst_synchronizetest.cpp \
     tst_enumerationtest.cpp \
     tst_flagstest.cpp \
     tst_usermanagementtest.cpp \
@@ -38,13 +37,12 @@ SOURCES +=  \
 
 HEADERS += \
     tst_cachetest.h \
-    tst_creationandupdatetimestest.h \
     tst_onetoonerelationtest.h \
     tst_onetomanyrelationtest.h \
     tst_manytomanyrelationstest.h \
-    tst_synchronizetest.h \
     tst_locktest.h \
     tst_enumerationtest.h \
+    tst_synchronizetest.h \
     tst_flagstest.h \
     tst_usermanagementtest.h \
     tests_common.h \
