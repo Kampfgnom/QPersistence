@@ -100,11 +100,6 @@ Qp::SynchronizeResult QpDataAccessObjectBase::sync(QSharedPointer<QObject> objec
             return Qp::Removed;
     }
     Q_ASSERT(result.size() == 1);
-
-#pragma message("QpRelationResolver")
-    foreach (QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
-        QpRelationResolver::readRelationFromDatabase(relation, obj);
-    }
     result.dataTransferObjects().first().write(obj);
 
     emit objectSynchronized(object);
@@ -381,12 +376,6 @@ bool QpDataAccessObjectBase::synchronizeAllObjects()
     foreach (QSharedPointer<QObject> object, readObjectsUpdatedAfterRevision(data->lastSynchronizedRevision)) {
         QObject *obj = object.data();
         data->lastSynchronizedRevision = qMax(data->lastSynchronizedRevision, Qp::Private::revisionInObject(obj));
-
-        QList<QpMetaProperty> rs = QpMetaObject::forObject(object).relationProperties();
-        for (int i = 0, c = rs.size(); i < c; ++i) {
-            QpMetaProperty relation = rs.at(i);
-            QpRelationResolver::readRelationFromDatabase(relation, obj);
-        }
 
         emit objectSynchronized(object);
 

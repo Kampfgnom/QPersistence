@@ -182,8 +182,8 @@ void QpPropertyDependenciesHelper::initSelfDependencies(QSharedPointer<QObject> 
 }
 
 void QpPropertyDependenciesHelper::initDependencies(QObject *object,
-                                              QList<QSharedPointer<QObject> > relatedObjects,
-                                              const QpMetaProperty &relation) const
+                                                    QList<QSharedPointer<QObject> > relatedObjects,
+                                                    const QpMetaProperty &relation) const
 {
     Q_ASSERT(object);
     QSet<QMetaMethod> recalculateMethods;
@@ -200,8 +200,8 @@ void QpPropertyDependenciesHelper::initDependencies(QObject *object,
 }
 
 void QpPropertyDependenciesHelper::initDependencies(QObject *object,
-                                              QSharedPointer<QObject> related,
-                                              const QpMetaProperty &relation) const
+                                                    QSharedPointer<QObject> related,
+                                                    const QpMetaProperty &relation) const
 {
     Q_ASSERT(object);
     if (!related)
@@ -217,8 +217,8 @@ void QpPropertyDependenciesHelper::initDependencies(QObject *object,
 }
 
 void QpPropertyDependenciesHelper::removeDependencies(QObject *object,
-                                                QSharedPointer<QObject> related,
-                                                const QpMetaProperty &relation) const
+                                                      QSharedPointer<QObject> related,
+                                                      const QpMetaProperty &relation) const
 {
     Q_ASSERT(object);
     if (!related)

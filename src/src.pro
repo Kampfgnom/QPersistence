@@ -35,16 +35,11 @@ HEADERS += \
     objectlistmodel.h \
     private.h \
     qpersistence.h \
-    relationresolver.h \
     sortfilterproxyobjectmodel.h \
     sqldataaccessobjecthelper.h \
     sqlquery.h \
     sqlbackend.h \
     lock.h \
-    relation_hasone.h \
-    relation_belongstoone.h \
-    relation_hasmany.h \
-    relation_belongstomany.h \
     defines.h \
     usermanagement.h \
     throttledfetchproxymodel.h \
@@ -58,7 +53,8 @@ HEADERS += \
     datasource.h \
     condition.h \
     datasourceresult.h \
-    legacysqldatasource.h
+    legacysqldatasource.h \
+    relations.h
 
 SOURCES += \
         cache.cpp \
@@ -70,16 +66,11 @@ SOURCES += \
     metaproperty.cpp \
     objectlistmodel.cpp \
     private.cpp \
-    relationresolver.cpp \
     sortfilterproxyobjectmodel.cpp \
     sqldataaccessobjecthelper.cpp \
     sqlquery.cpp \
     sqlbackend.cpp \
     lock.cpp \
-    relation_hasone.cpp \
-    relation_belongstoone.cpp \
-    relation_hasmany.cpp \
-    relation_belongstomany.cpp \
     usermanagement.cpp \
     throttledfetchproxymodel.cpp \
     storage.cpp \
@@ -92,7 +83,8 @@ SOURCES += \
     datasource.cpp \
     condition.cpp \
     datasourceresult.cpp \
-    legacysqldatasource.cpp
+    legacysqldatasource.cpp \
+    relations.cpp
 
 OTHER_FILES += \
     uncrustify.cfg

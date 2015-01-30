@@ -2,7 +2,6 @@
 #define QPERSISTENCE_PRIVATE_H
 
 #include "dataaccessobject.h"
-#include "relationresolver.h"
 #include "conversion.h"
 
 namespace Qp {
@@ -24,8 +23,6 @@ void undelete(QObject *object);
 
 template<class T> QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bool *ok = 0);
 template<class T> QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list);
-template<class T> QSharedPointer<T> resolveToOneRelation(const QString &name, const QObject *object);
-template<class T> QList<QSharedPointer<T> > resolveToManyRelation(const QString &name, const QObject *object);
 
 /*
  * Implementation:
@@ -50,18 +47,6 @@ QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list)
     QList<QWeakPointer<T> > result;
     foreach (QSharedPointer<T> s, list) result.append(s.toWeakRef());
     return result;
-}
-
-template<class T>
-QSharedPointer<T> resolveToOneRelation(const QString &name, const QObject *object)
-{
-    return qSharedPointerCast<T>(QpRelationResolver::resolveToOneRelation(name, object));
-}
-
-template<class T>
-QList<QSharedPointer<T> > resolveToManyRelation(const QString &name, const QObject *object)
-{
-    return Qp::castList<T>(QpRelationResolver::resolveToOneRelation(name, object));
 }
 
 } // namespace Private
