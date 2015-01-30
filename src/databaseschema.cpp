@@ -25,8 +25,8 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 const char* QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG("_Qp_deleted");
 const char* QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
 const char* QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
-const char* QpDatabaseSchema::COLUMN_NAME_REVISION("revision");
-const char* QpDatabaseSchema::COLUMN_NAME_ACTION("`action`");
+const char* QpDatabaseSchema::COLUMN_NAME_REVISION("_Qp_revision");
+const char* QpDatabaseSchema::COLUMN_NAME_ACTION("_Qp_action");
 const char* QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY("%1_Qp_history");
 #ifndef QP_NO_TIMESTAMPS
 const char* QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
@@ -469,12 +469,12 @@ bool QpDatabaseSchema::enableHistoryTracking(const QString &table)
 
     if (!query.exec(QString::fromLatin1(
                             "CREATE TABLE IF NOT EXISTS `%1_Qp_history` ("
-                            "`revision` INTEGER PRIMARY KEY AUTO_INCREMENT,"
+                            "`_Qp_revision` INTEGER PRIMARY KEY AUTO_INCREMENT,"
                             "`_Qp_ID` INTEGER NOT NULL, "
-                            "`action` ENUM('INSERT', 'UPDATE', 'MARK_AS_DELETE', 'DELETE') DEFAULT 'INSERT',"
+                            "`_Qp_action` ENUM('INSERT', 'UPDATE', 'MARK_AS_DELETE', 'DELETE') DEFAULT 'INSERT',"
                             "`datetime` DOUBLE NOT NULL,"
                             "`user` VARCHAR(100) NOT NULL,"
-                            "UNIQUE KEY (`_Qp_ID`, `revision`));")
+                            "UNIQUE KEY (`_Qp_ID`, `_Qp_revision`));")
                     .arg(table))
         || !query.exec(QString::fromLatin1(
                                "CREATE TRIGGER `%1_Qp_history_INSERT` AFTER INSERT ON `%1` FOR EACH ROW "
