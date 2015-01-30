@@ -215,6 +215,11 @@ QString QpSqlQuery::escapeField(const QString &field)
     return escaped.join(".");
 }
 
+QString QpSqlQuery::escapeField(const QString &table, const QString &field)
+{
+    return QString("`%1`.`%2`").arg(table).arg(field);
+}
+
 void QpSqlQuery::setTable(const QString &table)
 {
     data->table = table;
@@ -296,6 +301,11 @@ void QpSqlQuery::addJoin(const QString &direction, const QString &table, const Q
     join.table = table;
     join.on = on;
     data->joins.append(join);
+}
+
+void QpSqlQuery::addJoin(const QString &direction, const QString &table, const QString &key1, const QString &key2)
+{
+    addJoin(direction, table, QString("%1 = %2").arg(escapedQualifiedField(key1)).arg(escapedQualifiedField(key2)));
 }
 
 void QpSqlQuery::addJoin(const QString &direction, const QpSqlQuery &subSelect, const QString &on)
