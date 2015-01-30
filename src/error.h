@@ -35,6 +35,8 @@ public:
     bool isValid() const;
     QString text() const;
     ErrorType type() const;
+    QString lastQuery() const;
+    QMap<QString, QVariant> boundValues() const;
 
     QVariantMap additionalInformation() const;
     void addAdditionalInformation(const QString &key, const QVariant &value);

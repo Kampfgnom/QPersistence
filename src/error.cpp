@@ -29,6 +29,8 @@ public:
     QVariantMap additionalInformation;
     QpError::ErrorType type;
     bool isValid;
+    QString lastQuery;
+    QMap<QString, QVariant> boundValues;
 };
 
 
@@ -49,6 +51,8 @@ QpError::QpError(const QString &text,
 QpError::QpError(const QSqlQuery &query) :
     QpError(query.lastError())
 {
+    data->lastQuery = query.lastQuery();
+    data->boundValues = query.boundValues();
 }
 
 QpError::QpError(const QSqlError &error) :
@@ -92,6 +96,16 @@ QpError::ErrorType QpError::type() const
     return data->type;
 }
 
+QString QpError::lastQuery() const
+{
+    return data->lastQuery;
+}
+
+QMap<QString, QVariant> QpError::boundValues() const
+{
+    return data->boundValues;
+}
+
 QVariantMap QpError::additionalInformation() const
 {
     return data->additionalInformation;
@@ -104,7 +118,7 @@ void QpError::addAdditionalInformation(const QString &key, const QVariant &value
 
 QDebug operator<<(QDebug dbg, const QpError &error)
 {
-    dbg.nospace() << "(" << error.type() << ", " << error.text() << ")";
+    dbg.nospace() << "(" << error.type() << ", " << error.text() << ")\n" << error.lastQuery();
     return dbg.space();
 }
 
