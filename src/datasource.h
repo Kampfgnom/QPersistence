@@ -27,9 +27,18 @@ public:
         Order order;
     };
 
+    enum Feature {
+        NoFeature,
+        Asynchronous
+    };
+    Q_DECLARE_FLAGS(Features, Feature)
+
+    virtual QpDatasource *cloneForThread(QThread *thread) const = 0;
+
     QpDatasource(QObject *storage = 0);
     ~QpDatasource();
 
+    virtual QpDatasource::Features features() const = 0;
     virtual void count(QpDatasourceResult *result, const QpMetaObject &metaObject, const QpCondition &condition) const = 0;
     virtual void latestRevision(QpDatasourceResult *result, const QpMetaObject &metaObject) const = 0;
     virtual void maxPrimaryKey(QpDatasourceResult *result, const QpMetaObject &metaObject) const = 0;
@@ -42,5 +51,8 @@ public:
     virtual void removeObject(QpDatasourceResult *result, const QObject *v) const = 0;
     virtual void incrementNumericColumn(QpDatasourceResult *result, const QObject *object, const QString &fieldName) const = 0;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(QpDatasource::Features)
+Q_DECLARE_METATYPE(QList<QpDatasource::OrderField>)
 
 #endif // QPERSISTENCE_DATASOURCE_H

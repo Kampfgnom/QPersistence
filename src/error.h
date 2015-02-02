@@ -74,4 +74,6 @@ public:
 
 QDebug operator<<(QDebug dbg, const QpError &error);
 
+Q_DECLARE_METATYPE(QpError)
+
 #endif // QPERSISTENCE_ERROR_H

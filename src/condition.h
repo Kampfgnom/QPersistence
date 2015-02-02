@@ -65,4 +65,6 @@ private:
     QSharedDataPointer<QpConditionData> data;
 };
 
+Q_DECLARE_METATYPE(QpCondition)
+
 #endif // QPERSISTENCE_CONDITION_H

@@ -51,6 +51,7 @@ public:
     void resetAllLastKnownSynchronizations();
 
     QpDatasource *datasource() const;
+    QpDatasource *asynchronousDatasource() const;
     void setDatasource(QpDatasource *datasource);
 
     QList<QpDataAccessObjectBase *> dataAccessObjects();
@@ -289,5 +290,7 @@ template<class T> QpLock QpStorage::lockStatus(QSharedPointer<T> object)
     return QpLock::lockStatus(this, qSharedPointerCast<QObject>(object));
 }
 #endif
+
+Q_DECLARE_METATYPE(QSqlDatabase)
 
 #endif // QPERSISTENCE_STORAGE_H

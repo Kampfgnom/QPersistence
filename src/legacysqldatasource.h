@@ -16,13 +16,20 @@ class QpSqlQuery;
 class QpLegacySqlDatasourceData;
 class QpLegacySqlDatasource : public QpDatasource
 {
+    Q_OBJECT
+
 public:
     QpLegacySqlDatasource(QObject *parent = 0);
     ~QpLegacySqlDatasource();
 
+    QpDatasource *cloneForThread(QThread *thread) const Q_DECL_OVERRIDE;
+
     QSqlDatabase database() const;
     void setSqlDatabase(const QSqlDatabase &database);
 
+    QpDatasource::Features features() const Q_DECL_OVERRIDE;
+
+public slots:
     void count(QpDatasourceResult *result, const QpMetaObject &metaObject, const QpCondition &condition) const Q_DECL_OVERRIDE;
     void latestRevision(QpDatasourceResult *result, const QpMetaObject &metaObject) const Q_DECL_OVERRIDE;
     void maxPrimaryKey(QpDatasourceResult *result, const QpMetaObject &metaObject) const Q_DECL_OVERRIDE;
@@ -35,6 +42,8 @@ public:
     void removeObject(QpDatasourceResult *result, const QObject *object) const Q_DECL_OVERRIDE;
     void incrementNumericColumn(QpDatasourceResult *result, const QObject *object, const QString &fieldName) const Q_DECL_OVERRIDE;
 
+private slots:
+    void cloneDatabase(const QSqlDatabase &database);
 
 private:
     QSharedDataPointer<QpLegacySqlDatasourceData> data;

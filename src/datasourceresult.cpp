@@ -7,34 +7,56 @@
 /******************************************************************************
  * QpDatasourceResultData
  */
-class QpDatasourceResultPrivate : public QSharedData
+class QpDatasourceResultData : public QSharedData
 {
 public:
-    QpDatasourceResultPrivate();
+    QpDatasourceResultData();
 
-    QpDataAccessObjectBase *dataAccessObject;
+    const QpDataAccessObjectBase *dataAccessObject;
 
     bool valid;
     int integerResult;
     QpError error;
     QHash<int, QpDataTransferObject> dataTransferObjectsById;
     QList<QpDataTransferObject> dataTransferObjects;
+
+    void invalidate();
+    void setValid(bool valid);
+    void reset();
 };
 
-QpDatasourceResultPrivate::QpDatasourceResultPrivate() :
-    QSharedData(),
-    dataAccessObject(nullptr),
-    valid(false),
-    integerResult(-1)
+QpDatasourceResultData::QpDatasourceResultData() :
+    QSharedData()
 {
+    reset();
+}
+
+void QpDatasourceResultData::reset()
+{
+    valid = false;
+    integerResult = -1;
+    error = QpError();
+    dataTransferObjects.clear();
+    dataTransferObjectsById.clear();
+}
+
+void QpDatasourceResultData::invalidate()
+{
+    reset();
+    setValid(false);
+}
+
+void QpDatasourceResultData::setValid(bool v)
+{
+    valid = v;
 }
 
 /******************************************************************************
  * QpDatasourceResult
  */
-QpDatasourceResult::QpDatasourceResult(QpDataAccessObjectBase *dao) :
-    QObject(dao),
-    data(new QpDatasourceResultPrivate)
+QpDatasourceResult::QpDatasourceResult(const QpDataAccessObjectBase *dao) :
+    QObject(const_cast<QpDataAccessObjectBase *>(dao)),
+    data(new QpDatasourceResultData)
 {
     data->dataAccessObject = dao;
 }
@@ -43,29 +65,9 @@ QpDatasourceResult::~QpDatasourceResult()
 {
 }
 
-void QpDatasourceResult::reset()
-{
-    data->valid = false;
-    data->integerResult = -1;
-    data->error = QpError();
-    data->dataTransferObjects.clear();
-    data->dataTransferObjectsById.clear();
-}
-
 bool QpDatasourceResult::isValid() const
 {
-    return data->valid;
-}
-
-void QpDatasourceResult::invalidate()
-{
-    reset();
-    setValid(false);
-}
-
-void QpDatasourceResult::setValid(bool valid)
-{
-    data->valid = valid;
+    return data->valid && !data->error.isValid();
 }
 
 int QpDatasourceResult::integerResult() const
@@ -78,18 +80,19 @@ void QpDatasourceResult::setIntegerResult(int result)
     data->integerResult = result;
 }
 
-QpError QpDatasourceResult::error() const
+QpError QpDatasourceResult::lastError() const
 {
     return data->error;
 }
 
-void QpDatasourceResult::setError(const QpError &error)
+void QpDatasourceResult::setLastError(const QpError &e)
 {
-    data->error = error;
+    data->error = e;
 
-    if(error.isValid()) {
-        invalidate();
-        data->dataAccessObject->storage()->setLastError(error);
+    if(e.isValid()) {
+        data->invalidate();
+        data->dataAccessObject->storage()->setLastError(e);
+        emit error(e);
     }
 }
 
@@ -103,12 +106,12 @@ QList<QpDataTransferObject> QpDatasourceResult::dataTransferObjects() const
     return data->dataTransferObjects;
 }
 
-QHash<int, QpDataTransferObject> QpDatasourceResult::dataTransferObjectsById() const
+QpDataTransferObjectsById QpDatasourceResult::dataTransferObjectsById() const
 {
     return data->dataTransferObjectsById;
 }
 
-void QpDatasourceResult::setDataTransferObjects(const QHash<int, QpDataTransferObject> &dataTransferObjects)
+void QpDatasourceResult::setDataTransferObjects(const QpDataTransferObjectsById &dataTransferObjects)
 {
     data->dataTransferObjects = dataTransferObjects.values();
     data->dataTransferObjectsById = dataTransferObjects;
@@ -118,6 +121,17 @@ void QpDatasourceResult::addDataTransferObject(const QpDataTransferObject &dataT
 {
     data->dataTransferObjects << dataTransferObject;
     data->dataTransferObjectsById.insert(dataTransferObject.primaryKey, dataTransferObject);
+}
+
+void QpDatasourceResult::finish()
+{
+    data->setValid(true);
+    emit finished();
+}
+
+void QpDatasourceResult::reset()
+{
+    data->reset();
 }
 
 QpDataTransferObject::QpDataTransferObject() :

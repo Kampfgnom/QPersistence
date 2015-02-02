@@ -25,8 +25,8 @@ public:
                                                const QSqlRecord &record,
                                                const QpMetaObject &metaObject) const;
     void fillValuesIntoQuery(const QObject *object, QpSqlQuery &query) const;
-    int objectRevision(QpDatasourceResult *result, const QObject *object) const;
-    void adjustRelationsInDatabase(QpDatasourceResult *result, const QObject *object) const;
+    int objectRevision(const QObject *object, QpError &error) const;
+    void adjustRelationsInDatabase(const QObject *object, QpError &error) const;
 
     void readToManyRelations(QHash<int, QpDataTransferObject> &dataTransferObjects,
                              const QpMetaObject &metaObject,
@@ -34,10 +34,10 @@ public:
                              QpError &error) const;
 
 private:
-    QList<QpSqlQuery> queriesThatAdjustOneToOneRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const;
-    QList<QpSqlQuery> queriesThatAdjustOneToManyRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const;
-    QList<QpSqlQuery> queriesThatAdjustToOneRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const;
-    QList<QpSqlQuery> queriesThatAdjustManyToManyRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const;
+    QList<QpSqlQuery> queriesThatAdjustOneToOneRelation(const QpMetaProperty &relation, const QObject *object, QpError &error) const;
+    QList<QpSqlQuery> queriesThatAdjustOneToManyRelation(const QpMetaProperty &relation, const QObject *object, QpError &error) const;
+    QList<QpSqlQuery> queriesThatAdjustToOneRelation(const QpMetaProperty &relation, const QObject *object, QpError &error) const;
+    QList<QpSqlQuery> queriesThatAdjustManyToManyRelation(const QpMetaProperty &relation, const QObject *object, QpError &error) const;
 
     void readToManyRelation(QHash<int, QpDataTransferObject> &dataTransferObjects,
                             const QpMetaProperty &relation,
@@ -238,7 +238,7 @@ void QpLegacySqlDatasourceData::fillValuesIntoQuery(const QObject *object,
     }
 }
 
-int QpLegacySqlDatasourceData::objectRevision(QpDatasourceResult *result, const QObject *object) const
+int QpLegacySqlDatasourceData::objectRevision(const QObject *object, QpError &error) const
 {
     QpSqlQuery query(database);
     QString historyTable = QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(QpMetaObject::forObject(object).tableName());
@@ -251,14 +251,14 @@ int QpLegacySqlDatasourceData::objectRevision(QpDatasourceResult *result, const 
     query.prepareSelect();
 
     if (!query.exec() || !query.first()) {
-        result->setError(query);
+        error = QpError(query);
         return -1;
     }
 
     return query.value(0).toInt();
 }
 
-void QpLegacySqlDatasourceData::adjustRelationsInDatabase(QpDatasourceResult *result, const QObject *object) const
+void QpLegacySqlDatasourceData::adjustRelationsInDatabase(const QObject *object, QpError &error) const
 {
     QList<QpSqlQuery> queries;
     QpMetaObject metaObject = QpMetaObject::forObject(object);
@@ -267,34 +267,34 @@ void QpLegacySqlDatasourceData::adjustRelationsInDatabase(QpDatasourceResult *re
         QpMetaProperty::Cardinality cardinality = property.cardinality();
 
         if (cardinality == QpMetaProperty::OneToOneCardinality) {
-            queries.append(queriesThatAdjustOneToOneRelation(result, property, object));
+            queries.append(queriesThatAdjustOneToOneRelation(property, object, error));
         }
         else if (cardinality == QpMetaProperty::OneToManyCardinality) {
-            queries.append(queriesThatAdjustOneToManyRelation(result, property, object));
+            queries.append(queriesThatAdjustOneToManyRelation(property, object, error));
         }
         else if (cardinality == QpMetaProperty::ManyToOneCardinality) {
-            queries.append(queriesThatAdjustToOneRelation(result, property, object));
+            queries.append(queriesThatAdjustToOneRelation(property, object, error));
         }
         else if (cardinality == QpMetaProperty::ManyToManyCardinality) {
-            queries.append(queriesThatAdjustManyToManyRelation(result, property, object));
+            queries.append(queriesThatAdjustManyToManyRelation(property, object, error));
         }
     }
 
-    if (result->error().isValid())
+    if (error.isValid())
         return;
 
     foreach (QpSqlQuery query, queries) {
         if (!query.exec()) {
-            result->setError(query);
+            error = QpError(query);
             return;
         }
     }
 }
 
-QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustOneToOneRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const
+QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustOneToOneRelation(const QpMetaProperty &relation, const QObject *object, QpError &error) const
 {
     if (relation.hasTableForeignKey())
-        return queriesThatAdjustToOneRelation(result, relation, object);
+        return queriesThatAdjustToOneRelation(relation, object, error);
 
     QList<QpSqlQuery> queries;
     QVariant primaryKey = Qp::Private::primaryKey(object);
@@ -341,9 +341,9 @@ QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustOneToOneRelation(Q
     return queries;
 }
 
-QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustOneToManyRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const
+QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustOneToManyRelation(const QpMetaProperty &relation, const QObject *object, QpError &error) const
 {
-    Q_UNUSED(result);
+    Q_UNUSED(error);
 
     QList<QpSqlQuery> queries;
     QVariant primaryKey = Qp::Private::primaryKey(object);
@@ -429,9 +429,9 @@ QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustOneToManyRelation(
     return queries;
 }
 
-QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustToOneRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const
+QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustToOneRelation(const QpMetaProperty &relation, const QObject *object, QpError &error) const
 {
-    Q_UNUSED(result);
+    Q_UNUSED(error);
 
     QVariant primaryKey = Qp::Private::primaryKey(object);
 
@@ -508,9 +508,9 @@ QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustToOneRelation(QpDa
 
 }
 
-QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustManyToManyRelation(QpDatasourceResult *result, const QpMetaProperty &relation, const QObject *object) const
+QList<QpSqlQuery> QpLegacySqlDatasourceData::queriesThatAdjustManyToManyRelation(const QpMetaProperty &relation, const QObject *object, QpError &error) const
 {
-    Q_UNUSED(result);
+    Q_UNUSED(error);
 
     QList<QpSqlQuery> queries;
     QVariant primaryKey = Qp::Private::primaryKey(object);
@@ -710,6 +710,14 @@ QpLegacySqlDatasource::~QpLegacySqlDatasource()
 {
 }
 
+QpDatasource *QpLegacySqlDatasource::cloneForThread(QThread *thread) const
+{
+    QpLegacySqlDatasource *clone = new QpLegacySqlDatasource();
+    clone->moveToThread(thread);
+    Q_ASSERT(QMetaObject::invokeMethod(clone, "cloneDatabase", Qt::AutoConnection, Q_ARG(QSqlDatabase, data->database)));
+    return clone;
+}
+
 QSqlDatabase QpLegacySqlDatasource::database() const
 {
     return data->database;
@@ -718,6 +726,11 @@ QSqlDatabase QpLegacySqlDatasource::database() const
 void QpLegacySqlDatasource::setSqlDatabase(const QSqlDatabase &database)
 {
     data->database = database;
+}
+
+QpDatasource::Features QpLegacySqlDatasource::features() const
+{
+    return QpDatasource::Asynchronous;
 }
 
 void QpLegacySqlDatasource::count(QpDatasourceResult *result, const QpMetaObject &metaObject, const QpCondition &condition) const
@@ -736,11 +749,12 @@ void QpLegacySqlDatasource::count(QpDatasourceResult *result, const QpMetaObject
     query.prepare(q);
 
     if (!query.exec() || !query.first()) {
-        result->setError(query);
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
-    result->setIntegerResult(query.value(0).toInt());
+    Q_ASSERT(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, query.value(0).toInt())));
+    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::latestRevision(QpDatasourceResult *result, const QpMetaObject &metaObject) const
@@ -754,11 +768,12 @@ void QpLegacySqlDatasource::latestRevision(QpDatasourceResult *result, const QpM
                     .arg(data->database.databaseName())
                     .arg(QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(metaObject.tableName())))
         || !query.first()) {
-        result->setError(query);
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
-    result->setIntegerResult(query.value(0).toInt() - 1);
+    Q_ASSERT(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, query.value(0).toInt() - 1)));
+    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::maxPrimaryKey(QpDatasourceResult *result, const QpMetaObject &metaObject) const
@@ -770,11 +785,12 @@ void QpLegacySqlDatasource::maxPrimaryKey(QpDatasourceResult *result, const QpMe
                     .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
                     .arg(QpSqlQuery::escapeField(metaObject.tableName())))
         || !query.first()) {
-        result->setError(query);
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
-    result->setIntegerResult(query.value(0).toInt() - 1);
+    Q_ASSERT(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, query.value(0).toInt() - 1)));
+    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::objectByPrimaryKey(QpDatasourceResult *result, const QpMetaObject &metaObject, int primaryKey) const
@@ -803,7 +819,7 @@ void QpLegacySqlDatasource::objects(QpDatasourceResult *result, const QpMetaObje
     query.prepareSelect();
 
     if (!query.exec()) {
-        result->setError(query);
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
@@ -811,11 +827,12 @@ void QpLegacySqlDatasource::objects(QpDatasourceResult *result, const QpMetaObje
     QpError error;
     data->readToManyRelations(dtos, metaObject, QpCondition::primaryKeys(dtos.keys()), error);
     if (error.isValid()) {
-        result->setError(error);
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
         return;
     }
 
-    result->setDataTransferObjects(dtos);
+    Q_ASSERT(QMetaObject::invokeMethod(result, "setDataTransferObjects", Qt::AutoConnection, Q_ARG(QpDataTransferObjectsById, dtos)));
+    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::objectsUpdatedAfterRevision(QpDatasourceResult *result, const QpMetaObject &metaObject, int revision) const
@@ -844,11 +861,19 @@ void QpLegacySqlDatasource::objectRevision(QpDatasourceResult *result, const QOb
     query.prepareSelect();
 
     if (!query.exec() || !query.first()) {
-        result->setError(query);
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
-    result->setIntegerResult(data->objectRevision(result, object));
+    QpError error;
+    int revision = data->objectRevision(object, error);
+    if(error.isValid()) {
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
+        return;
+    }
+
+    Q_ASSERT(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, revision)));
+    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::insertObject(QpDatasourceResult *result, const QObject *object) const
@@ -867,7 +892,7 @@ void QpLegacySqlDatasource::insertObject(QpDatasourceResult *result, const QObje
     // Insert the object itself
     query.prepareInsert();
     if (!query.exec()) {
-        result->setError(query);
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
@@ -896,14 +921,17 @@ void QpLegacySqlDatasource::updateObject(QpDatasourceResult *result, const QObje
     // Insert the object itself
     query.prepareUpdate();
     if (!query.exec()) {
-        result->setError(query);
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
     // Update related objects
-    data->adjustRelationsInDatabase(result, object);
-    if (result->error().isValid())
+    QpError error;
+    data->adjustRelationsInDatabase(object, error);
+    if (error.isValid()) {
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
+    }
 
     objectByPrimaryKey(result, metaObject, primaryKey);
 }
@@ -920,7 +948,7 @@ void QpLegacySqlDatasource::removeObject(QpDatasourceResult *result, const QObje
     query.prepareDelete();
 
     if (!query.exec()) {
-        result->setError(query);
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
     }
 }
 
@@ -946,7 +974,7 @@ void QpLegacySqlDatasource::incrementNumericColumn(QpDatasourceResult *result, c
             break;
 
         if (tryCount >= TRY_COUNT_MAX || query.lastError().nativeErrorCode() != QLatin1String("1213")) {
-            result->setError(query);
+            Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
             return;
         }
 
@@ -957,4 +985,10 @@ void QpLegacySqlDatasource::incrementNumericColumn(QpDatasourceResult *result, c
     } while (true);
 
     objectByPrimaryKey(result, mo, primaryKey);
+}
+
+void QpLegacySqlDatasource::cloneDatabase(const QSqlDatabase &database)
+{
+    data->database = QSqlDatabase::cloneDatabase(database, database.connectionName().append(QThread::currentThread()->objectName()));
+    Q_ASSERT(data->database.open());
 }

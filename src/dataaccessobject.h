@@ -17,6 +17,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QSqlQuery;
 class QpCache;
+class QpReply;
 class QpStorage;
 class QpDatasourceResult;
 
@@ -42,7 +43,6 @@ public:
                                                    const QpCondition &condition = QpCondition(),
                                                    QList<QpDatasource::OrderField> orders = QList<QpDatasource::OrderField>()) const;
     QList<QSharedPointer<QObject> > readObjectsUpdatedAfterRevision(int revision) const;
-    QList<QSharedPointer<QObject> > readAllObjects(const QpDatasourceResult &datasourceResult) const;
     QList<QSharedPointer<QObject> > readAllObjects(const QList<int> primaryKeys) const;
     QSharedPointer<QObject> readObject(int id) const;
     QSharedPointer<QObject> createObject();
@@ -68,8 +68,15 @@ public:
 
     void resetLastKnownSynchronization();
 
+    QpReply *readAllObjectsAsync(int skip = -1,
+                                 int limit = -1,
+                                 const QpCondition &condition = QpCondition(),
+                                 QList<QpDatasource::OrderField> orders = {}) const;
+    QpReply *readObjectsUpdatedAfterRevisionAsync(int revision) const;
+
 public slots:
     bool synchronizeAllObjects();
+    void synchronizeAllObjectsAsync();
 
 Q_SIGNALS:
     void objectInstanceCreated(QSharedPointer<QObject>) const;
@@ -86,14 +93,20 @@ protected:
 
     virtual QObject *createInstance() const = 0;
 
+private slots:
+    void handleResultError();
+
 private:
     QSharedDataPointer<QpDataAccessObjectBaseData> data;
 
     void unlinkRelations(QSharedPointer<QObject> object) const;
-
     QSharedPointer<QObject> setupSharedObject(QObject *object, int id) const;
-
     Qp::SynchronizeResult sync(QSharedPointer<QObject> object);
+    QList<QSharedPointer<QObject> > readObjects(QpDatasourceResult *datasourceResult) const;
+    void handleCreatedObjects(const QList<QSharedPointer<QObject> > &objects);
+    void handleUpdatedObjects(const QList<QSharedPointer<QObject> > &objects);
+
+    QpReply *makeReply(QpDatasourceResult *result, std::function<void(QpDatasourceResult *, QpReply *)> handleResult) const;
 };
 
 namespace Qp {

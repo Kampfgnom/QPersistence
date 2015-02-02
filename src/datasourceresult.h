@@ -26,37 +26,42 @@ public:
     static QpDataTransferObject fromObject(const QObject *object); //! The "_Qp_dataTransferObject" dynamic property
 };
 
-class QpDatasourceResultPrivate;
+typedef QHash<int, QpDataTransferObject> QpDataTransferObjectsById;
+
+class QpDatasourceResultData;
 class QpDatasourceResult : public QObject
 {
     Q_OBJECT
 public:
-    explicit QpDatasourceResult(QpDataAccessObjectBase *dao = 0);
+
+    explicit QpDatasourceResult(const QpDataAccessObjectBase *dao = 0);
     ~QpDatasourceResult();
 
-    void reset();
-
-    bool isValid() const;
-    void invalidate();
-    void setValid(bool valid);
-
     int integerResult() const;
-    void setIntegerResult(int result);
-
-    QpError error() const;
-    void setError(const QpError &error);
-
     int size() const;
     QList<QpDataTransferObject> dataTransferObjects() const;
-    QHash<int, QpDataTransferObject> dataTransferObjectsById() const;
-    void setDataTransferObjects(const QHash<int, QpDataTransferObject> &dataTransferObjects);
+    QpDataTransferObjectsById dataTransferObjectsById() const;
+
+    bool isValid() const;
+    QpError lastError() const;
+
+public slots:
+    void finish();
+    void reset();
+    void setIntegerResult(int result);
+    void setDataTransferObjects(const QpDataTransferObjectsById &dataTransferObjects);
     void addDataTransferObject(const QpDataTransferObject &dataTransferObject);
+    void setLastError(const QpError &lastError);
+
+signals:
+    void finished();
+    void error(const QpError &error);
 
 private:
-    QExplicitlySharedDataPointer<QpDatasourceResultPrivate> data;
-
+    QExplicitlySharedDataPointer<QpDatasourceResultData> data;
 };
 
 Q_DECLARE_METATYPE(QpDataTransferObject)
+Q_DECLARE_METATYPE(QpDataTransferObjectsById)
 
 #endif // QPERSISTENCE_DATASOURCERESULT_H

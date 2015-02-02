@@ -70,4 +70,6 @@ private:
 
 bool operator==(const QpMetaObject &a1, const QpMetaObject &a2);
 
+Q_DECLARE_METATYPE(QpMetaObject)
+
 #endif // QPERSISTENCE_METAOBJECT_H

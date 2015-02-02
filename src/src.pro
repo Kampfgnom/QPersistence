@@ -26,65 +26,66 @@ macx {
 
 HEADERS += \
     cache.h \
+    condition.h \
     conversion.h \
     dataaccessobject.h \
     databaseschema.h \
+    datasource.h \
+    datasourceresult.h \
+    defaultstorage.h \
+    defines.h \
     error.h \
+    legacysqldatasource.h \
+    lock.h \
     metaobject.h \
     metaproperty.h \
+    model.h \
     objectlistmodel.h \
     private.h \
+    propertydependencieshelper.h \
     qpersistence.h \
+    relations.h \
+    reply.h \
+    schemaversioning.h \
     sortfilterproxyobjectmodel.h \
+    sqlbackend.h \
     sqldataaccessobjecthelper.h \
     sqlquery.h \
-    sqlbackend.h \
-    lock.h \
-    defines.h \
-    usermanagement.h \
-    throttledfetchproxymodel.h \
     storage.h \
-    defaultstorage.h \
-    schemaversioning.h \
-    lazyPixmap.h \
-    model.h \
+    throttledfetchproxymodel.h \
     transactionshelper.h \
-    propertydependencieshelper.h \
-    datasource.h \
-    condition.h \
-    datasourceresult.h \
-    legacysqldatasource.h \
-    relations.h
+    usermanagement.h
 
 SOURCES += \
-        cache.cpp \
+    cache.cpp \
+    condition.cpp \
     conversion.cpp \
     dataaccessobject.cpp \
     databaseschema.cpp \
+    datasource.cpp \
+    datasourceresult.cpp \
+    defaultstorage.cpp \
     error.cpp \
+    legacysqldatasource.cpp \
+    lock.cpp \
     metaobject.cpp \
     metaproperty.cpp \
+    model.cpp \
     objectlistmodel.cpp \
     private.cpp \
+    propertydependencieshelper.cpp \
+    relations.cpp \
+    reply.cpp \
+    schemaversioning.cpp \
     sortfilterproxyobjectmodel.cpp \
+    sqlbackend.cpp \
     sqldataaccessobjecthelper.cpp \
     sqlquery.cpp \
-    sqlbackend.cpp \
-    lock.cpp \
-    usermanagement.cpp \
-    throttledfetchproxymodel.cpp \
     storage.cpp \
-    defaultstorage.cpp \
-    schemaversioning.cpp \
-    lazyPixmap.cpp \
-    model.cpp \
+    throttledfetchproxymodel.cpp \
     transactionshelper.cpp \
-    propertydependencieshelper.cpp \
-    datasource.cpp \
-    condition.cpp \
-    datasourceresult.cpp \
-    legacysqldatasource.cpp \
-    relations.cpp
+    usermanagement.cpp
+
 
 OTHER_FILES += \
     uncrustify.cfg

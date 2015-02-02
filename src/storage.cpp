@@ -1,6 +1,7 @@
 #include "storage.h"
 
 #include "datasource.h"
+#include "datasourceresult.h"
 #include "error.h"
 #include "propertydependencieshelper.h"
 #include "sqlbackend.h"
@@ -9,6 +10,7 @@
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
+#include <QThread>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 static const char *PROPERTY_STORAGE = "_Qp_storage";
@@ -23,7 +25,9 @@ public:
     QpStorageData() :
         QSharedData(),
         locksEnabled(false),
-        datasource(nullptr)
+        datasource(nullptr),
+        asynchronousDatasource(nullptr),
+        datasourceThread(nullptr)
     {
     }
 
@@ -38,6 +42,8 @@ public:
     QpTransactionsHelper *transactionsHelper;
     QpPropertyDependenciesHelper *propertyDependenciesHelper;
     QpDatasource *datasource;
+    QpDatasource *asynchronousDatasource;
+    QThread *datasourceThread;
 
     static QpStorage *defaultStorage;
 };
@@ -52,6 +58,14 @@ QpStorage::QpStorage(QObject *parent) :
 {
     data->transactionsHelper = new QpTransactionsHelper(this);
     data->propertyDependenciesHelper = new QpPropertyDependenciesHelper(this);
+
+    qRegisterMetaType<QpDataTransferObjectsById>();
+    qRegisterMetaType<QpMetaObject>();
+    qRegisterMetaType<QpCondition>();
+    qRegisterMetaType<QList<QpDatasource::OrderField>>();
+    qRegisterMetaType<QSqlDatabase>();
+    qRegisterMetaType<QpDatasourceResult *>();
+    qRegisterMetaType<QpError>();
 }
 
 QpStorage::~QpStorage()
@@ -146,6 +160,8 @@ void QpStorage::setLastError(const QpError &error)
     if (!error.isValid())
         return;
 
+    qDebug() << error;
+
     foreach (QpAbstractErrorHandler *handler, data->errorHandlers) {
         handler->handleError(error);
     }
@@ -194,10 +210,31 @@ QpDatasource *QpStorage::datasource() const
     return data->datasource;
 }
 
+QpDatasource *QpStorage::asynchronousDatasource() const
+{
+    if(data->asynchronousDatasource)
+        return data->asynchronousDatasource;
+
+    Q_ASSERT(data->datasource->features() & QpDatasource::Asynchronous);
+    data->datasourceThread = new QThread(const_cast<QpStorage *>(this));
+    data->datasourceThread->setObjectName("DatasourceThread");
+    data->asynchronousDatasource = datasource()->cloneForThread(data->datasourceThread);
+    data->datasourceThread->start();
+    return data->asynchronousDatasource;
+}
+
 void QpStorage::setDatasource(QpDatasource *datasource)
 {
     if(data->datasource)
         data->datasource->deleteLater();
+
+    if(data->asynchronousDatasource) {
+        data->datasourceThread->quit();
+        data->datasourceThread->deleteLater();
+        data->asynchronousDatasource->deleteLater();
+        data->datasourceThread = nullptr;
+        data->asynchronousDatasource = nullptr;
+    }
 
     data->datasource = datasource;
 }
@@ -307,6 +344,7 @@ bool QpStorage::isDeleted(QSharedPointer<QObject> object)
 
 bool QpStorage::markAsDeleted(QSharedPointer<QObject> object)
 {
+#pragma message("mark as deleted wird nicht mehr im model reflektiert")
     return dataAccessObject(object)->markAsDeleted(object);
 }
 
