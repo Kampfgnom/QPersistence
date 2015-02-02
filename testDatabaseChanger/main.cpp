@@ -44,9 +44,9 @@ int main(int argc, char *argv[])
     if(!db.isOpen()) {
         db = QSqlDatabase::addDatabase("QMYSQL");
         db.setHostName("boot2docker");
-        db.setDatabaseName("niklas");
-        db.setUserName("niklas");
-        db.setPassword("niklas");
+        db.setDatabaseName("qpersistence_testing");
+        db.setUserName("qpersistence_testing");
+        db.setPassword("qpersistence_testing");
         if(!db.open()) {
             qWarning() << db.lastError();
             return -1;

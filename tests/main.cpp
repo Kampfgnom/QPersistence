@@ -32,9 +32,9 @@ int main(int argc, char *argv[])
 #ifdef QP_FOR_MYSQL
     QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
     db.setHostName("boot2docker");
-    db.setDatabaseName("niklas");
-    db.setUserName("niklas");
-    db.setPassword("niklas");
+    db.setDatabaseName("qpersistence_testing");
+    db.setUserName("qpersistence_testing");
+    db.setPassword("qpersistence_testing");
 #elif defined QP_FOR_SQLITE
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName("testdb.sqlite");
