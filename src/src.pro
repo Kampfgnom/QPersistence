@@ -48,7 +48,9 @@ HEADERS += \
     defaultstorage.h \
     schemaversioning.h \
     lazyPixmap.h \
-    model.h
+    model.h \
+    propertydependencies.h \
+    transactionshelper.h
 
 SOURCES += \
         cache.cpp \
@@ -77,4 +79,9 @@ SOURCES += \
     defaultstorage.cpp \
     schemaversioning.cpp \
     lazyPixmap.cpp \
-    model.cpp
+    model.cpp \
+    propertydependencies.cpp \
+    transactionshelper.cpp
+
+OTHER_FILES += \
+    uncrustify.cfg
