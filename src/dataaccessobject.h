@@ -59,9 +59,9 @@ public:
     int latestRevision() const;
 
 #ifndef QP_NO_TIMESTAMPS
-    QList<QSharedPointer<QObject>> createdSince(const QDateTime &time);
+    QList<QSharedPointer<QObject> > createdSince(const QDateTime &time);
     QList<QSharedPointer<QObject> > createdSince(double time);
-    QList<QSharedPointer<QObject>> updatedSince(const QDateTime &time);
+    QList<QSharedPointer<QObject> > updatedSince(const QDateTime &time);
     QList<QSharedPointer<QObject> > updatedSince(double time);
 #endif
 
@@ -74,11 +74,13 @@ public slots:
     bool synchronizeAllObjects();
 
 Q_SIGNALS:
+    void objectInstanceCreated(QSharedPointer<QObject>) const;
     void objectCreated(QSharedPointer<QObject>);
     void objectMarkedAsDeleted(QSharedPointer<QObject>);
     void objectUndeleted(QSharedPointer<QObject>);
     void objectUpdated(QSharedPointer<QObject>);
     void objectRemoved(QSharedPointer<QObject>);
+    void objectSynchronized(QSharedPointer<QObject>);
 
 protected:
     explicit QpDaoBase(const QMetaObject &metaObject,
@@ -92,6 +94,8 @@ private:
     void setLastError(const QpError &error) const;
     void resetLastError() const;
     void unlinkRelations(QSharedPointer<QObject> object) const;
+
+    QSharedPointer<QObject> setupSharedObject(QObject *object, int id) const;
 
     Qp::SynchronizeResult sync(QSharedPointer<QObject> object);
 
@@ -107,7 +111,9 @@ template<class T>
 class QpDao : public QpDaoBase
 {
 public:
-    QSharedPointer<T> read(int id) { return qSharedPointerCast<T>(readObject(id)); }
+    QSharedPointer<T> read(int id) {
+        return qSharedPointerCast<T>(readObject(id));
+    }
     QList<QSharedPointer<T> > readAllObjects(int skip = -1,
                                              int count = -1,
                                              const QpSqlCondition &condition = QpSqlCondition(),
@@ -119,9 +125,12 @@ public:
 protected:
     QpDao(QpStorage *parent) :
         QpDaoBase(T::staticMetaObject, parent)
-    {}
+    {
+    }
 
-    QObject *createInstance() const Q_DECL_OVERRIDE { return new T; }
+    QObject *createInstance() const Q_DECL_OVERRIDE {
+        return new T;
+    }
 
 private:
     friend class QpStorage;

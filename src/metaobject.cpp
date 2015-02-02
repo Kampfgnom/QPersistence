@@ -11,28 +11,34 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QString>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-class QpMetaObjectPrivate : public QSharedData
+
+/******************************************************************************
+ * QpMetaObjectData
+ */
+class QpMetaObjectData : public QSharedData
 {
 public:
-    QpMetaObjectPrivate() :
+    QpMetaObjectData() :
         QSharedData(),
         valid(false)
-    {}
+    {
+    }
 
     bool valid;
     QMetaObject metaObject;
     mutable QList<QpMetaProperty> metaProperties;
     mutable QList<QpMetaProperty> simpleProperties;
     mutable QList<QpMetaProperty> relationProperties;
+    mutable QList<QpMetaProperty> calculatedProperties;
     mutable QHash<QString, QpMetaProperty> metaPropertiesByName;
 
     static QHash<QString, QpMetaObject> metaObjectForName;
 
-    static QSharedDataPointer<QpMetaObjectPrivate> shared_null();
+    static QSharedDataPointer<QpMetaObjectData> shared_null();
 };
 
-QSharedDataPointer<QpMetaObjectPrivate> QpMetaObjectPrivate::shared_null() {
-    static QSharedDataPointer<QpMetaObjectPrivate>& shared_null = *new QSharedDataPointer<QpMetaObjectPrivate>(new QpMetaObjectPrivate);
+QSharedDataPointer<QpMetaObjectData> QpMetaObjectData::shared_null() {
+    static QSharedDataPointer<QpMetaObjectData>& shared_null = *new QSharedDataPointer<QpMetaObjectData>(new QpMetaObjectData);
     return shared_null;
 }
 
@@ -40,6 +46,10 @@ typedef QHash<QString, QpMetaObject> HashStringToMetaObject;
 QP_DEFINE_STATIC_LOCAL(HashStringToMetaObject, MetaObjectsForName)
 QP_DEFINE_STATIC_LOCAL(QList<QpMetaObject>, MetaObjects)
 
+
+/******************************************************************************
+ * QpMetaObject
+ */
 QpMetaObject QpMetaObject::registerMetaObject(const QMetaObject &metaObject)
 {
     QString className(metaObject.className());
@@ -59,7 +69,7 @@ QpMetaObject QpMetaObject::registerMetaObject(const QMetaObject &metaObject)
         MetaObjectsForName()->insert(qpmo.className(), result);
 
         objectInClassHierarchy = objectInClassHierarchy->superClass();
-    } while(objectInClassHierarchy->className() != QObject::staticMetaObject.className());
+    } while (objectInClassHierarchy->className() != QObject::staticMetaObject.className());
 
     return result;
 }
@@ -96,12 +106,12 @@ QList<QpMetaObject> QpMetaObject::registeredMetaObjects()
 }
 
 QpMetaObject::QpMetaObject() :
-    data(QpMetaObjectPrivate::shared_null())
+    data(QpMetaObjectData::shared_null())
 {
 }
 
 QpMetaObject::QpMetaObject(const QMetaObject &metaObject) :
-    data(new QpMetaObjectPrivate)
+    data(new QpMetaObjectData)
 {
     data->valid = true;
     data->metaObject = metaObject;
@@ -115,16 +125,16 @@ QMetaMethod QpMetaObject::method(QString signature, const QpMetaProperty &proper
     QMetaMethod method = findMethod(signature.arg(propertyName).arg(reverseClassName));
 
 
-    if(method.isValid())
+    if (method.isValid())
         return method;
 
     QString reverseClassNameWithoutNamespaces = removeNamespaces(reverseClassName);
-    if(reverseClassNameWithoutNamespaces == reverseClassName)
+    if (reverseClassNameWithoutNamespaces == reverseClassName)
         return QMetaMethod();
 
 
     method = findMethod(signature.arg(propertyName).arg(reverseClassNameWithoutNamespaces));
-    if(method.isValid())
+    if (method.isValid())
         return method;
 
     Q_ASSERT_X(false, Q_FUNC_INFO,
@@ -140,7 +150,7 @@ QMetaMethod QpMetaObject::findMethod(QString signature) const
     QByteArray normalized = QMetaObject::normalizedSignature(signature.toUtf8());
     int index = data->metaObject.indexOfMethod(normalized);
 
-    if(index > 0)
+    if (index > 0)
         return data->metaObject.method(index);
 
     // Remove a possible trailing 's' to match 'many' relations
@@ -148,7 +158,7 @@ QMetaMethod QpMetaObject::findMethod(QString signature) const
     normalized = QMetaObject::normalizedSignature(signature.toUtf8());
     index = data->metaObject.indexOfMethod(normalized);
 
-    if(index > 0)
+    if (index > 0)
         return data->metaObject.method(index);
 
     // Remove a possible trailing 's' to match 'many' relations
@@ -156,7 +166,7 @@ QMetaMethod QpMetaObject::findMethod(QString signature) const
     normalized = QMetaObject::normalizedSignature(signature.toUtf8());
     index = data->metaObject.indexOfMethod(normalized);
 
-    if(index > 0)
+    if (index > 0)
         return data->metaObject.method(index);
 
     // Remove all 's' to even better match 'many' relations
@@ -164,7 +174,7 @@ QMetaMethod QpMetaObject::findMethod(QString signature) const
     normalized = QMetaObject::normalizedSignature(signature.toUtf8());
     index = data->metaObject.indexOfMethod(normalized);
 
-    if(index > 0)
+    if (index > 0)
         return data->metaObject.method(index);
 
     return QMetaMethod();
@@ -175,18 +185,22 @@ void QpMetaObject::initProperties() const
     int count = data->metaObject.propertyCount();
     for (int i = 1; i < count; ++i) {
         QMetaProperty p = data->metaObject.property(i);
+
+        QpMetaProperty mp = QpMetaProperty(p, *this);
+        if(mp.isCalculated()) {
+            data->calculatedProperties.append(mp);
+        }
+
         if (!p.isStored())
             continue;
 
-        QpMetaProperty mp = QpMetaProperty(p, *this);
         data->metaPropertiesByName.insert(p.name(), mp);
         data->metaProperties.append(mp);
-
-        if (!mp.isRelationProperty()) {
-            data->simpleProperties.append(mp);
+        if (mp.isRelationProperty()) {
+            data->relationProperties.append(mp);
         }
         else {
-            data->relationProperties.append(mp);
+            data->simpleProperties.append(mp);
         }
     }
 }
@@ -275,6 +289,14 @@ QList<QpMetaProperty> QpMetaObject::relationProperties() const
     return data->relationProperties;
 }
 
+QList<QpMetaProperty> QpMetaObject::calculatedProperties() const
+{
+    if (data->metaProperties.isEmpty()) {
+        initProperties();
+    }
+    return data->calculatedProperties;
+}
+
 QString QpMetaObject::sqlFilter() const
 {
     return classInformation(QPERSISTENCE_SQLFILTER, QString());
@@ -319,7 +341,7 @@ QString QpMetaObject::removeNamespaces(const QString &classNameWithNamespaces)
 {
     QString className = classNameWithNamespaces;
     int namespaceIndex = className.lastIndexOf("::");
-    if(namespaceIndex > 0)
+    if (namespaceIndex > 0)
         className = className.mid(namespaceIndex + 2);
     return className;
 }

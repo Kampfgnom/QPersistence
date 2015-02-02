@@ -7,8 +7,12 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QLinkedList>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
+
+/******************************************************************************
+ * QpCacheData
+ */
 class QpCacheData : public QSharedData {
-public:                      
+public:
     int strongCacheSize;
     QHash<int, QWeakPointer<QObject> > weakCacheById;
     mutable QLinkedList<QSharedPointer<QObject> > strongCache;
@@ -25,6 +29,10 @@ void QpCacheData::adjustQueue(QSharedPointer<QObject> accessedObject) const
     }
 }
 
+
+/******************************************************************************
+ * QpCache
+ */
 QpCache::QpCache() :
     data(new QpCacheData)
 {

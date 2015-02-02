@@ -18,8 +18,8 @@ int QpSortFilterProxyObjectModelBase::sortRoleCount() const
 
 QString QpSortFilterProxyObjectModelBase::sortRoleTitle(int sortRole) const
 {
-    if(sortRole >= Qt::UserRole + 1
-       && sortRole > sortRoleCount())
+    if (sortRole >= Qt::UserRole + 1
+        && sortRole > sortRoleCount())
         sortRole -= Qt::UserRole + 1;
 
     return sortRoles().at(sortRole);
@@ -43,7 +43,7 @@ void QpSortFilterProxyObjectModelBase::setIncludeDeletedObjects(bool includeDele
 QList<QSharedPointer<QObject> > QpSortFilterProxyObjectModelBase::objectsBase() const
 {
     QList<QSharedPointer<QObject> > result;
-    for(int i = 0, c = rowCount(); i < c; ++i) {
+    for (int i = 0, c = rowCount(); i < c; ++i) {
         result << objectByIndexBase(index(i, 0));
     }
     return result;
@@ -51,9 +51,9 @@ QList<QSharedPointer<QObject> > QpSortFilterProxyObjectModelBase::objectsBase() 
 
 bool QpSortFilterProxyObjectModelBase::lessThan(const QModelIndex &left, const QModelIndex &right) const
 {
-    if(!left.isValid())
+    if (!left.isValid())
         return true;
-    if(!right.isValid())
+    if (!right.isValid())
         return false;
 
     QSharedPointer<QObject> o1 = sourceQpModel()->objectByIndexBase(left);
@@ -71,11 +71,11 @@ bool QpSortFilterProxyObjectModelBase::filterAcceptsRow(int source_row, const QM
 {
     QSharedPointer<QObject> o = sourceQpModel()->objectByIndexBase(sourceModel()->index(source_row, 0, source_parent));
 
-    if(!includeDeletedObjects()
-       && Qp::Private::isDeleted(o.data()))
+    if (!includeDeletedObjects()
+        && Qp::Private::isDeleted(o.data()))
         return false;
 
-    if(!filterAcceptsObjectBase(o))
+    if (!filterAcceptsObjectBase(o))
         return false;
 
     return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);

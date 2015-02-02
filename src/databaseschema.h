@@ -15,7 +15,7 @@ class QpMetaProperty;
 class QpSqlQuery;
 class QpStorage;
 
-class QpDatabaseSchemaPrivate;
+class QpDatabaseSchemaData;
 class QpDatabaseSchema : public QObject
 {
     Q_OBJECT
@@ -63,8 +63,8 @@ public:
     bool enableHistoryTracking(const QString &table);
 
     void cleanSchema();
-    void createCleanSchema();
-    void adjustSchema();
+    bool createCleanSchema();
+    bool adjustSchema();
 
     void setForeignKeyChecks(bool check);
 
@@ -87,7 +87,7 @@ public:
     QString variantTypeToSqlType(QVariant::Type type);
 
 private:
-    QSharedDataPointer<QpDatabaseSchemaPrivate> data;
+    QSharedDataPointer<QpDatabaseSchemaData> data;
 
     void setLastError(const QpError &error) const;
     void setLastError(const QSqlQuery &query) const;

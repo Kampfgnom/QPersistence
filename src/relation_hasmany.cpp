@@ -1,27 +1,42 @@
 #include "relation_hasmany.h"
-#include <QSharedData>
 
 #include "metaproperty.h"
-#include "relationresolver.h"
+#include "propertydependencies.h"
 #include "qpersistence.h"
+#include "relationresolver.h"
+#include "storage.h"
 
+BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+#include <QSharedData>
+#include <QDebug>
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
+
+/******************************************************************************
+ * QpHasManyBase
+ */
 class QpHasManyData : public QSharedData {
 public:
-    QpHasManyData() : QSharedData(),
+    QpHasManyData() :
+        QSharedData(),
         resolved(false),
-        parent(nullptr)
-    {}
+        owner(nullptr)
+    {
+    }
 
     bool resolved;
     QList<QSharedPointer<QObject>> objects;
     QpMetaProperty metaProperty;
-    QObject *parent;
+    QObject *owner;
 };
 
+
+/******************************************************************************
+ * QpHasManyBase
+ */
 QpHasManyBase::QpHasManyBase(const QString &name, QObject *parent) :
     data(new QpHasManyData)
 {
-    data->parent = parent;
+    data->owner = parent;
     QString propertyName = QpMetaProperty::nameFromMaybeQualifiedName(name);
     data->metaProperty = QpMetaObject::forObject(parent).metaProperty(propertyName);
 }
@@ -37,14 +52,18 @@ bool QpHasManyBase::operator ==(const QList<QSharedPointer<QObject> > &objects) 
 
 QList<QSharedPointer<QObject> > QpHasManyBase::objects() const
 {
-    if(Qp::Private::primaryKey(data->parent) == 0)
+    if (Qp::Private::primaryKey(data->owner) == 0)
         return QList<QSharedPointer<QObject> >();
 
-    if(data->resolved)
+    if (data->resolved)
         return data->objects;
 
-    data->objects = QpRelationResolver::resolveToManyRelation(data->metaProperty.name(), data->parent);
+    data->objects = QpRelationResolver::resolveToManyRelation(data->metaProperty.name(), data->owner);
     data->resolved = true;
+
+    QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
+    dependecies.initDependencies(data->owner, data->objects, data->metaProperty);
+
     return data->objects;
 }
 
@@ -52,82 +71,33 @@ void QpHasManyBase::add(QSharedPointer<QObject> object)
 {
     objects(); // resolve
 
-    if(data->objects.contains(object))
+    if (data->objects.contains(object))
         return;
 
     data->objects.append(object);
 
-    QpMetaProperty reverse = data->metaProperty.reverseRelation();
-    QSharedPointer<QObject> sharedParent = Qp::sharedFrom(data->parent);
-    QString className = data->metaProperty.metaObject().className();
+    if (object) {
+        data->metaProperty.reverseRelation().add(object, Qp::sharedFrom(data->owner));
 
-    if(object){
-        if(reverse.isToOneRelationProperty()) {
-            reverse.write(object.data(), Qp::Private::variantCast(sharedParent, className));
-        }
-        else {
-
-            QSharedPointer<QObject> shared = Qp::sharedFrom(data->parent);
-            QVariant wrapper = Qp::Private::variantCast(shared, className);
-
-            const QMetaObject *mo = object->metaObject();
-            QByteArray methodName = reverse.metaObject().addObjectMethod(reverse).methodSignature();
-            int index = mo->indexOfMethod(methodName);
-
-            Q_ASSERT_X(index > 0, Q_FUNC_INFO,
-                       QString("You have to add a public slot with the signature '%1' to your '%2' class!")
-                       .arg(QString::fromLatin1(methodName))
-                       .arg(mo->className())
-                       .toLatin1());
-
-            QMetaMethod method = mo->method(index);
-            bool result = method.invoke(object.data(), Qt::DirectConnection,
-                                        QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data()));
-            Q_ASSERT(result);
-            Q_UNUSED(result);
-        }
+        QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
+        dependecies.initDependencies(data->owner, object, data->metaProperty);
     }
 
-    if(!data->objects.contains(object))
+    if (!data->objects.contains(object))
         data->objects.append(object);
 }
 
 void QpHasManyBase::remove(QSharedPointer<QObject> object)
 {
     objects(); // resolve
-    int removeCount = data->objects.removeAll(object);
-    Q_ASSERT(removeCount <= 1);
-
-    if(removeCount == 0)
+    if(!data->objects.removeOne(object))
         return;
 
-    QpMetaProperty reverse = data->metaProperty.reverseRelation();
-    QString className = data->metaProperty.metaObject().className();
+    if (object) {
+        data->metaProperty.reverseRelation().remove(object, Qp::sharedFrom(data->owner));
 
-    if(object){
-        if(reverse.isToOneRelationProperty()) {
-            reverse.write(object.data(), Qp::Private::variantCast(QSharedPointer<QObject>(), className));
-        }
-        else {
-            QSharedPointer<QObject> shared = Qp::sharedFrom(data->parent);
-            QVariant wrapper = Qp::Private::variantCast(shared, className);       
-
-            const QMetaObject *mo = object->metaObject();
-            QByteArray methodName = reverse.metaObject().removeObjectMethod(reverse).methodSignature();
-            int index = mo->indexOfMethod(methodName);
-
-            Q_ASSERT_X(index > 0, Q_FUNC_INFO,
-                       QString("You have to add a public slot with the signature '%1' to your '%2' class!")
-                       .arg(QString::fromLatin1(methodName))
-                       .arg(mo->className())
-                       .toLatin1());
-
-            QMetaMethod method = mo->method(index);
-            bool result = method.invoke(object.data(), Qt::DirectConnection,
-                                        QGenericArgument(data->metaProperty.typeName().toLatin1(), wrapper.data()));
-            Q_ASSERT(result);
-            Q_UNUSED(result);
-        }
+        QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
+        dependecies.removeDependencies(data->owner, object, data->metaProperty);
     }
 }
 
@@ -135,6 +105,9 @@ void QpHasManyBase::setObjects(const QList<QSharedPointer<QObject>> objects) con
 {
     data->objects = objects;
     data->resolved = true;
+
+    QpPropertyDependencies dependecies(QpStorage::forObject(data->owner));
+    dependecies.initDependencies(data->owner, objects, data->metaProperty);
 }
 
 bool QpHasManyBase::isResolved() const

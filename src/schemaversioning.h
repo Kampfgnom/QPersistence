@@ -1,5 +1,5 @@
-#ifndef SCHEMAVERSIONING_H
-#define SCHEMAVERSIONING_H
+#ifndef QPERSISTENCE_SCHEMAVERSIONING_H
+#define QPERSISTENCE_SCHEMAVERSIONING_H
 
 #include "defines.h"
 
@@ -65,8 +65,8 @@ uint qHash(const QpSchemaVersioning::Version &version, uint seed)
 bool operator <(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
 {
     return v1.major < v2.major
-            || (v1.major == v2.major && v1.minor < v2.minor)
-            || (v1.major == v2.major && v1.minor == v2.minor && v1.dot < v2.dot);
+           || (v1.major == v2.major && v1.minor < v2.minor)
+           || (v1.major == v2.major && v1.minor == v2.minor && v1.dot < v2.dot);
 }
 
 bool operator >(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
@@ -82,8 +82,8 @@ bool operator <=(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning
 bool operator ==(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
 {
     return v1.major == v2.major
-            && v1.minor == v2.minor
-            && v1.dot == v2.dot;
+           && v1.minor == v2.minor
+           && v1.dot == v2.dot;
 }
 
 bool operator !=(const QpSchemaVersioning::Version &v1, const QpSchemaVersioning::Version &v2)
@@ -97,4 +97,4 @@ QDebug operator<<(QDebug dbg, const QpSchemaVersioning::Version &version)
     return dbg.space();
 }
 
-#endif // SCHEMAVERSIONING_H
+#endif // QPERSISTENCE_SCHEMAVERSIONING_H

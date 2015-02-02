@@ -1,13 +1,19 @@
 #include "objectlistmodel.h"
 
+
+/******************************************************************************
+ * QpObjectListModelBaseData
+ */
 class QpObjectListModelBaseData : public QSharedData
 {
 public:
-    QpObjectListModelBaseData() : QSharedData(),
+    QpObjectListModelBaseData() :
+        QSharedData(),
         fetchCount(std::numeric_limits<int>::max()),
         dao(nullptr),
         objectsFromDao(true)
-    {}
+    {
+    }
 
     int fetchCount;
     mutable QHash<QSharedPointer<QObject>, int> rows;
@@ -17,6 +23,10 @@ public:
     QpSqlCondition condition;
 };
 
+
+/******************************************************************************
+ * QpObjectListModelBase
+ */
 QpObjectListModelBase::QpObjectListModelBase(QpDaoBase *dao, QObject *parent) :
     QAbstractListModel(parent),
     d(new QpObjectListModelBaseData)
@@ -40,7 +50,7 @@ int QpObjectListModelBase::fetchCount() const
 
 void QpObjectListModelBase::setFetchCount(int fetchCount)
 {
-    if(fetchCount < 0)
+    if (fetchCount < 0)
         d->fetchCount = std::numeric_limits<int>::max();
     else
         d->fetchCount = fetchCount;
@@ -62,7 +72,7 @@ int QpObjectListModelBase::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
     int index = metaObject()->indexOfEnumerator("Columns");
-    if(index != -1)
+    if (index != -1)
         return metaObject()->enumerator(index).keyCount();
 
     return d->dao->qpMetaObject().metaObject().propertyCount();
@@ -78,15 +88,17 @@ int QpObjectListModelBase::rowCount(const QModelIndex &parent) const
 
 bool QpObjectListModelBase::canFetchMore(const QModelIndex &) const
 {
-    if(!d->objectsFromDao)
+    if (!d->objectsFromDao)
         return false;
 
     return (d->objects.size() < d->dao->count(d->condition));
 }
 
-void QpObjectListModelBase::fetchMore(const QModelIndex &/*parent*/)
+void QpObjectListModelBase::fetchMore(const QModelIndex &parent)
 {
-    if(!d->objectsFromDao)
+    Q_UNUSED(parent)
+
+    if (!d->objectsFromDao)
         return;
 
     int begin = d->objects.size();
@@ -96,7 +108,7 @@ void QpObjectListModelBase::fetchMore(const QModelIndex &/*parent*/)
     beginInsertRows(QModelIndex(), begin, begin+itemsToFetch-1);
 
     d->objects.append(d->dao->readAllObjects(begin, itemsToFetch, d->condition));
-    for(int i = begin; i < begin + itemsToFetch; ++i) {
+    for (int i = begin; i < begin + itemsToFetch; ++i) {
         d->rows.insert(d->objects.at(i), i);
     }
 
@@ -132,8 +144,8 @@ QVariant QpObjectListModelBase::headerData(int section, Qt::Orientation orientat
 
 QModelIndex QpObjectListModelBase::indexForObjectBase(QSharedPointer<QObject> object) const
 {
-    while(!d->rows.contains(object)) {
-        if(!canFetchMore())
+    while (!d->rows.contains(object)) {
+        if (!canFetchMore())
             return QModelIndex();
 
         const_cast<QpObjectListModelBase *>(this)->fetchMore();
@@ -159,14 +171,14 @@ void QpObjectListModelBase::setObjects(QList<QSharedPointer<QObject> > objects)
 {
     beginResetModel();
 
-    if(d->dao)
+    if (d->dao)
         disconnect(d->dao, 0, this, 0);
 
     d->objectsFromDao = false;
     d->objects = objects;
     d->rows.clear();
 
-    for(int i = 0, count = objects.size(); i < count; ++i) {
+    for (int i = 0, count = objects.size(); i < count; ++i) {
         d->rows.insert(d->objects.at(i), i);
     }
 
@@ -184,19 +196,19 @@ void QpObjectListModelBase::objectUpdated(QSharedPointer<QObject> object)
     // fetches more items until the object is fetched
     QModelIndex i = indexForObjectBase(object);
 
-    if(i.isValid())
+    if (i.isValid())
         emit dataChanged(i, index(i.row(), columnCount(QModelIndex()) - 1));
 }
 
 void QpObjectListModelBase::objectRemoved(QSharedPointer<QObject> object)
 {
-    if(!d->rows.contains(object))
+    if (!d->rows.contains(object))
         return;
 
     int row = d->rows.value(object);
     beginRemoveRows(QModelIndex(), row, row);
 
-    for(int i = row + 1; i < d->objects.size(); ++i) {
+    for (int i = row + 1; i < d->objects.size(); ++i) {
         d->rows.insert(d->objects.at(i), i - 1);
     }
     d->rows.remove(object);
@@ -209,13 +221,13 @@ void QpObjectListModelBase::objectMarkedAsDeleted(QSharedPointer<QObject> object
 {
     objectUpdated(object);
 
-    if(Qp::isDeleted(object))
+    if (Qp::isDeleted(object))
         objectRemoved(object);
 }
 
 void QpObjectListModelBase::objectUndeleted(QSharedPointer<QObject> object)
 {
-    if(!d->objectsFromDao || d->rows.contains(object))
+    if (!d->objectsFromDao || d->rows.contains(object))
         return;
 
     int index = d->dao->count(d->condition
@@ -224,7 +236,7 @@ void QpObjectListModelBase::objectUndeleted(QSharedPointer<QObject> object)
     beginInsertRows(QModelIndex(), index, index);
 
     d->objects.insert(index, object);
-    for(int i = index, c = d->objects.count(); i < c; ++i) {
+    for (int i = index, c = d->objects.count(); i < c; ++i) {
         d->rows.insert(d->objects.at(i), i);
     }
 

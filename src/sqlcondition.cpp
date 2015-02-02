@@ -11,11 +11,17 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QVariantList>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
+
+/******************************************************************************
+ * QpSqlConditionData
+ */
 class QpSqlConditionData : public QSharedData {
 public:
-    QpSqlConditionData() : QSharedData(),
+    QpSqlConditionData() :
+        QSharedData(),
         bindValues(false)
-    {}
+    {
+    }
     bool bindValues;
     QString rawString;
     QString field;
@@ -26,15 +32,19 @@ public:
     QString table;
 };
 
+
+/******************************************************************************
+ * QpSqlCondition
+ */
 QpSqlCondition QpSqlCondition::notDeletedAnd(const QpSqlCondition &additionalConditions)
 {
     QpSqlCondition notDeleted = QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG, NotEqualTo, "1");
-    if(!additionalConditions.isValid())
+    if (!additionalConditions.isValid())
         return notDeleted;
 
     QpSqlCondition cond = QpSqlCondition(And, QList<QpSqlCondition>()
-                          << notDeleted
-                          << additionalConditions);
+                                         << notDeleted
+                                         << additionalConditions);
     cond.setBindValuesAsString(additionalConditions.data->bindValues);
     return cond;
 }
@@ -78,17 +88,17 @@ QpSqlCondition::QpSqlCondition(QpSqlCondition::BooleanOperator op, const QList<Q
 bool QpSqlCondition::isValid() const
 {
     return !data->field.isEmpty()
-            || !data->rawString.isEmpty()
-            || (data->booleanOperator == Not
-                && data->conditions.size() == 1)
-            || !data->conditions.isEmpty();
+           || !data->rawString.isEmpty()
+           || (data->booleanOperator == Not
+               && data->conditions.size() == 1)
+           || !data->conditions.isEmpty();
 }
 
 void QpSqlCondition::setBindValuesAsString(bool bindValues)
 {
     data->bindValues = bindValues;
 
-    for(int i = 0; i < data->conditions.size(); ++i) {
+    for (int i = 0; i < data->conditions.size(); ++i) {
         data->conditions[i].setBindValuesAsString(bindValues);
     }
 }
@@ -123,10 +133,10 @@ QpSqlCondition QpSqlCondition::operator !()
 
 QpSqlCondition QpSqlCondition::operator ||(const QpSqlCondition &rhs)
 {
-    if(!isValid())
+    if (!isValid())
         return rhs;
 
-    if(!rhs.isValid())
+    if (!rhs.isValid())
         return *this;
 
     return QpSqlCondition(QpSqlCondition::Or, QList<QpSqlCondition>() << *this << rhs);
@@ -134,10 +144,10 @@ QpSqlCondition QpSqlCondition::operator ||(const QpSqlCondition &rhs)
 
 QpSqlCondition QpSqlCondition::operator &&(const QpSqlCondition &rhs)
 {
-    if(!isValid())
+    if (!isValid())
         return rhs;
 
-    if(!rhs.isValid())
+    if (!rhs.isValid())
         return *this;
 
     return QpSqlCondition(QpSqlCondition::And, QList<QpSqlCondition>() << *this << rhs);
@@ -170,31 +180,31 @@ QString QpSqlCondition::toWhereClause() const
     Q_ASSERT(!data->field.isEmpty());
 
     QString value = "?";
-    if(data->bindValues)
+    if (data->bindValues)
         value = data->value.toString();
 
-    if(!data->table.isEmpty()
-       && !data->field.contains('.')) {
+    if (!data->table.isEmpty()
+        && !data->field.contains('.')) {
         return comparisonOperator()
-                .prepend(QString("%1.%2")
-                         .arg(QpSqlQuery::escapeField(data->table))
-                         .arg(QpSqlQuery::escapeField(data->field)))
-                .append(value);
+               .prepend(QString("%1.%2")
+                        .arg(QpSqlQuery::escapeField(data->table))
+                        .arg(QpSqlQuery::escapeField(data->field)))
+               .append(value);
     }
 
     return comparisonOperator()
-            .prepend(QpSqlQuery::escapeField(data->field))
-            .append(value);
+           .prepend(QpSqlQuery::escapeField(data->field))
+           .append(value);
 }
 
 QVariantList QpSqlCondition::bindValues() const
 {
     QVariantList result;
 
-    if(data->bindValues)
+    if (data->bindValues)
         return result;
 
-    if(!data->rawString.isEmpty())
+    if (!data->rawString.isEmpty())
         return result;
 
     foreach (const QpSqlCondition& condition, data->conditions) {
@@ -246,7 +256,7 @@ QString QpSqlCondition::comparisonOperator() const
 void QpSqlCondition::setTable(const QString &table)
 {
     QList<QpSqlCondition> newData;
-    foreach(QpSqlCondition c, data->conditions) {
+    foreach (QpSqlCondition c, data->conditions) {
         c.setTable(table);
         newData << c;
     }

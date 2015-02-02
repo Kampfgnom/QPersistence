@@ -10,7 +10,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 class QpSqlCondition;
 
-class QpSqlQueryPrivate;
+class QpSqlQueryData;
 class QpSqlQuery : public QSqlQuery
 {
 public:
@@ -20,8 +20,8 @@ public:
     };
 
     struct OrderField {
-            QString field;
-            Order order;
+        QString field;
+        Order order;
     };
 
     QpSqlQuery();
@@ -84,7 +84,7 @@ public:
     static QString escapeField(const QString &field);
 
 private:
-    QExplicitlySharedDataPointer<QpSqlQueryPrivate> data;
+    QExplicitlySharedDataPointer<QpSqlQueryData> data;
 
 };
 

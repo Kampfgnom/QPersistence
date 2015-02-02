@@ -9,7 +9,6 @@
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtTest>
 #include <QGuiApplication>
-END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #ifndef QP_NO_LOCKS
 void lockedCounter(QSharedPointer<TestNameSpace::ParentObject> parent);
@@ -23,6 +22,7 @@ void lockedCounter(QSharedPointer<TestNameSpace::ParentObject> parent) {
         Qp::unlock(parent);
     }
 }
+END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #endif
 
 int main(int argc, char *argv[])
@@ -41,10 +41,14 @@ int main(int argc, char *argv[])
 
     if(!db.isOpen()) {
         db = QSqlDatabase::addDatabase("QMYSQL");
-        db.setHostName("192.168.100.2");
+        db.setHostName("boot2docker");
         db.setDatabaseName("niklas");
         db.setUserName("niklas");
         db.setPassword("niklas");
+        if(!db.open()) {
+            qWarning() << db.lastError();
+            return -1;
+        }
 
         foreach(QString field, LockTest::additionalLockInfo().keys()) {
             Qp::addAdditionalLockInformationField(field);

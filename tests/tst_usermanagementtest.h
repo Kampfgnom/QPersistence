@@ -14,12 +14,15 @@ private slots:
     void initDatabase();
 
     void testCreateUser();
-    void testSetPassword();
-    void testGrandTable();
-    void testGrandTableColumn();
     void testGrandAll();
+    void testGrandTable();
+    void testSetPassword();
+    void testGrandTableColumn();
     void testRevokeAll();
     void testDeleteUser();
+
+private:
+    QpUserManagement m_userManagement;
 #endif
 };
 

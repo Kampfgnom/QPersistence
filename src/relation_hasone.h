@@ -32,13 +32,21 @@ template<class T>
 class QpHasOne : public QpHasOneBase
 {
 public:
-    explicit QpHasOne(const QString &name, QObject *parent) : QpHasOneBase(name, parent) {}
-    virtual ~QpHasOne() {}
+    explicit QpHasOne(const QString &name, QObject *parent) : QpHasOneBase(name, parent) {
+    }
+    virtual ~QpHasOne() {
+    }
 
     operator QSharedPointer<T> () const { return qSharedPointerCast<T>(object()); }
-    QpHasOne &operator=(const QSharedPointer<T> object) { setObject(qSharedPointerCast<QObject>(object)); return *this; }
-    bool operator ==(const QSharedPointer<T> &object) const { return QpHasOneBase::operator ==(object); }
-    bool operator !=(const QSharedPointer<T> &object) { return !operator ==(object); }
+    QpHasOne &operator=(const QSharedPointer<T> object) {
+        setObject(qSharedPointerCast<QObject>(object)); return *this;
+    }
+    bool operator ==(const QSharedPointer<T> &object) const {
+        return QpHasOneBase::operator ==(object);
+    }
+    bool operator !=(const QSharedPointer<T> &object) {
+        return !operator ==(object);
+    }
 };
 
 #ifndef QpRelation

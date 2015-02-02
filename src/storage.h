@@ -15,8 +15,9 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include "lock.h"
 
 class QSqlDatabase;
-class QpError;
 class QpAbstractErrorHandler;
+class QpError;
+class QpTransactionsHelper;
 
 class QpStorageData;
 class QpStorage : public QObject
@@ -28,7 +29,7 @@ public:
     explicit QpStorage(QObject *parent = 0);
     ~QpStorage();
 
-    QSqlDatabase database();
+    QSqlDatabase database() const;
     void setDatabase(const QSqlDatabase &database);
     void setSqlDebugEnabled(bool enable);
     bool adjustDatabaseSchema();
@@ -40,10 +41,13 @@ public:
     void clearErrorHandlers();
 
     bool beginTransaction();
-    Qp::CommitResult commitOrRollbackTransaction();
+    bool commitOrRollbackTransaction();
+    bool rollbackTransaction();
 
     void startBulkDatabaseQueries();
     void commitBulkDatabaseQueries();
+
+    void resetAllLastKnownSynchronizations();
 
     QList<QpDaoBase *> dataAccessObjects();
     QpDaoBase *dataAccessObject(const QMetaObject metaObject) const;
@@ -62,11 +66,12 @@ public:
     QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper() const;
     void enableStorageFrom(QObject *object);
     static QpStorage *forObject(const QObject *object);
+    static QpStorage *forObject(QSharedPointer<QObject> object);
 
     int revisionInDatabase(QObject *object);
     int revisionInObject(QObject *object);
 
-    template<class T, class... Superclasses> void registerClass();
+    template<class T, class ... Superclasses> void registerClass();
 
     template<class T> QpDao<T> *dataAccessObject();
     template<class T> QpDaoBase *dataAccessObject(QSharedPointer<T> object) const;
@@ -85,8 +90,8 @@ public:
 #ifndef QP_NO_TIMESTAMPS
     QDateTime databaseTime();
     double databaseTimeInternal();
-    template<class T> QList<QSharedPointer<T>> createdSince(const QDateTime &time);
-    template<class T> QList<QSharedPointer<T>> updatedSince(const QDateTime &time);
+    template<class T> QList<QSharedPointer<T> > createdSince(const QDateTime &time);
+    template<class T> QList<QSharedPointer<T> > updatedSince(const QDateTime &time);
     template<class T> QDateTime creationTime(QSharedPointer<T> object);
     template<class T> QDateTime creationTimeInDatabase(QSharedPointer<T> object);
     template<class T> QDateTime creationTimeInInObject(QSharedPointer<T> object);
@@ -182,9 +187,10 @@ void registerMetaType() {
     Qp::Private::registerConverter<QSharedPointer<T> >(converter);
 }
 
-template<typename... Args> void unpackTemplateParameters(Args...) {}
+template<typename ... Args> void unpackTemplateParameters(Args ...) {
+}
 
-template<class T, class... Superclasses>
+template<class T, class ... Superclasses>
 void QpStorage::registerClass()
 {
     QpDao<T> *dao = new QpDao<T>(this);
@@ -193,7 +199,7 @@ void QpStorage::registerClass()
     registerMetaType<T>();
 
     // http://stackoverflow.com/questions/12515616/expression-contains-unexpanded-parameter-packs/12515637#12515637
-    unpackTemplateParameters((registerMetaType<Superclasses>(), 0)...);
+    unpackTemplateParameters((registerMetaType<Superclasses>(), 0) ...);
 }
 
 template<class T> QSharedPointer<T> QpStorage::read(int id)
@@ -270,7 +276,7 @@ template<class T> QDateTime QpStorage::updateTimeInObject(QSharedPointer<T> obje
 
 template<class T> bool QpStorage::isLocked(QSharedPointer<T> object, IsLockedOption option)
 {
-    if(option == LockStateFromLastSync)
+    if (option == LockStateFromLastSync)
         return QpLock::isLocked(qSharedPointerCast<QObject>(object));
 
     QpLock lock = QpLock::lockStatus(this, qSharedPointerCast<QObject>(object));

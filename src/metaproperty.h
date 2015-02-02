@@ -10,7 +10,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 struct QMetaObject;
 class QpMetaObject;
 
-class QpMetaPropertyPrivate;
+class QpMetaPropertyData;
 class QpMetaProperty
 {
 public:
@@ -38,12 +38,18 @@ public:
     QString typeName() const;
     QString columnName() const;
 
+    QHash<QString, QString> attributes() const;
+
     bool isStored() const;
     bool isValid() const;
     bool isLazy() const;
+    bool hasAnnotation(const QString &name) const;
     QVariant::Type type() const;
 
-    QHash<QString, QString> attributes() const;
+    // Calculated properties
+    bool isCalculated() const;
+    QStringList dependencies() const;
+    QMetaMethod recalculateMethod(QSharedPointer<QObject> object) const;
 
     // Relations
     bool isRelationProperty() const;
@@ -83,7 +89,7 @@ private:
     QString shortName(const QString &name) const;
     void parseAttributes() const;
 
-    QExplicitlySharedDataPointer<QpMetaPropertyPrivate> data;
+    QExplicitlySharedDataPointer<QpMetaPropertyData> data;
 };
 
 uint qHash(const QpMetaProperty &t, uint seed);

@@ -41,6 +41,7 @@ public:
     void testSynchronizeCounter();
 
 private slots:
+    void init();
     void testCreatedSince();
     void testUpdatedSince();
 

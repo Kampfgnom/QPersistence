@@ -20,6 +20,7 @@ public:
         NoError = 0,
         SqlError,
         TransactionError,
+        TransactionRequestedByApplication,
         UserError = 1024
     };
 
@@ -44,29 +45,29 @@ private:
 
 class QpAbstractErrorHandler : public QObject
 {
-        Q_OBJECT
-    public:
-        explicit QpAbstractErrorHandler(QObject *parent = 0);
-        ~QpAbstractErrorHandler();
-        virtual void handleError(const QpError &error) = 0;
+    Q_OBJECT
+public:
+    explicit QpAbstractErrorHandler(QObject *parent = 0);
+    ~QpAbstractErrorHandler();
+    virtual void handleError(const QpError &error) = 0;
 };
 
 class QpPrintError : public QpAbstractErrorHandler
 {
-        Q_OBJECT
-    public:
-        explicit QpPrintError(QObject *parent = 0);
-        ~QpPrintError();
-        void handleError(const QpError &error);
+    Q_OBJECT
+public:
+    explicit QpPrintError(QObject *parent = 0);
+    ~QpPrintError();
+    void handleError(const QpError &error);
 };
 
 class QpQuitOnError : public QpAbstractErrorHandler
 {
-        Q_OBJECT
-    public:
-        explicit QpQuitOnError(QObject *parent = 0);
-        ~QpQuitOnError();
-        void handleError(const QpError &error);
+    Q_OBJECT
+public:
+    explicit QpQuitOnError(QObject *parent = 0);
+    ~QpQuitOnError();
+    void handleError(const QpError &error);
 };
 
 QDebug operator<<(QDebug dbg, const QpError &error);

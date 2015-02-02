@@ -35,15 +35,25 @@ template<class T>
 class QpHasMany : public QpHasManyBase
 {
 public:
-    explicit QpHasMany(const QString &name, QObject *parent) : QpHasManyBase(name, parent) {}
-    virtual ~QpHasMany() {}
+    explicit QpHasMany(const QString &name, QObject *parent) : QpHasManyBase(name, parent) {
+    }
+    virtual ~QpHasMany() {
+    }
 
-    void add(QSharedPointer<T> object) { QpHasManyBase::add(qSharedPointerCast<QObject>(object)); }
-    void remove(QSharedPointer<T> object) { QpHasManyBase::remove(qSharedPointerCast<QObject>(object)); }
+    void add(QSharedPointer<T> object) {
+        QpHasManyBase::add(qSharedPointerCast<QObject>(object));
+    }
+    void remove(QSharedPointer<T> object) {
+        QpHasManyBase::remove(qSharedPointerCast<QObject>(object));
+    }
 
     operator QList<QSharedPointer<T> > () const { return Qp::castList<T>(QpHasManyBase::objects()); }
-    QpHasMany &operator=(const QList<QSharedPointer<T> > objects) { QpHasManyBase::setObjects(Qp::castList<QObject>(objects)); return *this; }
-    bool operator ==(const QList<QSharedPointer<T> > &objects) const { return QpHasManyBase::operator ==(Qp::castList<QObject>(objects)); }
+    QpHasMany &operator=(const QList<QSharedPointer<T> > objects) {
+        QpHasManyBase::setObjects(Qp::castList<QObject>(objects)); return *this;
+    }
+    bool operator ==(const QList<QSharedPointer<T> > &objects) const {
+        return QpHasManyBase::operator ==(Qp::castList<QObject>(objects));
+    }
 };
 
 #endif // QPERSISTENCE_RELATION_HASMANY_H

@@ -1,5 +1,5 @@
-#ifndef LOCK_H
-#define LOCK_H
+#ifndef QPERSISTENCE_LOCK_H
+#define QPERSISTENCE_LOCK_H
 
 #include "defines.h"
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
@@ -59,4 +59,4 @@ private:
 #endif
 };
 
-#endif // LOCK_H
+#endif // QPERSISTENCE_LOCK_H

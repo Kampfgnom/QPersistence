@@ -13,6 +13,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include "tst_enumerationtest.h"
 #include "tst_flagstest.h"
 #include "tst_usermanagementtest.h"
+#include "tst_propertydependenciestest.h"
 
 #include "parentobject.h"
 #include "childobject.h"
@@ -30,7 +31,7 @@ int main(int argc, char *argv[])
 
 #ifdef QP_FOR_MYSQL
     QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
-    db.setHostName("192.168.100.2");
+    db.setHostName("boot2docker");
     db.setDatabaseName("niklas");
     db.setUserName("niklas");
     db.setPassword("niklas");
@@ -57,6 +58,7 @@ int main(int argc, char *argv[])
     Qp::registerClass<TestNameSpace::ChildObject>();
     Qp::createCleanSchema();
 
+    RUNTEST(PropertyDependenciesTest);
     RUNTEST(FlagsTest);
     RUNTEST(EnumerationTest);
     RUNTEST(CacheTest);
@@ -74,7 +76,7 @@ int main(int argc, char *argv[])
 #endif
 
 #ifndef QP_NO_USERMANAGEMENT
-    //    RUNTEST(UserManagementTest);
+    RUNTEST(UserManagementTest);
 #endif
 
     return 0;
