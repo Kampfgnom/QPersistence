@@ -16,4 +16,6 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 QVariant NULLKEY();
 
+bool waitForSignal(QObject *sender, const char *signal);
+
 #endif // TESTS_COMMON_H
