@@ -18,6 +18,7 @@ void setPrimaryKey(QObject *object, int key);
 int revisionInObject(const QObject *object);
 
 bool isDeleted(const QObject *object);
+bool isDeleted(QSharedPointer<QObject> object);
 void markAsDeleted(QObject *object);
 void undelete(QObject *object);
 

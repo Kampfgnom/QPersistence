@@ -20,6 +20,7 @@ public:
         SqlError,
         TransactionError,
         TransactionRequestedByApplication,
+        UpdateConflictError,
         UserError = 1024
     };
 

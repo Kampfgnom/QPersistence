@@ -21,7 +21,8 @@ enum SynchronizeResult : short {
     Updated,
     LastSyncNewEnough,
     Removed,
-    Deleted
+    Deleted,
+    RebaseConflict
 };
 
 enum UpdateResult : short {

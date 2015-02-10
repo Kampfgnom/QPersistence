@@ -8,6 +8,7 @@
 #include "../src/objectlistmodel.h"
 #include "../src/qpersistence.h"
 #include "../src/relations.h"
+#include "../src/reply.h"
 #include "../src/schemaversioning.h"
 #include "../src/sortfilterproxyobjectmodel.h"
 #include "../src/sqlquery.h"

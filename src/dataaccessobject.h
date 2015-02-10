@@ -20,6 +20,7 @@ class QpCache;
 class QpReply;
 class QpStorage;
 class QpDatasourceResult;
+class QpDataTransferObjectDiff;
 
 namespace Qp {
 enum SynchronizeResult : short;
@@ -50,7 +51,7 @@ public:
     bool removeObject(QSharedPointer<QObject> object);
     bool markAsDeleted(QSharedPointer<QObject> object);
     bool undelete(QSharedPointer<QObject> object);
-    enum SynchronizeMode { NormalMode, IgnoreRevision };
+    enum SynchronizeMode { NormalMode, IgnoreRevision, RebaseMode };
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode = NormalMode);
     int revisionInDatabase(QSharedPointer<QObject> object);
     bool incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName);
@@ -76,7 +77,7 @@ public:
 
 public slots:
     bool synchronizeAllObjects();
-    void synchronizeAllObjectsAsync();
+    QpReply *synchronizeAllObjectsAsync();
 
 Q_SIGNALS:
     void objectInstanceCreated(QSharedPointer<QObject>) const;
@@ -101,7 +102,7 @@ private:
 
     void unlinkRelations(QSharedPointer<QObject> object) const;
     QSharedPointer<QObject> setupSharedObject(QObject *object, int id) const;
-    Qp::SynchronizeResult sync(QSharedPointer<QObject> object);
+    Qp::SynchronizeResult sync(QSharedPointer<QObject> object, SynchronizeMode mode = NormalMode);
     QList<QSharedPointer<QObject> > readObjects(QpDatasourceResult *datasourceResult) const;
     void handleCreatedObjects(const QList<QSharedPointer<QObject> > &objects);
     void handleUpdatedObjects(const QList<QSharedPointer<QObject> > &objects);

@@ -9,6 +9,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 struct QMetaObject;
 class QpMetaObject;
+class QpRelationBase;
 
 class QpMetaPropertyData;
 class QpMetaProperty
@@ -62,6 +63,8 @@ public:
     QpMetaObject reverseMetaObject() const;
     QString reverseRelationName() const;
     QpMetaProperty reverseRelation() const;
+    QString internalRelationObjectPropertyName() const;
+    QpRelationBase *internalRelationObject(const QObject *object) const;
 
     QString tableName() const;
 

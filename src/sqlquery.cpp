@@ -200,24 +200,24 @@ QString QpSqlQuery::escapeField(const QString &field)
     if (field.startsWith('('))
         return field;
 
-    QStringList fields = field.split(".");
+    QStringList fields = field.split('.');
     QStringList escaped;
     foreach (QString f, fields) {
         QStringList split = f.split('+');
         if (split.size() == 2)
-            escaped << QString("%1+%2").arg(escapeField(split.at(0))).arg(split.at(1));
+            escaped << QString::fromLatin1("%1+%2").arg(escapeField(split.at(0))).arg(split.at(1));
         else if (!f.contains('`'))
-            escaped << QString("`%1`").arg(f);
+            escaped << QString::fromLatin1("`%1`").arg(f);
         else
             escaped << f;
     }
 
-    return escaped.join(".");
+    return escaped.join('.');
 }
 
 QString QpSqlQuery::escapeField(const QString &table, const QString &field)
 {
-    return QString("`%1`.`%2`").arg(table).arg(field);
+    return QString::fromLatin1("`%1`.`%2`").arg(table).arg(field);
 }
 
 void QpSqlQuery::setTable(const QString &table)

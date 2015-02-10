@@ -16,8 +16,14 @@ public:
     bool finished;
 };
 
-QpReply::QpReply(QpDatasourceResult *result, QObject *parent) : QObject(parent),
+QpReply::QpReply(QObject *parent) :
+    QObject(parent),
     data(new QpReplyData)
+{
+}
+
+QpReply::QpReply(QpDatasourceResult *result, QObject *parent) :
+    QpReply(parent)
 {
     setInternalResult(result);
 }

@@ -2,6 +2,7 @@
 
 #include "metaobject.h"
 #include "qpersistence.h"
+#include "relations.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QMetaClassInfo>
@@ -362,6 +363,16 @@ QString QpMetaProperty::reverseRelationName() const
 QpMetaProperty QpMetaProperty::reverseRelation() const
 {
     return reverseMetaObject().metaProperty(reverseRelationName());
+}
+
+QString QpMetaProperty::internalRelationObjectPropertyName() const
+{
+    return name().append("_internal");
+}
+
+QpRelationBase *QpMetaProperty::internalRelationObject(const QObject *object) const
+{
+    return object->property(internalRelationObjectPropertyName().toLatin1()).value<QpRelationBase *>();
 }
 
 QString QpMetaProperty::tableName() const

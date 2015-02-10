@@ -8,10 +8,14 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include <QPersistence/private.h>
 
+class QpDataTransferObject;
+
 class QpRelationBasePrivate;
 class QpRelationBase
 {
     Q_DECLARE_PRIVATE(QpRelationBase)
+public:
+    virtual void adjustFromDataTransferObject(const QpDataTransferObject &dataTransferObject) = 0;
 
 protected:
     QpRelationBase(QpRelationBasePrivate &dd, const QString &name, QObject *owner);
@@ -37,6 +41,10 @@ public:
     void setObjects(const QList<QSharedPointer<QObject> > &objects);
 
     bool isResolved() const;
+
+    QList<int> foreignKeys() const;
+
+    void adjustFromDataTransferObject(const QpDataTransferObject &dataTransferObject);
 };
 
 class QpRelationToOneBasePrivate;
@@ -50,6 +58,9 @@ public:
     bool operator ==(const QSharedPointer<QObject> &object) const;
     QSharedPointer<QObject> object() const;
     void setObject(const QSharedPointer<QObject> newObject);
+
+    int foreignKey() const;
+    void adjustFromDataTransferObject(const QpDataTransferObject &dataTransferObject) Q_DECL_OVERRIDE;
 };
 
 template<class T>
@@ -140,6 +151,7 @@ public:
     }
 };
 
+Q_DECLARE_METATYPE(QpRelationBase *)
 
 #ifndef QpRelation
 #define QpRelation(Address) \

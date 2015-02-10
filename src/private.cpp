@@ -48,6 +48,11 @@ int revisionInObject(const QObject *object)
     return object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt();
 }
 
+bool isDeleted(QSharedPointer<QObject> object)
+{
+    return object->property(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG).toBool();
+}
+
 bool isDeleted(const QObject *object)
 {
     return object->property(QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG).toBool();

@@ -15,6 +15,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
  */
 class QpRelationBasePrivate : public QSharedData
 {
+    Q_DECLARE_PUBLIC(QpRelationBase)
 public:
     QpRelationBasePrivate() : QSharedData(), strong(false) {
     }
@@ -24,6 +25,8 @@ public:
 
     void initDependencies(QSharedPointer<QObject> object) const;
     void removeDependencies(QSharedPointer<QObject> object) const;
+
+    QpRelationBase *q_ptr;
 };
 
 void QpRelationBasePrivate::initDependencies(QSharedPointer<QObject> object) const
@@ -41,8 +44,10 @@ QpRelationBase::QpRelationBase(QpRelationBasePrivate &dd, const QString &name, Q
 {
     Q_D(QpRelationBase);
     d->owner = owner;
+    d->q_ptr = this;
     QString propertyName = QpMetaProperty::nameFromMaybeQualifiedName(name);
     d->metaProperty = QpMetaObject::forObject(owner).metaProperty(propertyName);
+    d->owner->setProperty(d->metaProperty.internalRelationObjectPropertyName().toLatin1(), QVariant::fromValue<QpRelationBase *>(this));
 }
 
 QpRelationBase::~QpRelationBase()
@@ -61,9 +66,11 @@ void QpRelationBase::setStrong(bool strong)
  */
 class QpRelationToManyBasePrivate : public QpRelationBasePrivate
 {
+    Q_DECLARE_PUBLIC(QpRelationToManyBase)
 public:
     QpRelationToManyBasePrivate() : QpRelationBasePrivate(), resolved(false) {
     }
+    mutable bool resolved;
 
     QList<int> foreignKeys() const;
 
@@ -76,8 +83,7 @@ public:
     bool removeObject(QSharedPointer<QObject> object) const;
 
     void initMultipleDependencies(QList<QSharedPointer<QObject> > objects) const;
-
-    mutable bool resolved;
+    void adjustFromDataTransferObject(const QpDataTransferObject &dataTransferObject);
 
 private:
     mutable QList<QWeakPointer<QObject> > weakObjects;
@@ -155,6 +161,14 @@ bool QpRelationToManyBasePrivate::removeObject(QSharedPointer<QObject> object) c
         return weakObjects.removeOne(object.toWeakRef());
 }
 
+void QpRelationToManyBasePrivate::adjustFromDataTransferObject(const QpDataTransferObject &dataTransferObject)
+{
+    resolved = false;
+    sharedObjects.clear();;
+    weakObjects.clear();
+    fks = dataTransferObject.toManyRelationFKs.value(metaProperty.metaProperty().propertyIndex());
+}
+
 QpRelationToManyBase::QpRelationToManyBase(const QString &name, QObject *owner) :
     QpRelationBase(*new QpRelationToManyBasePrivate, name, owner)
 {
@@ -216,6 +230,18 @@ bool QpRelationToManyBase::isResolved() const
     return d->resolved;
 }
 
+QList<int> QpRelationToManyBase::foreignKeys() const
+{
+    Q_D(const QpRelationToManyBase);
+    return d->foreignKeys();
+}
+
+void QpRelationToManyBase::adjustFromDataTransferObject(const QpDataTransferObject &dataTransferObject)
+{
+    Q_D(QpRelationToManyBase);
+    d->adjustFromDataTransferObject(dataTransferObject);
+}
+
 void QpRelationToManyBase::setObjects(const QList<QSharedPointer<QObject> > &objects)
 {
     Q_D(QpRelationToManyBase);
@@ -230,45 +256,34 @@ void QpRelationToManyBase::setObjects(const QList<QSharedPointer<QObject> > &obj
  */
 class QpRelationToOneBasePrivate : public QpRelationBasePrivate
 {
+    Q_DECLARE_PUBLIC(QpRelationToOneBase)
 public:
     QpRelationToOneBasePrivate() : QpRelationBasePrivate(), fk(-1) {
     }
-
-    int foreignKey() const;
 
     QSharedPointer<QObject> resolve() const;
 
     QSharedPointer<QObject> object() const;
     void setObject(QSharedPointer<QObject> object) const;
 
-    bool isLocallyChanged() const;
+    void adjustFromDataTransferObject(const QpDataTransferObject &dataTransferObject);
+
+    mutable int fk;
 
 private:
     mutable QWeakPointer<QObject> weakObject;
     mutable QSharedPointer<QObject> sharedObject;
-
-    mutable int fk;
 };
-
-int QpRelationToOneBasePrivate::foreignKey() const
-{
-    if (isLocallyChanged())
-        return fk;
-
-    QpDataTransferObject dto = QpDataTransferObject::fromObject(owner);
-    return dto.toOneRelationFKs.value(metaProperty.metaProperty().propertyIndex());
-}
 
 QSharedPointer<QObject> QpRelationToOneBasePrivate::resolve() const
 {
-    int localFk = foreignKey();
-    if (localFk <= 0)
+    if (fk <= 0)
         return QSharedPointer<QObject>();
 
     QpStorage *storage = QpStorage::forObject(owner);
     QpMetaObject foreignMetaObject = metaProperty.reverseMetaObject();
     QpDataAccessObjectBase *dao = storage->dataAccessObject(foreignMetaObject.metaObject());
-    return dao->readObject(localFk);
+    return dao->readObject(fk);
 }
 
 QSharedPointer<QObject> QpRelationToOneBasePrivate::object() const
@@ -288,9 +303,11 @@ void QpRelationToOneBasePrivate::setObject(QSharedPointer<QObject> object) const
         weakObject = object.toWeakRef();
 }
 
-bool QpRelationToOneBasePrivate::isLocallyChanged() const
+void QpRelationToOneBasePrivate::adjustFromDataTransferObject(const QpDataTransferObject &dataTransferObject)
 {
-    return fk >= 0;
+    sharedObject.clear();
+    weakObject.clear();
+    fk = dataTransferObject.toOneRelationFKs.value(metaProperty.metaProperty().propertyIndex());
 }
 
 QpRelationToOneBase::QpRelationToOneBase(const QString &name, QObject *owner) :
@@ -329,7 +346,7 @@ void QpRelationToOneBase::setObject(const QSharedPointer<QObject> newObject)
     Q_D(QpRelationToOneBase);
 
     int newFk = newObject ? Qp::Private::primaryKey(newObject) : 0;
-    if (d->foreignKey() == newFk)
+    if (d->fk == newFk)
         return;
 
     QSharedPointer<QObject> previousObject = object();
@@ -353,4 +370,16 @@ void QpRelationToOneBase::setObject(const QSharedPointer<QObject> newObject)
 
     // Set again, because it may happen, that resetting the previousObjects relation has also reset this value.
     d->setObject(newObject);
+}
+
+int QpRelationToOneBase::foreignKey() const
+{
+    Q_D(const QpRelationToOneBase);
+    return d->fk;
+}
+
+void QpRelationToOneBase::adjustFromDataTransferObject(const QpDataTransferObject &dataTransferObject)
+{
+    Q_D(QpRelationToOneBase);
+    d->adjustFromDataTransferObject(dataTransferObject);
 }

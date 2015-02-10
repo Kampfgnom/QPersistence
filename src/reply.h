@@ -32,7 +32,8 @@ private slots:
     void setInternalResult(QpDatasourceResult *result);
 
 private:
-    explicit QpReply(QpDatasourceResult *result, QObject *parent = 0);
+    explicit QpReply(QObject *parent = 0);
+    QpReply(QpDatasourceResult *result, QObject *parent = 0);
 
     QSharedDataPointer<QpReplyData> data;
 

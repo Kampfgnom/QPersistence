@@ -107,7 +107,7 @@ void QpObjectListModelBase::fetchMore(const QModelIndex &parent)
 
     beginInsertRows(QModelIndex(), begin, begin+itemsToFetch-1);
 
-    d->objects.append(d->dao->readAllObjects(begin, itemsToFetch, d->condition));
+    d->objects.append(d->dao->readAllObjects(begin, itemsToFetch, QpCondition::notDeletedAnd(d->condition)));
     for (int i = begin; i < begin + itemsToFetch; ++i) {
         d->rows.insert(d->objects.at(i), i);
     }

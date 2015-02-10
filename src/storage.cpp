@@ -317,9 +317,7 @@ bool QpStorage::incrementNumericColumn(QSharedPointer<QObject> object, const QSt
 
 Qp::UpdateResult QpStorage::update(QSharedPointer<QObject> object)
 {
-    Qp::UpdateResult result = dataAccessObject(object)->updateObject(object);
-    Q_ASSERT(result == Qp::UpdateSuccess);
-    return result;
+    return dataAccessObject(object)->updateObject(object);
 }
 
 Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<QObject> object, QpDataAccessObjectBase::SynchronizeMode mode)
@@ -344,7 +342,6 @@ bool QpStorage::isDeleted(QSharedPointer<QObject> object)
 
 bool QpStorage::markAsDeleted(QSharedPointer<QObject> object)
 {
-#pragma message("mark as deleted wird nicht mehr im model reflektiert")
     return dataAccessObject(object)->markAsDeleted(object);
 }
 

@@ -33,6 +33,13 @@ public:
                              const QpCondition &condition,
                              QpError &error) const;
 
+    QHash<int, QpDataTransferObject> readObjects(const QpMetaObject &metaObject,
+                                                 int skip,
+                                                 int limit,
+                                                 const QpCondition &condition,
+                                                 QList<QpDatasource::OrderField> orders,
+                                                 QpError &error) const;
+
 private:
     QList<QpSqlQuery> queriesThatAdjustOneToOneRelation(const QpMetaProperty &relation, const QObject *object, QpError &error) const;
     QList<QpSqlQuery> queriesThatAdjustOneToManyRelation(const QpMetaProperty &relation, const QObject *object, QpError &error) const;
@@ -183,7 +190,7 @@ QHash<int, QpDataTransferObject> QpLegacySqlDatasourceData::readQuery(QpSqlQuery
                     QVariant value = query.value(i);
                     dto.dynamicProperties.insert(name, value);
 
-                    if (name == QLatin1String("_Qp_ID"))
+                    if (name == QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
                         dto.primaryKey = value.toInt();
                 }
             }
@@ -616,7 +623,7 @@ void QpLegacySqlDatasourceData::readToManyRelations(QHash<int, QpDataTransferObj
                                                     const QpCondition &condition,
                                                     QpError &error) const
 {
-    if(dataTransferObjects.isEmpty())
+    if (dataTransferObjects.isEmpty())
         return;
 
     foreach (QpMetaProperty relation, metaObject.relationProperties()) {
@@ -625,6 +632,35 @@ void QpLegacySqlDatasourceData::readToManyRelations(QHash<int, QpDataTransferObj
 
         readToManyRelation(dataTransferObjects, relation, condition, error);
     }
+}
+
+QHash<int, QpDataTransferObject> QpLegacySqlDatasourceData::readObjects(const QpMetaObject &metaObject,
+                                                                        int skip,
+                                                                        int limit,
+                                                                        const QpCondition &condition,
+                                                                        QList<QpDatasource::OrderField> orders,
+                                                                        QpError &error) const
+{
+    QpSqlQuery query(database);
+    query.setTable(metaObject.tableName());
+    selectFields(metaObject, query);
+    query.setWhereCondition(condition);
+    query.setLimit(limit);
+    query.setSkip(skip);
+    query.setForwardOnly(true);
+    foreach (QpDatasource::OrderField orderField, orders) {
+        query.addOrder(orderField.field, static_cast<QpSqlQuery::Order>(orderField.order));
+    }
+    query.prepareSelect();
+
+    if (!query.exec()) {
+        error = QpError(query);
+        return QHash<int, QpDataTransferObject>();
+    }
+
+    QHash<int, QpDataTransferObject> dataTransferObjects = readQuery(query, query.record(), metaObject);
+    readToManyRelations(dataTransferObjects, metaObject, QpCondition::primaryKeys(dataTransferObjects.keys()), error);
+    return dataTransferObjects;
 }
 
 void QpLegacySqlDatasourceData::readToManyRelation(QHash<int, QpDataTransferObject> &dataTransferObjects,
@@ -648,29 +684,29 @@ void QpLegacySqlDatasourceData::readToManyRelation(QHash<int, QpDataTransferObje
     // AND `foreignTable`.`_Qp_deleted` = 0
 
     QString primaryTable = relation.metaObject().tableName();
-    QString primaryTableAlias("__primaryTable");
+    QString primaryTableAlias = QString::fromLatin1("__primaryTable");
     QString primaryKeyQualified = QpSqlQuery::escapeField(primaryTableAlias, QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
     QString foreignTable = relation.reverseMetaObject().tableName();
-    QString foreignTableAlias("__foreignTable");
+    QString foreignTableAlias = QString::fromLatin1("__foreignTable");
     QString foreignKeyQualified = QpSqlQuery::escapeField(foreignTableAlias, QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
 
     QpSqlQuery query(database);
     query.setTable(primaryTable);
     query.setTableName(primaryTableAlias);
-    query.addField(QString("%1 AS `__pk`").arg(primaryKeyQualified));
-    query.addField(QString("%1 AS `__fk`").arg(foreignKeyQualified));
+    query.addField(QString::fromLatin1("%1 AS `__pk`").arg(primaryKeyQualified));
+    query.addField(QString::fromLatin1("%1 AS `__fk`").arg(foreignKeyQualified));
 
     if (relation.cardinality() == QpMetaProperty::ManyToManyCardinality) {
         QString joinTable = relation.tableName();
-        QString joinTableTableAlias("__joinTable");
+        QString joinTableTableAlias = QString::fromLatin1("__joinTable");
         QString primaryJoinKey = QpSqlQuery::escapeField(joinTableTableAlias, relation.columnName());
         QString foreignJoinKey = QpSqlQuery::escapeField(joinTableTableAlias, relation.reverseRelation().columnName());
-        query.addJoin("", QString("`%1` AS `%2`").arg(joinTable).arg(joinTableTableAlias), primaryKeyQualified, primaryJoinKey);
-        query.addJoin("", QString("`%1` AS `%2`").arg(foreignTable).arg(foreignTableAlias), foreignJoinKey, foreignKeyQualified);
+        query.addJoin("", QString::fromLatin1("`%1` AS `%2`").arg(joinTable).arg(joinTableTableAlias), primaryKeyQualified, primaryJoinKey);
+        query.addJoin("", QString::fromLatin1("`%1` AS `%2`").arg(foreignTable).arg(foreignTableAlias), foreignJoinKey, foreignKeyQualified);
     }
     else {
         QString foreignJoinKey = QpSqlQuery::escapeField(foreignTableAlias, relation.columnName());
-        query.addJoin("", QString("`%1` AS `%2`").arg(foreignTable).arg(foreignTableAlias), primaryKeyQualified, foreignJoinKey);
+        query.addJoin("", QString::fromLatin1("`%1` AS `%2`").arg(foreignTable).arg(foreignTableAlias), primaryKeyQualified, foreignJoinKey);
     }
 
     QpCondition primaryNotDeleted = QpCondition(QpSqlQuery::escapeField(primaryTableAlias, QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG), QpCondition::NotEqualTo, "1");
@@ -685,8 +721,8 @@ void QpLegacySqlDatasourceData::readToManyRelation(QHash<int, QpDataTransferObje
 
     int relationPropertyIndex = relation.metaProperty().propertyIndex();
     QSqlRecord record = query.record();
-    int pkIndex = record.indexOf("__pk");
-    int fkIndex = record.indexOf("__fk");
+    int pkIndex = record.indexOf(QString::fromLatin1("__pk"));
+    int fkIndex = record.indexOf(QString::fromLatin1("__fk"));
 
     while (query.next()) {
         int primaryKey = query.value(pkIndex).toInt();
@@ -795,37 +831,28 @@ void QpLegacySqlDatasource::maxPrimaryKey(QpDatasourceResult *result, const QpMe
 
 void QpLegacySqlDatasource::objectByPrimaryKey(QpDatasourceResult *result, const QpMetaObject &metaObject, int primaryKey) const
 {
-    objects(result,
-            metaObject,
-            -1, 1,
-            QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                        QpCondition::EqualTo,
-                        primaryKey),
-            {});
-}
-
-void QpLegacySqlDatasource::objects(QpDatasourceResult *result, const QpMetaObject &metaObject, int skip, int limit, const QpCondition &condition, QList<QpDatasource::OrderField> orders) const
-{
-    QpSqlQuery query(data->database);
-    query.setTable(metaObject.tableName());
-    data->selectFields(metaObject, query);
-    query.setWhereCondition(QpCondition::notDeletedAnd(condition));
-    query.setLimit(limit);
-    query.setSkip(skip);
-    query.setForwardOnly(true);
-    foreach (QpDatasource::OrderField orderField, orders) {
-        query.addOrder(orderField.field, static_cast<QpSqlQuery::Order>(orderField.order));
-    }
-    query.prepareSelect();
-
-    if (!query.exec()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
+    QpError error;
+    QHash<int, QpDataTransferObject> dtos = data->readObjects(metaObject, -1, -1, QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                                                              QpCondition::EqualTo,
+                                                                                              primaryKey), {}, error);
+    if (error.isValid()) {
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
         return;
     }
 
-    QHash<int, QpDataTransferObject> dtos = data->readQuery(query, query.record(), metaObject);
+    Q_ASSERT(QMetaObject::invokeMethod(result, "setDataTransferObjects", Qt::AutoConnection, Q_ARG(QpDataTransferObjectsById, dtos)));
+    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
+}
+
+void QpLegacySqlDatasource::objects(QpDatasourceResult *result,
+                                    const QpMetaObject &metaObject,
+                                    int skip,
+                                    int limit,
+                                    const QpCondition &condition,
+                                    QList<QpDatasource::OrderField> orders) const
+{
     QpError error;
-    data->readToManyRelations(dtos, metaObject, QpCondition::primaryKeys(dtos.keys()), error);
+    QHash<int, QpDataTransferObject> dtos = data->readObjects(metaObject, skip, limit, condition, orders, error);
     if (error.isValid()) {
         Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
         return;
@@ -840,34 +867,27 @@ void QpLegacySqlDatasource::objectsUpdatedAfterRevision(QpDatasourceResult *resu
     QString qualifiedRevisionField = QString::fromLatin1("%1.%2")
                                      .arg(QpSqlQuery::escapeField("history_subselect"))
                                      .arg(QpSqlQuery::escapeField(QpDatabaseSchema::COLUMN_NAME_REVISION));
-    objects(result, metaObject, -1, -1,
-            QString::fromLatin1("%1 > %2 AND %3 in ('UPDATE', 'MARK_AS_DELETE')")
-            .arg(qualifiedRevisionField)
-            .arg(revision)
-            .arg(QpDatabaseSchema::COLUMN_NAME_ACTION),
-            {{qualifiedRevisionField, QpDatasource::Ascending}});
+    QpError error;
+    QHash<int, QpDataTransferObject> dtos = data->readObjects(metaObject, -1, -1,
+                                                              QString::fromLatin1("%1 > %2 AND %3 in ('UPDATE', 'MARK_AS_DELETE')")
+                                                              .arg(qualifiedRevisionField)
+                                                              .arg(revision)
+                                                              .arg(QpDatabaseSchema::COLUMN_NAME_ACTION),
+                                                              {{qualifiedRevisionField, QpDatasource::Ascending}}, error);
+    if (error.isValid()) {
+        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
+        return;
+    }
+
+    Q_ASSERT(QMetaObject::invokeMethod(result, "setDataTransferObjects", Qt::AutoConnection, Q_ARG(QpDataTransferObjectsById, dtos)));
+    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::objectRevision(QpDatasourceResult *result, const QObject *object) const
 {
-    QpSqlQuery query(data->database);
-    QString historyTable = QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(QpMetaObject::forObject(object).tableName());
-    query.setTable(historyTable);
-    query.setLimit(1);
-    query.addRawField(QString::fromLatin1("MAX(%1) AS %1").arg(QpDatabaseSchema::COLUMN_NAME_REVISION));
-    query.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                        QpCondition::EqualTo,
-                                        Qp::Private::primaryKey(object)));
-    query.prepareSelect();
-
-    if (!query.exec() || !query.first()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
-        return;
-    }
-
     QpError error;
     int revision = data->objectRevision(object, error);
-    if(error.isValid()) {
+    if (error.isValid()) {
         Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
         return;
     }
