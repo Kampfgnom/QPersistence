@@ -16,6 +16,10 @@ CONFIG          += static c++11
 macx:QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
 INCLUDEPATH     += $$QPERSISTENCE_INCLUDEPATH
 
+macx {
+    QMAKE_MAC_SDK = macosx10.9
+}
+
 
 ### Files ###
 
