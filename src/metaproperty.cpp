@@ -8,7 +8,6 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QMetaClassInfo>
 #include <QRegularExpression>
 #include <QStringList>
-#include <QDebug>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 static const char* TOMANYRELATIONREGEXP("QList\\<(QSharedPointer|QWeakPointer)\\<(.+)\\> \\>");
@@ -201,10 +200,6 @@ QMetaMethod QpMetaProperty::recalculateMethod(QSharedPointer<QObject> object) co
     QString methodName = data->metaProperty.name();
     methodName[0] = methodName.at(0).toTitleCase();
     methodName.prepend("recalculate");
-
-    for (int i = 0, c = metaObject->methodCount(); i < c; ++i) {
-        qDebug() << metaObject->method(i).name();
-    }
 
     QByteArray signature = QMetaObject::normalizedSignature(methodName.toLatin1());
     int index = metaObject->indexOfMethod(signature);
