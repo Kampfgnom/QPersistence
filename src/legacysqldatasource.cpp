@@ -205,7 +205,7 @@ QHash<int, QpDataTransferObject> QpLegacySqlDatasourceData::readQuery(QpSqlQuery
                 } else if (metaProperty.isEnumType()) {
                     value = metaProperty.enumerator().value(value.toInt());
                 } else {
-                    QMetaType::Type type = static_cast<QMetaType::Type>(value.userType());
+                    QMetaType::Type type = static_cast<QMetaType::Type>(metaProperty.userType());
                     value = QpSqlQuery::variantFromSqlStorableVariant(value, type);
                 }
                 dto.properties.insert(propertyIndex, value);
