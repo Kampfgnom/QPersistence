@@ -210,13 +210,13 @@ template<class T> QSharedPointer<T> QpStorage::read(int id)
 template<class T>
 QList<QSharedPointer<T> > QpStorage::readAll(const QpSqlCondition &condition)
 {
-    return dataAccessObject<T>()->readAllObjects(-1, -1, condition);
+    return dataAccessObject<T>()->readAllObjects(-1, -1, QpSqlCondition::notDeletedAnd(condition));
 }
 
 template<class T>
 int QpStorage::count(const QpSqlCondition &condition)
 {
-    return dataAccessObject<T>()->count(condition);
+    return dataAccessObject<T>()->count(QpSqlCondition::notDeletedAnd(condition));
 }
 
 template<class T>
