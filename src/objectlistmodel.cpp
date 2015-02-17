@@ -91,7 +91,7 @@ bool QpObjectListModelBase::canFetchMore(const QModelIndex &) const
     if (!d->objectsFromDao)
         return false;
 
-    return (d->objects.size() < d->dao->count(d->condition));
+    return (d->objects.size() < d->dao->count(QpCondition::notDeletedAnd(d->condition)));
 }
 
 void QpObjectListModelBase::fetchMore(const QModelIndex &parent)
@@ -102,7 +102,7 @@ void QpObjectListModelBase::fetchMore(const QModelIndex &parent)
         return;
 
     int begin = d->objects.size();
-    int remainder = d->dao->count(d->condition) - begin;
+    int remainder = d->dao->count(QpCondition::notDeletedAnd(d->condition)) - begin;
     int itemsToFetch = qMin(d->fetchCount, remainder);
 
     beginInsertRows(QModelIndex(), begin, begin+itemsToFetch-1);
@@ -230,7 +230,7 @@ void QpObjectListModelBase::objectUndeleted(QSharedPointer<QObject> object)
     if (!d->objectsFromDao || d->rows.contains(object))
         return;
 
-    int index = d->dao->count(d->condition
+    int index = d->dao->count(QpCondition::notDeletedAnd(d->condition)
                               && QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, QpCondition::LessThan, Qp::Private::primaryKey(object.data())));
 
     beginInsertRows(QModelIndex(), index, index);
