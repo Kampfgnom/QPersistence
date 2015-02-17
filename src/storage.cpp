@@ -324,11 +324,15 @@ double QpStorage::databaseTimeInternal()
 double QpStorage::creationTime(QObject *object)
 {
     double time = creationTimeInInObject(object);
-    _Pragma("GCC diagnostic push")
-    _Pragma("GCC diagnostic ignored \"-Wused-but-marked-unused\"")
+#ifdef __clang__
+    _Pragma("GCC diagnostic push");
+    _Pragma("GCC diagnostic ignored \"-Wused-but-marked-unused\"");
+#endif
     if (qFuzzyCompare(0.0, time))
         return creationTimeInDatabase(object);
-    _Pragma("GCC diagnostic pop")
+#ifdef __clang__
+    _Pragma("GCC diagnostic pop");
+#endif
     return time;
 }
 
