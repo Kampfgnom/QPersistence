@@ -21,6 +21,18 @@ macx {
     QMAKE_MAC_SDK = macosx10.9
 }
 
+unix {
+    QMAKE_CXXFLAGS  += \
+    -Qunused-arguments \
+    -Wall \
+    -Wno-unreachable-code-loop-increment \
+    -Wno-c++98-compat \
+    -Wno-padded  \
+    -Wno-undefined-reinterpret-cast  \
+    -Wno-pragmas  \
+    -Wno-unknown-warning-option \
+    -Wno-unkown-pragmas
+}
 
 ### Files ###
 
