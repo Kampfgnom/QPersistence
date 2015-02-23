@@ -4,13 +4,13 @@
 #include "defines.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
-#include <QtCore/QIdentityProxyModel>
+#include <QtCore/QSortFilterProxyModel>
 #include <QtCore/QElapsedTimer>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "model.h"
 
-class QpThrottledFetchProxyModel : public QIdentityProxyModel, public QpModelBase
+class QpThrottledFetchProxyModel : public QSortFilterProxyModel, public QpModelBase
 {
     Q_OBJECT
 public:

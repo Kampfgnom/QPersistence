@@ -3,7 +3,7 @@
 #include "sortfilterproxyobjectmodel.h"
 
 QpThrottledFetchProxyModel::QpThrottledFetchProxyModel(QObject *parent) :
-    QIdentityProxyModel(parent),
+    QSortFilterProxyModel(parent),
     m_throttle(1000)
 {
 }
@@ -32,6 +32,6 @@ bool QpThrottledFetchProxyModel::canFetchMore(const QModelIndex &parent) const
     if (isThrottled())
         return false;
 
-    return QIdentityProxyModel::sourceModel()->canFetchMore(QIdentityProxyModel::mapToSource(parent));
+    return QSortFilterProxyModel::sourceModel()->canFetchMore(QSortFilterProxyModel::mapToSource(parent));
 }
 
