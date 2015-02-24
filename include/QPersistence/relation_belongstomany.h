@@ -1,0 +1,1 @@
+#include "../../src/relation_belongstomany.h"

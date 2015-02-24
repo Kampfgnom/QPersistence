@@ -9,10 +9,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "private.h"
 
-template<class T>
-class QpDao;
-class QpDaoBase;
-class QpError;
+class QpDataAccessObjectBase;
 class QpLock;
 class QpMetaObject;
 
@@ -24,7 +21,8 @@ enum SynchronizeResult : short {
     Updated,
     LastSyncNewEnough,
     Removed,
-    Deleted
+    Deleted,
+    RebaseConflict
 };
 
 enum UpdateResult : short {
@@ -79,12 +77,12 @@ void registerMappableTypes()
     qRegisterMetaType<QMap<K,V> >();
 
     // Create converter
-    Private::registerConverter<QMap<K,V> >(new Private::MapConverter<K,V>(Private::GlobalGuard()));
+    Private::registerConverter<QMap<K,V> >(new Private::MapConverter<K,V>());
 
     if (!Private::canConvertFromSqlStoredVariant<K>())
-        Private::registerConverter<K>(new Private::SqlConverter<K>(Private::GlobalGuard()));
+        Private::registerConverter<K>(new Private::SqlConverter<K>());
     if (!Private::canConvertFromSqlStoredVariant<V>())
-        Private::registerConverter<V>(new Private::SqlConverter<V>(Private::GlobalGuard()));
+        Private::registerConverter<V>(new Private::SqlConverter<V>());
 }
 
 template<class T>
@@ -94,10 +92,10 @@ void registerSetType()
     qRegisterMetaType<QSet<T> >();
 
     // Create converter
-    Private::registerConverter<QSet<T> >(new Private::SetConverter<T>(Private::GlobalGuard()));
+    Private::registerConverter<QSet<T> >(new Private::SetConverter<T>());
 
     if (!Private::canConvertFromSqlStoredVariant<T>())
-        Private::registerConverter<T>(new Private::SqlConverter<T>(Private::GlobalGuard()));
+        Private::registerConverter<T>(new Private::SqlConverter<T>());
 }
 
 template<class Target, class Source>

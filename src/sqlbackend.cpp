@@ -26,9 +26,9 @@ QP_DEFINE_STATIC_LOCAL(HashStringToBackend, Backends)
 QpSqlBackend *QpSqlBackendData::createForDatabase()
 {
 #ifdef QP_FOR_SQLITE
-    return new QpSqliteBackend(Qp::Private::GlobalGuard());
+    return new QpSqliteBackend;
 #elif defined QP_FOR_MYSQL
-    return new QpMySqlBackend(Qp::Private::GlobalGuard());
+    return new QpMySqlBackend;
 #else
 #   error This should have 'errored' long before :)
 #endif
@@ -50,8 +50,7 @@ QpSqlBackend *QpSqlBackend::forDatabase(const QSqlDatabase &database)
     return backend;
 }
 
-QpSqlBackend::QpSqlBackend(QObject *parent) :
-    QObject(parent)
+QpSqlBackend::QpSqlBackend()
 {
 }
 
@@ -59,8 +58,8 @@ QpSqlBackend::~QpSqlBackend()
 {
 }
 
-QpSqliteBackend::QpSqliteBackend(QObject *parent) :
-    QpSqlBackend(parent)
+QpSqliteBackend::QpSqliteBackend() :
+    QpSqlBackend()
 {
 }
 
@@ -148,8 +147,8 @@ QString QpSqliteBackend::variantTypeToSqlType(QVariant::Type type) const
     return QString();
 }
 
-QpMySqlBackend::QpMySqlBackend(QObject *parent) :
-    QpSqlBackend(parent)
+QpMySqlBackend::QpMySqlBackend() :
+    QpSqlBackend()
 {
 }
 

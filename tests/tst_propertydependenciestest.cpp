@@ -73,6 +73,7 @@ void PropertyDependenciesTest::testHasOneDependency()
 void PropertyDependenciesTest::testHasManyDependency()
 {
     int parentId = 0;
+    int childId = 0;
     int factor = 3;
     int v1 = 7;
     int v2 = 11;
@@ -84,6 +85,7 @@ void PropertyDependenciesTest::testHasManyDependency()
 
         QSharedPointer<TestNameSpace::ChildObject> child1 = Qp::create<TestNameSpace::ChildObject>();
         child1->setCalculatedIntDependency(v1);
+        childId = Qp::primaryKey(child1);
 
         parent->addHasMany(child1);
         QCOMPARE(parent->calculatedFromHasMany(), child1->calculatedIntDependency() * factor);
@@ -106,7 +108,7 @@ void PropertyDependenciesTest::testHasManyDependency()
         QSharedPointer<TestNameSpace::ParentObject> parent = Qp::read<TestNameSpace::ParentObject>(parentId);
         QCOMPARE(parent->calculatedFromHasMany(), v2 * factor + v3 * factor);
 
-        QSharedPointer<TestNameSpace::ChildObject> child1 = parent->hasMany().first();
+        QSharedPointer<TestNameSpace::ChildObject> child1 = Qp::read<TestNameSpace::ChildObject>(childId);
         parent->removeHasMany(child1);
         QCOMPARE(parent->calculatedFromHasMany(), v2 * factor);
 
@@ -118,6 +120,7 @@ void PropertyDependenciesTest::testHasManyDependency()
 void PropertyDependenciesTest::testHasManyManyDependency()
 {
     int parentId = 0;
+    int childId = 0;
     int factor = 5;
     int v1 = 7;
     int v2 = 11;
@@ -129,6 +132,7 @@ void PropertyDependenciesTest::testHasManyManyDependency()
 
         QSharedPointer<TestNameSpace::ChildObject> child1 = Qp::create<TestNameSpace::ChildObject>();
         child1->setCalculatedIntDependency(v1);
+        childId = Qp::primaryKey(child1);
 
         parent->addHasManyMany(child1);
         QCOMPARE(parent->calculatedFromHasManyMany(), child1->calculatedIntDependency() * factor);
@@ -151,7 +155,7 @@ void PropertyDependenciesTest::testHasManyManyDependency()
         QSharedPointer<TestNameSpace::ParentObject> parent = Qp::read<TestNameSpace::ParentObject>(parentId);
         QCOMPARE(parent->calculatedFromHasManyMany(), v2 * factor + v3 * factor);
 
-        QSharedPointer<TestNameSpace::ChildObject> child1 = parent->hasManyMany().first();
+        QSharedPointer<TestNameSpace::ChildObject> child1 = Qp::read<TestNameSpace::ChildObject>(childId);
         parent->removeHasManyMany(child1);
         QCOMPARE(parent->calculatedFromHasManyMany(), v2 * factor);
 
@@ -235,6 +239,7 @@ void PropertyDependenciesTest::testBelongsToManyDependency()
 void PropertyDependenciesTest::testBelongsManyToManyDependency()
 {
     int childId = 0;
+    int parentId = 0;
     int v1 = 7;
     int v2 = 11;
     {
@@ -244,6 +249,7 @@ void PropertyDependenciesTest::testBelongsManyToManyDependency()
 
         QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
         parent->setCalculatedIntDependency(v1);
+        parentId = Qp::primaryKey(parent);
 
         parent->addHasManyMany(child);
         QCOMPARE(child->calculatedFromManyToMany(), v1 * 29);
@@ -261,7 +267,7 @@ void PropertyDependenciesTest::testBelongsManyToManyDependency()
         QSharedPointer<TestNameSpace::ChildObject> child = Qp::read<TestNameSpace::ChildObject>(childId);
         QCOMPARE(child->calculatedFromManyToMany(), v1 * 29 + v2 * 29);
 
-        QSharedPointer<TestNameSpace::ParentObject> parent = child->belongsToManyMany().first();
+        QSharedPointer<TestNameSpace::ParentObject> parent = Qp::read<TestNameSpace::ParentObject>(parentId);
         parent->removeHasManyMany(child);
         QCOMPARE(child->calculatedFromManyToMany(), v2 * 29);
 

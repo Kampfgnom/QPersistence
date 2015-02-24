@@ -57,7 +57,7 @@ public:
     static QString removeNamespaces(const QString &classNameWithNamespaces);
 
 private:
-    friend class QpDaoBase;
+    friend class QpDataAccessObjectBase;
     static QpMetaObject registerMetaObject(const QMetaObject &metaObject);
     explicit QpMetaObject(const QMetaObject &metaObject);
 
@@ -69,5 +69,7 @@ private:
 };
 
 bool operator==(const QpMetaObject &a1, const QpMetaObject &a2);
+
+Q_DECLARE_METATYPE(QpMetaObject)
 
 #endif // QPERSISTENCE_METAOBJECT_H

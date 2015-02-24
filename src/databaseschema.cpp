@@ -25,8 +25,8 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 const char* QpDatabaseSchema::COLUMN_NAME_DELETEDFLAG("_Qp_deleted");
 const char* QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY("_Qp_ID");
 const char* QpDatabaseSchema::ONDELETE_CASCADE("CASCADE");
-const char* QpDatabaseSchema::COLUMN_NAME_REVISION("revision");
-const char* QpDatabaseSchema::COLUMN_NAME_ACTION("`action`");
+const char* QpDatabaseSchema::COLUMN_NAME_REVISION("_Qp_revision");
+const char* QpDatabaseSchema::COLUMN_NAME_ACTION("_Qp_action");
 const char* QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY("%1_Qp_history");
 #ifndef QP_NO_TIMESTAMPS
 const char* QpDatabaseSchema::COLUMN_NAME_CREATION_TIME("_Qp_creationTime");
@@ -60,7 +60,6 @@ public:
 
     QpStorage *storage;
     QSqlDatabase database;
-    mutable QpError lastError;
     QpSqlQuery query;
 };
 
@@ -69,7 +68,6 @@ public:
  * QpDatabaseSchema
  */
 QpDatabaseSchema::QpDatabaseSchema(QpStorage *storage) :
-    QObject(storage),
     data(new QpDatabaseSchemaData)
 {
     data->storage = storage;
@@ -92,32 +90,35 @@ bool QpDatabaseSchema::existsTable(const QString &table)
     return data->database.tables().contains(table);
 }
 
-void QpDatabaseSchema::createTableIfNotExists(const QMetaObject &metaObject)
+bool QpDatabaseSchema::createTableIfNotExists(const QMetaObject &metaObject)
 {
-    if (!existsTable(metaObject))
-        createTable(metaObject);
+    if (existsTable(metaObject))
+        return true;
+
+    return createTable(metaObject);
 }
 
-void QpDatabaseSchema::dropTable(const QMetaObject &metaObject)
+bool QpDatabaseSchema::dropTable(const QMetaObject &metaObject)
 {
     QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
 
-    dropTable(meta.tableName());
+    return dropTable(meta.tableName());
 }
 
-void QpDatabaseSchema::dropTable(const QString &table)
+bool QpDatabaseSchema::dropTable(const QString &table)
 {
     data->query.clear();
     data->query.setTable(table);
     data->query.prepareDropTable();
 
-    if ( !data->query.exec()
-         || data->query.lastError().isValid()) {
-        setLastError(data->query);
+    if (!data->query.exec()) {
+        data->storage->setLastError(data->query);
+        return false;
     }
+    return true;
 }
 
-void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
+bool QpDatabaseSchema::createTable(const QMetaObject &metaObject)
 {
     QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
 
@@ -224,13 +225,15 @@ void QpDatabaseSchema::createTable(const QMetaObject &metaObject)
 
     data->query.prepareCreateTable();
 
-    if ( !data->query.exec()
-         || data->query.lastError().isValid()) {
-        setLastError(data->query);
+    if (!data->query.exec()) {
+        data->storage->setLastError(data->query);
+        return false;
     }
+
+    return true;
 }
 
-void QpDatabaseSchema::createManyToManyRelationTables(const QMetaObject &metaObject)
+bool QpDatabaseSchema::createManyToManyRelationTables(const QMetaObject &metaObject)
 {
     QpMetaObject meta = QpMetaObject::forClassName(metaObject.className());
     QString primaryTable = meta.tableName();
@@ -264,12 +267,13 @@ void QpDatabaseSchema::createManyToManyRelationTables(const QMetaObject &metaObj
         createTableQuery.addKey(QpSqlBackend::forDatabase(data->database)->uniqueKeyType(),
                                 QStringList() << columnName << foreignColumnName);
         createTableQuery.prepareCreateTable();
-        if ( !createTableQuery.exec()
-             || createTableQuery.lastError().isValid()) {
-            setLastError(createTableQuery);
-            return;
+        if (!createTableQuery.exec()) {
+            data->storage->setLastError(createTableQuery);
+            return false;
         }
     }
+
+    return true;
 }
 
 bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
@@ -294,9 +298,7 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
         if (record.indexOf(metaProperty.columnName()) != -1)
             continue;
 
-        addColumn(metaProperty);
-
-        if (lastError().isValid())
+        if (!addColumn(metaProperty))
             return false;
     }
 
@@ -334,9 +336,8 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
 
         data->query.prepareAlterTable();
 
-        if (!data->query.exec()
-            || data->query.lastError().isValid()) {
-            setLastError(data->query);
+        if (!data->query.exec()) {
+            data->storage->setLastError(data->query);
             return false;
         }
     }
@@ -345,7 +346,7 @@ bool QpDatabaseSchema::addMissingColumns(const QMetaObject &metaObject)
     return true;
 }
 
-void QpDatabaseSchema::addColumn(const QpMetaProperty &metaProperty)
+bool QpDatabaseSchema::addColumn(const QpMetaProperty &metaProperty)
 {
     QString tableName;
     QString name;
@@ -368,36 +369,37 @@ void QpDatabaseSchema::addColumn(const QpMetaProperty &metaProperty)
         type = variantTypeToSqlType(metaProperty.type());
     }
 
-    addColumn(tableName, name, type);
+    return addColumn(tableName, name, type);
 }
 
-void QpDatabaseSchema::addColumn(const QString &table, const QString &column, const QString &type)
+bool QpDatabaseSchema::addColumn(const QString &table, const QString &column, const QString &type)
 {
     data->query.clear();
     data->query.setTable(table);
     data->query.addField(column, type);
     data->query.prepareAlterTable();
 
-    if ( !data->query.exec()
-         || data->query.lastError().isValid()) {
-        setLastError(data->query);
+    if (!data->query.exec()) {
+        data->storage->setLastError(data->query);
+        return false;
     }
+
+    return true;
 }
 
 bool QpDatabaseSchema::dropColumns(const QString &table, const QStringList &columns)
 {
     data->database.close();
-    data->database.open();
 
-    if(!data->storage->beginTransaction())
+    if (!data->database.open()
+        || !data->storage->beginTransaction())
         return false;
 
     QpSqlQuery query(data->database);
-    query.exec(QString("SELECT sql FROM sqlite_master WHERE name = '%1'")
-               .arg(table));
-    if (!query.first()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!query.exec(QString("SELECT sql FROM sqlite_master WHERE name = '%1'")
+                    .arg(table))
+        || !query.first()) {
+        data->storage->setLastError(query);
         return false;
     }
 
@@ -410,7 +412,10 @@ bool QpDatabaseSchema::dropColumns(const QString &table, const QStringList &colu
         sql.remove(QRegularExpression(QString(", \"?%1\"? ?\\w*").arg(col)));
     }
 
-    query.exec(sql);
+    if (!query.exec(sql)) {
+        data->storage->setLastError(query);
+        return false;
+    }
 
     QStringList newCols;
     QSqlRecord record = data->database.record(table);
@@ -419,19 +424,22 @@ bool QpDatabaseSchema::dropColumns(const QString &table, const QStringList &colu
         newCols << record.fieldName(i);
     }
 
-    query.exec(QString("INSERT INTO %1 SELECT %2 FROM %3")
-               .arg(table)
-               .arg(newCols.join(','))
-               .arg(tableBackup));
+    if (!query.exec(QString("INSERT INTO %1 SELECT %2 FROM %3")
+                    .arg(table)
+                    .arg(newCols.join(','))
+                    .arg(tableBackup))) {
+        data->storage->setLastError(query);
+        return false;
+    }
 
-    dropTable(tableBackup);
+    bool result = dropTable(tableBackup);
 
     if (!data->storage->commitOrRollbackTransaction())
         return false;
 
     data->database.close();
     data->database.open();
-    return true;
+    return result;
 }
 
 bool QpDatabaseSchema::enableHistoryTracking()
@@ -461,12 +469,12 @@ bool QpDatabaseSchema::enableHistoryTracking(const QString &table)
 
     if (!query.exec(QString::fromLatin1(
                             "CREATE TABLE IF NOT EXISTS `%1_Qp_history` ("
-                            "`revision` INTEGER PRIMARY KEY AUTO_INCREMENT,"
+                            "`_Qp_revision` INTEGER PRIMARY KEY AUTO_INCREMENT,"
                             "`_Qp_ID` INTEGER NOT NULL, "
-                            "`action` ENUM('INSERT', 'UPDATE', 'MARK_AS_DELETE', 'DELETE') DEFAULT 'INSERT',"
+                            "`_Qp_action` ENUM('INSERT', 'UPDATE', 'MARK_AS_DELETE', 'DELETE') DEFAULT 'INSERT',"
                             "`datetime` DOUBLE NOT NULL,"
                             "`user` VARCHAR(100) NOT NULL,"
-                            "UNIQUE KEY (`_Qp_ID`, `revision`));")
+                            "UNIQUE KEY (`_Qp_ID`, `_Qp_revision`));")
                     .arg(table))
         || !query.exec(QString::fromLatin1(
                                "CREATE TRIGGER `%1_Qp_history_INSERT` AFTER INSERT ON `%1` FOR EACH ROW "
@@ -498,7 +506,7 @@ bool QpDatabaseSchema::enableHistoryTracking(const QString &table)
                                "CURRENT_USER()"
                                ");")
                        .arg(table))) {
-        data->storage->setLastError(QpError(query.lastError()));
+        data->storage->setLastError(query);
         data->database.rollback();
         return false;
     }
@@ -511,46 +519,50 @@ bool QpDatabaseSchema::enableHistoryTracking(const QString &table)
     return true;
 }
 
-void QpDatabaseSchema::cleanSchema()
+bool QpDatabaseSchema::cleanSchema()
 {
 #ifdef QP_FOR_SQLITE
     QFile file(data->database.databaseName());
     if (file.exists()) {
-        if (!file.remove())
+        if (!file.remove()) {
             qCritical() << Q_FUNC_INFO << "Could not remove database file"<< file.fileName();
-        if (!data->database.open())
+            return false;
+        }
+        if (!data->database.open()) {
             qCritical() << Q_FUNC_INFO << "Could not re-open database file"<< file.fileName();
+            return false;
+        }
     }
 #elif defined QP_FOR_MYSQL
-    QpSqlQuery query(data->database);
-    query.prepare(QString("DROP SCHEMA IF EXISTS %1").arg(data->database.databaseName()));
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!data->query.exec(QString("DROP SCHEMA IF EXISTS %1")
+                          .arg(data->database.databaseName()))) {
+        data->storage->setLastError(data->query);
+        return false;
     }
-    query.clear();
-    query.prepare(QString("CREATE SCHEMA %1 CHARACTER SET %2")
-                  .arg(data->database.databaseName())
-                  .arg("utf8"));
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!data->query.exec(QString("CREATE SCHEMA %1 CHARACTER SET %2")
+                          .arg(data->database.databaseName())
+                          .arg("utf8"))) {
+        data->storage->setLastError(data->query);
+        return false;
     }
 
     data->database.close();
     data->database.open();
 #else
     foreach (QString table, data->database.tables(QSql::Tables)) {
-        dropTable(table);
+        if (!dropTable(table))
+            return false;
     }
 #endif
+
+    return true;
 }
 
 bool QpDatabaseSchema::createCleanSchema()
 {
-    if(!data->storage->beginTransaction())
+    if (!data->storage->beginTransaction())
         return false;
 
     setForeignKeyChecks(false);
@@ -577,7 +589,7 @@ bool QpDatabaseSchema::createCleanSchema()
 
 bool QpDatabaseSchema::adjustSchema()
 {
-    if(!data->storage->beginTransaction())
+    if (!data->storage->beginTransaction())
         return false;
 
     setForeignKeyChecks(false);
@@ -599,9 +611,8 @@ bool QpDatabaseSchema::adjustSchema()
     return data->storage->commitOrRollbackTransaction();
 }
 
-void QpDatabaseSchema::setForeignKeyChecks(bool check)
+bool QpDatabaseSchema::setForeignKeyChecks(bool check)
 {
-    QpSqlQuery query(data->storage->database());
     QString q;
 
 #ifdef QP_FOR_MYSQL
@@ -616,17 +627,17 @@ void QpDatabaseSchema::setForeignKeyChecks(bool check)
         q = QString::fromLatin1("PRAGMA foreign_keys = OFF");
 #endif
 
-    if (!query.exec(q)
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!data->query.exec(q)) {
+        data->storage->setLastError(data->query);
+        return false;
     }
+    return true;
 }
 
 #ifndef QP_NO_LOCKS
-void QpDatabaseSchema::createLocksTable()
+bool QpDatabaseSchema::createLocksTable()
 {
     if (!existsTable(QpDatabaseSchema::TABLENAME_LOCKS)) {
-
         data->query.clear();
         data->query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
         data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
@@ -638,9 +649,9 @@ void QpDatabaseSchema::createLocksTable()
 
         data->query.prepareCreateTable();
 
-        if ( !data->query.exec()
-             || data->query.lastError().isValid()) {
-            setLastError(data->query);
+        if (!data->query.exec()) {
+            data->storage->setLastError(data->query);
+            return false;
         }
     }
     else {
@@ -651,17 +662,18 @@ void QpDatabaseSchema::createLocksTable()
                 continue;
 
             QString type = variantTypeToSqlType(data->storage->additionalLockInformationFields().value(field));
-            addColumn(QpDatabaseSchema::TABLENAME_LOCKS, field, type);
+            if (!addColumn(QpDatabaseSchema::TABLENAME_LOCKS, field, type))
+                return false;
         }
     }
+    return true;
 }
 #endif
 
 #ifndef QP_NO_SCHEMAVERSIONING
-void QpDatabaseSchema::createSchemaVersioningTable()
+bool QpDatabaseSchema::createSchemaVersioningTable()
 {
     if (!existsTable(QpDatabaseSchema::TABLENAME_SCHEMAVERSIONING)) {
-
         data->query.clear();
         data->query.setTable(QpDatabaseSchema::TABLENAME_SCHEMAVERSIONING);
         data->query.addPrimaryKey(COLUMN_NAME_PRIMARY_KEY);
@@ -675,18 +687,14 @@ void QpDatabaseSchema::createSchemaVersioningTable()
 
         data->query.prepareCreateTable();
 
-        if ( !data->query.exec()
-             || data->query.lastError().isValid()) {
-            setLastError(data->query);
+        if (!data->query.exec()) {
+            data->storage->setLastError(data->query);
+            return false;
         }
     }
+    return true;
 }
 #endif
-
-QpError QpDatabaseSchema::lastError() const
-{
-    return data->lastError;
-}
 
 bool QpDatabaseSchema::renameColumn(const QString &tableName, const QString &oldColumnName, const QString &newColumnName)
 {
@@ -700,29 +708,33 @@ bool QpDatabaseSchema::renameColumn(const QString &tableName, const QString &old
     if (!data->storage->beginTransaction())
         return false;
 
-    QpSqlQuery query(data->database);
-    query.exec(QString("SELECT sql FROM sqlite_master WHERE name = '%1'")
-               .arg(tableName));
-    if (!query.first()
-        || query.lastError().isValid()) {
-        setLastError(query);
+    if (!data->query.exec(QString("SELECT sql FROM sqlite_master WHERE name = '%1'")
+                          .arg(tableName))
+        || !data->query.first()) {
+        data->storage->setLastError(data->query);
         return false;
     }
 
-    QString sql = query.value(0).toString();
+    QString sql = data->query.value(0).toString();
     sql.replace(QString("\"%1\"").arg(oldColumnName), QString("\"%1\"").arg(newColumnName));
     sql.replace(QString(" %1 ").arg(oldColumnName), QString(" %1 ").arg(newColumnName));
     sql.replace(QString("(%1 ").arg(oldColumnName), QString("(%1 ").arg(newColumnName));
 
-    query.exec("PRAGMA writable_schema = 1;");
-    query.exec(QString("UPDATE SQLITE_MASTER SET SQL ="
-                       "'%1' WHERE NAME = '%2';")
-               .arg(sql)
-               .arg(tableName));
-    query.exec("PRAGMA writable_schema = 0;");
+    if (!data->query.exec("PRAGMA writable_schema = 0")) {
+        data->storage->setLastError(data->query);
+        return false;
+    }
 
-    if (query.lastError().isValid()) {
-        setLastError(query);
+    if (!data->query.exec(QString("UPDATE SQLITE_MASTER SET SQL ="
+                                  "'%1' WHERE NAME = '%2'")
+                          .arg(sql)
+                          .arg(tableName))) {
+        data->storage->setLastError(data->query);
+        return false;
+    }
+
+    if (!data->query.exec("PRAGMA writable_schema = 0")) {
+        data->storage->setLastError(data->query);
         return false;
     }
 
@@ -736,13 +748,10 @@ bool QpDatabaseSchema::renameColumn(const QString &tableName, const QString &old
 
 bool QpDatabaseSchema::renameTable(const QString &oldTableName, const QString &newTableName)
 {
-    QpSqlQuery query(data->database);
-    query.exec(QString("ALTER TABLE %1 RENAME TO %2")
-               .arg(oldTableName)
-               .arg(newTableName));
-
-    if (query.lastError().isValid()) {
-        setLastError(query);
+    if (data->query.exec(QString("ALTER TABLE %1 RENAME TO %2")
+                         .arg(oldTableName)
+                         .arg(newTableName))) {
+        data->storage->setLastError(data->query);
         return false;
     }
 
@@ -753,27 +762,25 @@ bool QpDatabaseSchema::createColumnCopy(const QString &sourceTable,
                                         const QString &sourceColumn,
                                         const QString &destColumn)
 {
-
     if (!data->storage->beginTransaction())
         return false;
 
-    QSqlQuery query(data->database);
     QSqlRecord record = data->database.record(sourceTable);
     int i = record.indexOf(sourceColumn);
 
     QString type = variantTypeToSqlType(record.field(i).type());
-
-    query.exec(QString("ALTER TABLE %1 ADD COLUMN %2 %3")
-               .arg(sourceTable)
-               .arg(destColumn)
-               .arg(type));
-    query.exec(QString("UPDATE %1 SET %2 = %3")
-               .arg(sourceTable)
-               .arg(destColumn)
-               .arg(sourceColumn));
-
-    if (query.lastError().isValid()) {
-        setLastError(query);
+    if (data->query.exec(QString("ALTER TABLE %1 ADD COLUMN %2 %3")
+                         .arg(sourceTable)
+                         .arg(destColumn)
+                         .arg(type))) {
+        data->storage->setLastError(data->query);
+        return false;
+    }
+    if (data->query.exec(QString("UPDATE %1 SET %2 = %3")
+                         .arg(sourceTable)
+                         .arg(destColumn)
+                         .arg(sourceColumn))) {
+        data->storage->setLastError(data->query);
         return false;
     }
 
@@ -786,18 +793,6 @@ bool QpDatabaseSchema::createColumnCopy(const QString &sourceTable,
 QString QpDatabaseSchema::variantTypeToSqlType(QVariant::Type type)
 {
     return QpSqlBackend::forDatabase(data->database)->variantTypeToSqlType(type);
-}
-
-void QpDatabaseSchema::setLastError(const QpError &error) const
-{
-    qDebug() << error;
-    data->lastError = error;
-    data->storage->setLastError(error);
-}
-
-void QpDatabaseSchema::setLastError(const QSqlQuery &query) const
-{
-    setLastError(QpError(query.lastError().text().append(": ").append(query.executedQuery()), QpError::SqlError));
 }
 
 QString QpDatabaseSchema::metaPropertyToColumnDefinition(const QpMetaProperty &metaProperty)

@@ -15,73 +15,89 @@ QT              += sql
 CONFIG          += static c++11
 macx:QMAKE_CXXFLAGS  += $$QPERSISTENCE_COMMON_QMAKE_CXXFLAGS
 INCLUDEPATH     += $$QPERSISTENCE_INCLUDEPATH
+INCLUDEPATH += ../include
 
+macx {
+    QMAKE_MAC_SDK = macosx10.9
+}
+
+unix {
+    QMAKE_CXXFLAGS  += \
+    -Qunused-arguments \
+    -Wall \
+    -Wno-unreachable-code-loop-increment \
+    -Wno-c++98-compat \
+    -Wno-padded  \
+    -Wno-undefined-reinterpret-cast  \
+    -Wno-pragmas  \
+    -Wno-unknown-warning-option \
+    -Wno-unkown-pragmas
+}
 
 ### Files ###
 
 HEADERS += \
     cache.h \
+    condition.h \
     conversion.h \
     dataaccessobject.h \
     databaseschema.h \
+    datasource.h \
+    datasourceresult.h \
+    defaultstorage.h \
+    defines.h \
     error.h \
+    legacysqldatasource.h \
+    lock.h \
     metaobject.h \
     metaproperty.h \
+    model.h \
     objectlistmodel.h \
     private.h \
+    propertydependencieshelper.h \
     qpersistence.h \
-    relationresolver.h \
+    relations.h \
+    reply.h \
+    schemaversioning.h \
     sortfilterproxyobjectmodel.h \
-    sqlcondition.h \
+    sqlbackend.h \
     sqldataaccessobjecthelper.h \
     sqlquery.h \
-    sqlbackend.h \
-    lock.h \
-    relation_hasone.h \
-    relation_belongstoone.h \
-    relation_hasmany.h \
-    relation_belongstomany.h \
-    defines.h \
-    usermanagement.h \
-    throttledfetchproxymodel.h \
     storage.h \
-    defaultstorage.h \
-    schemaversioning.h \
-    lazyPixmap.h \
-    model.h \
-    propertydependencies.h \
-    transactionshelper.h
+    throttledfetchproxymodel.h \
+    transactionshelper.h \
+    usermanagement.h
 
 SOURCES += \
-        cache.cpp \
+    cache.cpp \
+    condition.cpp \
     conversion.cpp \
     dataaccessobject.cpp \
     databaseschema.cpp \
+    datasource.cpp \
+    datasourceresult.cpp \
+    defaultstorage.cpp \
     error.cpp \
+    legacysqldatasource.cpp \
+    lock.cpp \
     metaobject.cpp \
     metaproperty.cpp \
+    model.cpp \
     objectlistmodel.cpp \
     private.cpp \
-    relationresolver.cpp \
+    propertydependencieshelper.cpp \
+    relations.cpp \
+    reply.cpp \
+    schemaversioning.cpp \
     sortfilterproxyobjectmodel.cpp \
-    sqlcondition.cpp \
+    sqlbackend.cpp \
     sqldataaccessobjecthelper.cpp \
     sqlquery.cpp \
-    sqlbackend.cpp \
-    lock.cpp \
-    relation_hasone.cpp \
-    relation_belongstoone.cpp \
-    relation_hasmany.cpp \
-    relation_belongstomany.cpp \
-    usermanagement.cpp \
-    throttledfetchproxymodel.cpp \
     storage.cpp \
-    defaultstorage.cpp \
-    schemaversioning.cpp \
-    lazyPixmap.cpp \
-    model.cpp \
-    propertydependencies.cpp \
-    transactionshelper.cpp
+    throttledfetchproxymodel.cpp \
+    transactionshelper.cpp \
+    usermanagement.cpp
+
 
 OTHER_FILES += \
     uncrustify.cfg

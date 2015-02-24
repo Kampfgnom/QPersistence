@@ -12,51 +12,49 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 #include "conversion.h"
 #include "metaobject.h"
-#include "sqlcondition.h"
-#include "sqlquery.h"
+#include "condition.h"
+#include "datasource.h"
 
 class QSqlQuery;
 class QpCache;
-class QpError;
-class QpSqlDataAccessObjectHelper;
+class QpReply;
 class QpStorage;
+class QpDatasourceResult;
+class QpDataTransferObjectDiff;
 
 namespace Qp {
 enum SynchronizeResult : short;
 enum UpdateResult : short;
-template<class T>
-struct SynchronizeAllResult;
 }
 
 
-class QpDaoBaseData;
-class QpDaoBase : public QObject
+class QpDataAccessObjectBaseData;
+class QpDataAccessObjectBase : public QObject
 {
     Q_OBJECT
 public:
-    ~QpDaoBase();
+    ~QpDataAccessObjectBase();
 
     QpMetaObject qpMetaObject() const;
 
-    int count(const QpSqlCondition &condition = QpSqlCondition()) const;
+    int count(const QpCondition &condition = QpCondition()) const;
     QList<int> allKeys(int skip = -1, int count = -1) const;
     QList<QSharedPointer<QObject> > readAllObjects(int skip = -1,
-                                                   int count = -1,
-                                                   const QpSqlCondition &condition = QpSqlCondition(),
-                                                   QList<QpSqlQuery::OrderField> orders = QList<QpSqlQuery::OrderField>()) const;
+                                                   int limit = -1,
+                                                   const QpCondition &condition = QpCondition(),
+                                                   QList<QpDatasource::OrderField> orders = QList<QpDatasource::OrderField>()) const;
     QList<QSharedPointer<QObject> > readObjectsUpdatedAfterRevision(int revision) const;
-    QList<QSharedPointer<QObject> > readAllObjects(QpSqlQuery &query) const;
+    QList<QSharedPointer<QObject> > readAllObjects(const QList<int> primaryKeys) const;
     QSharedPointer<QObject> readObject(int id) const;
     QSharedPointer<QObject> createObject();
     Qp::UpdateResult updateObject(QSharedPointer<QObject> object);
     bool removeObject(QSharedPointer<QObject> object);
     bool markAsDeleted(QSharedPointer<QObject> object);
     bool undelete(QSharedPointer<QObject> object);
-    enum SynchronizeMode { NormalMode, IgnoreRevision };
+    enum SynchronizeMode { NormalMode, IgnoreRevision, RebaseMode };
     Qp::SynchronizeResult synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode = NormalMode);
+    int revisionInDatabase(QSharedPointer<QObject> object);
     bool incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName);
-
-    int latestRevision() const;
 
 #ifndef QP_NO_TIMESTAMPS
     QList<QSharedPointer<QObject> > createdSince(const QDateTime &time);
@@ -65,13 +63,21 @@ public:
     QList<QSharedPointer<QObject> > updatedSince(double time);
 #endif
 
-    QpError lastError() const;
     QpCache cache() const;
+
+    QpStorage *storage() const;
 
     void resetLastKnownSynchronization();
 
+    QpReply *readAllObjectsAsync(int skip = -1,
+                                 int limit = -1,
+                                 const QpCondition &condition = QpCondition(),
+                                 QList<QpDatasource::OrderField> orders = {}) const;
+    QpReply *readObjectsUpdatedAfterRevisionAsync(int revision) const;
+
 public slots:
     bool synchronizeAllObjects();
+    QpReply *synchronizeAllObjectsAsync();
 
 Q_SIGNALS:
     void objectInstanceCreated(QSharedPointer<QObject>) const;
@@ -83,23 +89,25 @@ Q_SIGNALS:
     void objectSynchronized(QSharedPointer<QObject>);
 
 protected:
-    explicit QpDaoBase(const QMetaObject &metaObject,
+    explicit QpDataAccessObjectBase(const QMetaObject &metaObject,
                        QpStorage *parent = 0);
 
     virtual QObject *createInstance() const = 0;
 
+private slots:
+    void handleResultError();
+
 private:
-    QSharedDataPointer<QpDaoBaseData> data;
+    QSharedDataPointer<QpDataAccessObjectBaseData> data;
 
-    void setLastError(const QpError &error) const;
-    void resetLastError() const;
     void unlinkRelations(QSharedPointer<QObject> object) const;
-
     QSharedPointer<QObject> setupSharedObject(QObject *object, int id) const;
+    Qp::SynchronizeResult sync(QSharedPointer<QObject> object, SynchronizeMode mode = NormalMode);
+    QList<QSharedPointer<QObject> > readObjects(QpDatasourceResult *datasourceResult) const;
+    void handleCreatedObjects(const QList<QSharedPointer<QObject> > &objects);
+    void handleUpdatedObjects(const QList<QSharedPointer<QObject> > &objects);
 
-    Qp::SynchronizeResult sync(QSharedPointer<QObject> object);
-
-    Q_DISABLE_COPY(QpDaoBase)
+    QpReply *makeReply(QpDatasourceResult *result, std::function<void(QpDatasourceResult *, QpReply *)> handleResult) const;
 };
 
 namespace Qp {
@@ -108,7 +116,7 @@ QList<QSharedPointer<T> > castList(const QList<QSharedPointer<Source> >&);
 }
 
 template<class T>
-class QpDao : public QpDaoBase
+class QpDataAccessObject : public QpDataAccessObjectBase
 {
 public:
     QSharedPointer<T> read(int id) {
@@ -116,15 +124,15 @@ public:
     }
     QList<QSharedPointer<T> > readAllObjects(int skip = -1,
                                              int count = -1,
-                                             const QpSqlCondition &condition = QpSqlCondition(),
-                                             QList<QpSqlQuery::OrderField> orders = QList<QpSqlQuery::OrderField>()) const
+                                             const QpCondition &condition = QpCondition(),
+                                             QList<QpDatasource::OrderField> orders = QList<QpDatasource::OrderField>()) const
     {
-        return Qp::castList<T>(QpDaoBase::readAllObjects(skip, count, condition, orders));
+        return Qp::castList<T>(QpDataAccessObjectBase::readAllObjects(skip, count, condition, orders));
     }
 
 protected:
-    QpDao(QpStorage *parent) :
-        QpDaoBase(T::staticMetaObject, parent)
+    QpDataAccessObject(QpStorage *parent) :
+        QpDataAccessObjectBase(T::staticMetaObject, parent)
     {
     }
 
@@ -134,7 +142,6 @@ protected:
 
 private:
     friend class QpStorage;
-    Q_DISABLE_COPY(QpDao)
 };
 
 #endif // QPERSISTENCE_DATAACCESSOBJECT_H

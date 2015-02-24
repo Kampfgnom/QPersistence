@@ -8,7 +8,6 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtCore/QVariantMap>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
-class QpError;
 class QSqlError;
 class QSqlQuery;
 
@@ -21,12 +20,14 @@ public:
         SqlError,
         TransactionError,
         TransactionRequestedByApplication,
+        UpdateConflictError,
         UserError = 1024
     };
 
     QpError(const QString &text = QString(),
             ErrorType type = NoError,
             QVariantMap additionalInformation = QVariantMap());
+    QpError(const QSqlQuery &query);
     QpError(const QSqlError &error);
     ~QpError();
     QpError(const QpError &other);
@@ -35,6 +36,8 @@ public:
     bool isValid() const;
     QString text() const;
     ErrorType type() const;
+    QString lastQuery() const;
+    QMap<QString, QVariant> boundValues() const;
 
     QVariantMap additionalInformation() const;
     void addAdditionalInformation(const QString &key, const QVariant &value);
@@ -71,5 +74,7 @@ public:
 };
 
 QDebug operator<<(QDebug dbg, const QpError &error);
+
+Q_DECLARE_METATYPE(QpError)
 
 #endif // QPERSISTENCE_ERROR_H

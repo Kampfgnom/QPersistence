@@ -19,11 +19,6 @@ private slots:
     void testDatabaseFKChangeFromParent();
     void testDatabaseFKChangeFromChild();
 
-#ifndef QP_NO_TIMESTAMPS
-    void testUpdateTimesFromParent();
-    void testUpdateTimesFromChild();
-#endif
-
 private:
     QpMetaProperty m_parentToChildRelation;
     QpMetaProperty m_childToParentRelation;

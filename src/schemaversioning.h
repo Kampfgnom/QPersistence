@@ -15,9 +15,8 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 class QpStorage;
 
 class QpSchemaVersioningData;
-class QpSchemaVersioning : public QObject
+class QpSchemaVersioning
 {
-    Q_OBJECT
 public:
     struct Version {
         int major;
@@ -27,8 +26,7 @@ public:
     static const Version NullVersion;
     static Version parseVersionString(const QString &version);
 
-    explicit QpSchemaVersioning(QObject *parent = 0);
-    QpSchemaVersioning(QpStorage *storage, QObject *parent = 0);
+    QpSchemaVersioning(QpStorage *storage);
     ~QpSchemaVersioning();
 
     void setInitialVersion(const QpSchemaVersioning::Version &version, const QString description);

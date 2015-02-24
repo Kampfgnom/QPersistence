@@ -251,163 +251,13 @@ void ManyToManyRelationsTest::testDatabaseFKChangeFromChild()
     }
 }
 
-#ifndef QP_NO_TIMESTAMPS
-void ManyToManyRelationsTest::testUpdateTimesFromParent()
-{
-    QSKIP("This test does not work anymore");
-
-    // Add a new child
-    {
-        Tree tree = createTree();
-        Tree changedTree;
-
-        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.first();
-        QSharedPointer<TestNameSpace::ChildObject> addedChild = Qp::create<TestNameSpace::ChildObject>();
-        QDateTime previousTime = Qp::updateTimeInDatabase(addedChild);
-
-        qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1010);
-
-        addedToParent->addChildObjectsManyToMany(addedChild);
-        Qp::update(addedToParent);
-
-        changedTree.children.append(addedChild);
-        changedTree.parents.append(addedToParent);
-        QDateTime newTime = Qp::updateTimeInDatabase(addedToParent);
-
-        testUpdateTimes(previousTime, newTime, changedTree, tree);
-    }
-
-    // Remove a child
-    {
-        Tree tree = createTree();
-        Tree changedTree;
-
-        QSharedPointer<TestNameSpace::ParentObject> removedFromParent = tree.parents.at(1);
-        QSharedPointer<TestNameSpace::ChildObject> removedChild = removedFromParent->childObjectsManyToMany().first();
-        QDateTime previousTime = Qp::updateTimeInDatabase(removedChild);
-
-        qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1010);
-
-        removedFromParent->removeChildObjectsManyToMany(removedChild);
-        Qp::update(removedFromParent);
-
-        changedTree.children.append(removedChild);
-        changedTree.parents.append(removedFromParent);
-        QDateTime newTime = Qp::updateTimeInDatabase(removedFromParent);
-
-        testUpdateTimes(previousTime, newTime, changedTree, tree);
-    }
-
-    // Add one child from one parent to another and update the added-to parent
-    {
-        Tree tree = createTree();
-        Tree changedTree;
-
-        QSharedPointer<TestNameSpace::ParentObject> addedFromParent = tree.parents.at(0);
-        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.at(1);
-        QSharedPointer<TestNameSpace::ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
-        QDateTime previousTime = Qp::updateTimeInDatabase(changedChild);
-
-        qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1010);
-
-        addedToParent->addChildObjectsManyToMany(changedChild);
-        Qp::update(addedToParent);
-
-        // The added-from parent does not change by this operation!
-        changedTree.children.append(changedChild);
-        changedTree.parents.append(addedToParent);
-
-        QDateTime newTime = Qp::updateTimeInDatabase(addedToParent);
-
-        testUpdateTimes(previousTime, newTime, changedTree, tree);
-    }
-}
-
-void ManyToManyRelationsTest::testUpdateTimesFromChild()
-{
-    QSKIP("This test does not work anymore");
-
-    // Add a new child
-    {
-        Tree tree = createTree();
-        Tree changedTree;
-
-        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.first();
-        QSharedPointer<TestNameSpace::ChildObject> addedChild = Qp::create<TestNameSpace::ChildObject>();
-        QDateTime previousTime = Qp::updateTimeInDatabase(addedChild);
-
-        qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1010);
-
-        addedToParent->addChildObjectsManyToMany(addedChild);
-        Qp::update(addedChild);
-
-        changedTree.children.append(addedChild);
-        changedTree.parents.append(addedToParent);
-        QDateTime newTime = Qp::updateTimeInDatabase(addedChild);
-
-        testUpdateTimes(previousTime, newTime, changedTree, tree);
-    }
-
-    // Remove a child
-    {
-        Tree tree = createTree();
-        Tree changedTree;
-
-        QSharedPointer<TestNameSpace::ParentObject> removedFromParent = tree.parents.at(1);
-        QSharedPointer<TestNameSpace::ChildObject> removedChild = removedFromParent->childObjectsManyToMany().first();
-        QDateTime previousTime = Qp::updateTimeInDatabase(removedChild);
-
-        qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1010);
-
-        removedFromParent->removeChildObjectsManyToMany(removedChild);
-        Qp::update(removedChild);
-
-        changedTree.children.append(removedChild);
-        changedTree.parents.append(removedFromParent);
-        QDateTime newTime = Qp::updateTimeInDatabase(removedChild);
-
-        testUpdateTimes(previousTime, newTime, changedTree, tree);
-    }
-
-    // Add one child from one parent to another and update the added-to parent
-    {
-        Tree tree = createTree();
-        Tree changedTree;
-
-        QSharedPointer<TestNameSpace::ParentObject> addedFromParent = tree.parents.at(0);
-        QSharedPointer<TestNameSpace::ParentObject> addedToParent = tree.parents.at(1);
-        QSharedPointer<TestNameSpace::ChildObject> changedChild = addedFromParent->childObjectsManyToMany().first();
-        QDateTime previousTime = Qp::updateTimeInDatabase(changedChild);
-
-        qDebug() << "Sleeping 1 second...";
-        QTest::qSleep(1010);
-
-        addedToParent->addChildObjectsManyToMany(changedChild);
-        Qp::update(changedChild);
-
-        // The added-from parent does not change by this operation!
-        changedTree.children.append(changedChild);
-        changedTree.parents.append(addedToParent);
-
-        QDateTime newTime = Qp::updateTimeInDatabase(changedChild);
-
-        testUpdateTimes(previousTime, newTime, changedTree, tree);
-    }
-}
-#endif
-
 QVariantList ManyToManyRelationsTest::childFKs(QSharedPointer<TestNameSpace::ParentObject> parent)
 {
     QpSqlQuery select(Qp::database());
     select.setTable(m_childToParentRelation.tableName());
     select.addField(m_childToParentRelation.columnName());
-    select.setWhereCondition(QpSqlCondition(m_childToParentRelation.reverseRelation().columnName(),
-                                            QpSqlCondition::EqualTo,
+    select.setWhereCondition(QpCondition(m_childToParentRelation.reverseRelation().columnName(),
+                                            QpCondition::EqualTo,
                                             Qp::primaryKey(parent)));
     select.prepareSelect();
 
@@ -427,8 +277,8 @@ QVariantList ManyToManyRelationsTest::parentFKs(QSharedPointer<TestNameSpace::Ch
     QpSqlQuery select(Qp::database());
     select.setTable(m_parentToChildRelation.tableName());
     select.addField(m_parentToChildRelation.columnName());
-    select.setWhereCondition(QpSqlCondition(m_parentToChildRelation.reverseRelation().columnName(),
-                                            QpSqlCondition::EqualTo,
+    select.setWhereCondition(QpCondition(m_parentToChildRelation.reverseRelation().columnName(),
+                                            QpCondition::EqualTo,
                                             Qp::primaryKey(child)));
     select.prepareSelect();
 
@@ -474,6 +324,8 @@ void ManyToManyRelationsTest::testChildFks(QSharedPointer<TestNameSpace::ParentO
 
 void ManyToManyRelationsTest::testTree(ManyToManyRelationsTest::Tree tree)
 {
+    _Pragma("GCC diagnostic push");
+    _Pragma("GCC diagnostic ignored \"-Wshadow\"");
     foreach(QSharedPointer<TestNameSpace::ParentObject> parent, tree.parents) {
         testChildFks(parent);
         foreach(QSharedPointer<TestNameSpace::ChildObject> child2, parent->childObjectsManyToMany()) {
@@ -486,49 +338,8 @@ void ManyToManyRelationsTest::testTree(ManyToManyRelationsTest::Tree tree)
             testChildFks(parent);
         }
     }
+    _Pragma("GCC diagnostic pop");
 }
-
-#ifndef QP_NO_TIMESTAMPS
-void ManyToManyRelationsTest::testUpdateTimes(QDateTime previousTime, QDateTime newTime,
-                                              ManyToManyRelationsTest::Tree changed, ManyToManyRelationsTest::Tree completeTree)
-{
-    foreach(QSharedPointer<TestNameSpace::ParentObject> parent, completeTree.parents) {
-        if(changed.parents.contains(parent)) {
-            QCOMPARE(Qp::updateTimeInDatabase(parent), newTime);
-        }
-        else {
-            QVERIFY(Qp::updateTimeInDatabase(parent) <= previousTime);
-        }
-
-        foreach(QSharedPointer<TestNameSpace::ChildObject> child, parent->childObjectsManyToMany()) {
-            if(changed.children.contains(child)) {
-                QCOMPARE(Qp::updateTimeInDatabase(child), newTime);
-            }
-            else {
-                QVERIFY(Qp::updateTimeInDatabase(child) <= previousTime);
-            }
-        }
-    }
-
-    foreach(QSharedPointer<TestNameSpace::ChildObject> child, completeTree.children) {
-        if(changed.children.contains(child)) {
-            QCOMPARE(Qp::updateTimeInDatabase(child), newTime);
-        }
-        else {
-            QVERIFY(Qp::updateTimeInDatabase(child) <= previousTime);
-        }
-
-        foreach(QSharedPointer<TestNameSpace::ParentObject> parent, child->parentObjectsManyToMany()) {
-            if(changed.parents.contains(parent)) {
-                QCOMPARE(Qp::updateTimeInDatabase(parent), newTime);
-            }
-            else {
-                QVERIFY(Qp::updateTimeInDatabase(parent) <= previousTime);
-            }
-        }
-    }
-}
-#endif
 
 ManyToManyRelationsTest::Tree ManyToManyRelationsTest::createTree()
 {

@@ -19,11 +19,6 @@ private Q_SLOTS:
     void testDatabaseFKChangeFromParent();
     void testDatabaseFKChangeFromChild();
 
-#ifndef QP_NO_TIMESTAMPS
-    void testUpdateTimesFromParent();
-    void testUpdateTimesFromChild();
-#endif
-
 private:
     struct Tree {
         QList<QSharedPointer<TestNameSpace::ParentObject>> parents;
@@ -40,10 +35,6 @@ private:
     void testChildFks(QSharedPointer<TestNameSpace::ParentObject> parent);
 
     void testTree(Tree tree);
-
-#ifndef QP_NO_TIMESTAMPS
-    void testUpdateTimes(QDateTime previousTime, QDateTime newTime, Tree changed, Tree unchanged);
-#endif
 
     Tree createTree();
 

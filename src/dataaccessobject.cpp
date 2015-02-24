@@ -2,11 +2,14 @@
 
 #include "cache.h"
 #include "databaseschema.h"
+#include "datasource.h"
+#include "datasourceresult.h"
 #include "error.h"
 #include "metaobject.h"
 #include "metaproperty.h"
-#include "propertydependencies.h"
+#include "propertydependencieshelper.h"
 #include "qpersistence.h"
+#include "reply.h"
 #include "sqlbackend.h"
 #include "sqldataaccessobjecthelper.h"
 #include "sqlquery.h"
@@ -20,12 +23,12 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 
 /******************************************************************************
- * QpDaoBaseData
+ * QpDataAccessObjectBaseData
  */
-class QpDaoBaseData : public QSharedData
+class QpDataAccessObjectBaseData : public QSharedData
 {
 public:
-    QpDaoBaseData() :
+    QpDataAccessObjectBaseData() :
         QSharedData(),
         lastSynchronizedCreatedId(0),
         lastSynchronizedRevision(0)
@@ -34,80 +37,84 @@ public:
 
     QpStorage *storage;
     QpMetaObject metaObject;
-    mutable QpError lastError;
     mutable QpCache cache;
     int lastSynchronizedCreatedId;
     int lastSynchronizedRevision;
-    QpPropertyDependencies propertyDependencies;
 };
 
 
 /******************************************************************************
- * QpDaoBase
+ * QpDataAccessObjectBase
  */
-QpDaoBase::QpDaoBase(const QMetaObject &metaObject,
-                     QpStorage *parent) :
+QpDataAccessObjectBase::QpDataAccessObjectBase(const QMetaObject &metaObject,
+                                               QpStorage *parent) :
     QObject(parent),
-    data(new QpDaoBaseData)
+    data(new QpDataAccessObjectBaseData)
 {
     data->storage = parent;
     data->metaObject = QpMetaObject::registerMetaObject(metaObject);
-    data->propertyDependencies = QpPropertyDependencies(parent);
 }
 
-QpDaoBase::~QpDaoBase()
+void QpDataAccessObjectBase::handleResultError()
+{
+    QpDatasourceResult *result = static_cast<QpDatasourceResult *>(sender());
+    // The result sets storage's lastError, so that we have nothing to handle anything in here yet
+    result->deleteLater();
+}
+
+QpDataAccessObjectBase::~QpDataAccessObjectBase()
 {
 }
 
-QpError QpDaoBase::lastError() const
-{
-    return data->lastError;
-}
-
-QpCache QpDaoBase::cache() const
+QpCache QpDataAccessObjectBase::cache() const
 {
     return data->cache;
 }
 
-void QpDaoBase::resetLastKnownSynchronization()
+QpStorage *QpDataAccessObjectBase::storage() const
+{
+    return data->storage;
+}
+
+void QpDataAccessObjectBase::resetLastKnownSynchronization()
 {
     if (!data->storage->beginTransaction())
         return;
-    data->lastSynchronizedCreatedId = data->storage->sqlDataAccessObjectHelper()->maxPrimaryKey(data->metaObject);
-    data->lastSynchronizedRevision = data->storage->sqlDataAccessObjectHelper()->latestRevision(data->metaObject);
+
+    QpDatasourceResult result(this);
+    data->storage->datasource()->latestRevision(&result, data->metaObject);
+    data->lastSynchronizedRevision = result.integerResult();
+    result.reset();
+    data->storage->datasource()->maxPrimaryKey(&result, data->metaObject);
+    data->lastSynchronizedCreatedId = result.integerResult();
+
     data->storage->commitOrRollbackTransaction();
 }
 
-void QpDaoBase::setLastError(const QpError &error) const
-{
-    data->lastError = error;
-    data->storage->setLastError(error);
-}
-
-void QpDaoBase::resetLastError() const
-{
-    setLastError(QpError());
-}
-
-Qp::SynchronizeResult QpDaoBase::sync(QSharedPointer<QObject> object)
+Qp::SynchronizeResult QpDataAccessObjectBase::sync(QSharedPointer<QObject> object, SynchronizeMode mode)
 {
     QObject *obj = object.data();
-    int id = data->storage->primaryKey(object);
-    if (!data->storage->sqlDataAccessObjectHelper()->readObject(data->metaObject, id, obj)) {
-        QpError error = data->storage->lastError();
-        if (error.isValid()) {
-            setLastError(error);
-            return Qp::Error;
-        }
+    int primaryKey = Qp::Private::primaryKey(obj);
+    QpDatasourceResult result(this);
+    data->storage->datasource()->objectByPrimaryKey(&result, data->metaObject, primaryKey);
 
+    if (result.lastError().isValid() || result.size() == 0) {
         data->cache.remove(data->storage->primaryKey(object));
         emit objectRemoved(object);
 
-        return Qp::Removed;
+        if (data->storage->lastError().isValid())
+            return Qp::Error;
+        else
+            return Qp::Removed;
     }
-
-    foreach (QpMetaProperty relation, QpMetaObject::forObject(object).relationProperties()) {
-        QpRelationResolver::readRelationFromDatabase(relation, obj);
+    Q_ASSERT(result.size() == 1);
+    if(mode == RebaseMode) {
+        QpDataTransferObjectDiff diff = result.dataTransferObjects().first().rebase(obj);
+        if(diff.isConflict())
+            return Qp::RebaseConflict;
+    }
+    else {
+        result.dataTransferObjects().first().write(obj);
     }
 
     emit objectSynchronized(object);
@@ -121,51 +128,101 @@ Qp::SynchronizeResult QpDaoBase::sync(QSharedPointer<QObject> object)
     return Qp::Updated;
 }
 
-QpMetaObject QpDaoBase::qpMetaObject() const
+QpReply *QpDataAccessObjectBase::makeReply(QpDatasourceResult *result, std::function<void (QpDatasourceResult *result, QpReply *reply)> handleResult) const
+{
+    QpReply *reply = new QpReply(result, const_cast<QpDataAccessObjectBase *>(this));
+    connect(result, &QpDatasourceResult::error, this, &QpDataAccessObjectBase::handleResultError);
+    connect(result, &QpDatasourceResult::finished, [=] {
+        handleResult(result, reply);
+        result->deleteLater();
+        reply->finish();
+    });
+    return reply;
+}
+
+QpMetaObject QpDataAccessObjectBase::qpMetaObject() const
 {
     return data->metaObject;
 }
 
-int QpDaoBase::count(const QpSqlCondition &condition) const
+int QpDataAccessObjectBase::count(const QpCondition &condition) const
 {
-    return data->storage->sqlDataAccessObjectHelper()->count(data->metaObject, condition);
+    QpDatasourceResult result(this);
+    data->storage->datasource()->count(&result, data->metaObject, condition);
+    return result.integerResult();
 }
 
-QList<int> QpDaoBase::allKeys(int skip, int count) const
+QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(int skip, int limit, const QpCondition &condition, QList<QpDatasource::OrderField> orders) const
 {
-    QList<int> result = data->storage->sqlDataAccessObjectHelper()->allKeys(data->metaObject, skip, count);
+    QpDatasourceResult result(this);
+    data->storage->datasource()->objects(&result, data->metaObject, skip, limit, condition, orders);
+    return readObjects(&result);
+}
 
-    if (data->storage->lastError().isValid())
-        setLastError(data->storage->lastError());
+QpReply *QpDataAccessObjectBase::readAllObjectsAsync(int skip, int limit, const QpCondition &condition, QList<QpDatasource::OrderField> orders) const
+{
+    QpDatasourceResult *result = new QpDatasourceResult(this);
+    QMetaObject::invokeMethod(data->storage->asynchronousDatasource(), "objects",
+                              Q_ARG(QpDatasourceResult *, result),
+                              Q_ARG(QpMetaObject, data->metaObject),
+                              Q_ARG(int, skip),
+                              Q_ARG(int, limit),
+                              Q_ARG(QpCondition, condition),
+                              Q_ARG(QList<QpDatasource::OrderField>, orders));
+    return makeReply(result, [this] (QpDatasourceResult *r, QpReply *reply) {
+        reply->setObjects(readObjects(r));
+    });
+}
 
+QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readAllObjects(const QList<int> primaryKeys) const
+{
+    if (primaryKeys.isEmpty())
+        return {};
+
+    QList<QSharedPointer<QObject> > result;
+    QList<int> missing;
+    foreach (int primaryKey, primaryKeys) {
+        if (QSharedPointer<QObject> object = data->cache.get(primaryKey)) {
+            result << object;
+        }
+        else {
+            missing << primaryKey;
+        }
+    }
+
+    if (!missing.isEmpty())
+        result << readAllObjects(-1, -1, QpCondition::notDeletedAnd(QpCondition::primaryKeys(missing)));
     return result;
 }
 
-QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(int skip, int count, const QpSqlCondition &condition, QList<QpSqlQuery::OrderField> orders) const
+QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readObjectsUpdatedAfterRevision(int revision) const
 {
-    QpSqlQuery query = data->storage->sqlDataAccessObjectHelper()->readAllObjects(data->metaObject, skip, count, condition, orders);
-    return readAllObjects(query);
+    QpDatasourceResult result(this);
+    data->storage->datasource()->objectsUpdatedAfterRevision(&result, data->metaObject, revision);
+    return readObjects(&result);
 }
 
-QList<QSharedPointer<QObject> > QpDaoBase::readObjectsUpdatedAfterRevision(int revision) const
+QpReply *QpDataAccessObjectBase::readObjectsUpdatedAfterRevisionAsync(int revision) const
 {
-    QpSqlQuery query = data->storage->sqlDataAccessObjectHelper()->readObjectsUpdatedAfterRevision(data->metaObject, revision);
-    return readAllObjects(query);
+    QpDatasourceResult *result = new QpDatasourceResult(this);
+    QMetaObject::invokeMethod(data->storage->asynchronousDatasource(), "objectsUpdatedAfterRevision",
+                              Q_ARG(QpDatasourceResult *, result),
+                              Q_ARG(QpMetaObject, data->metaObject),
+                              Q_ARG(int, revision));
+
+    return makeReply(result, [this] (QpDatasourceResult *r, QpReply *reply) {
+        reply->setObjects(readObjects(r));
+    });
 }
 
-QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) const
+QList<QSharedPointer<QObject> > QpDataAccessObjectBase::readObjects(QpDatasourceResult *datasourceResult) const
 {
-    if (data->storage->lastError().isValid()) {
-        return QList<QSharedPointer<QObject> >();
-    }
+    if (datasourceResult->lastError().isValid())
+        return {};
 
     QList<QSharedPointer<QObject> > result;
-    QSqlRecord record = query.record();
-    int primaryKeyRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
-    int revisionRecordIndex = record.indexOf(QpDatabaseSchema::COLUMN_NAME_REVISION);
-
-    while (query.next()) {
-        int key = query.value(primaryKeyRecordIndex).toInt();
+    foreach (const QpDataTransferObject &dto, datasourceResult->dataTransferObjects()) {
+        int key = dto.primaryKey;
 
         QSharedPointer<QObject> currentObject;
         if (data->cache.contains(key)) {
@@ -180,20 +237,9 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
             currentObject->blockSignals(true);
         }
 
-        int localRevision = data->storage->revisionInObject(currentObject.data());
-        int remoteRevision = query.value(revisionRecordIndex).toInt();
+        dto.write(currentObject.data());
 
-        // A revision of 0 means the object has no revision.
-        // This should only be the case for objects, which have been created before enabling the history tracking.
-        // We have to read these objects:
-        if (remoteRevision <= 0
-            || localRevision < remoteRevision) {
-            data->storage->sqlDataAccessObjectHelper()->readQueryIntoObject(query,
-                                                                            record,
-                                                                            currentObject.data());
-        }
-
-        if(isNewObject) {
+        if (isNewObject) {
             currentObject->blockSignals(false);
             emit objectInstanceCreated(currentObject);
         }
@@ -201,55 +247,56 @@ QList<QSharedPointer<QObject> > QpDaoBase::readAllObjects(QpSqlQuery &query) con
         result.append(currentObject);
     }
 
-    if (data->storage->lastError().isValid()) {
-        setLastError(data->storage->lastError());
-        return QList<QSharedPointer<QObject> >();
-    }
+    if (data->storage->lastError().isValid())
+        return {};
 
     return result;
 }
 
-QSharedPointer<QObject> QpDaoBase::readObject(int id) const
+QSharedPointer<QObject> QpDataAccessObjectBase::readObject(int primaryKey) const
 {
-    if (id <= 0) {
+    if (primaryKey <= 0)
         return QSharedPointer<QObject>();
-    }
 
-    QSharedPointer<QObject> p = data->cache.get(id);
-
+    QSharedPointer<QObject> p = data->cache.get(primaryKey);
     if (p)
         return p;
+
+    QpDatasourceResult result(this);
+    data->storage->datasource()->objectByPrimaryKey(&result, data->metaObject, primaryKey);
+
+    if (result.lastError().isValid() || result.isEmpty())
+        return QSharedPointer<QObject>();
 
     QObject *object = createInstance();
     // Block signals, so that no signals are emitted for partly-initialized objects
     object->blockSignals(true);
 
-    if (!data->storage->sqlDataAccessObjectHelper()->readObject(data->metaObject, id, object)) {
-        QpError error = data->storage->lastError();
-        if (error.isValid())
-            setLastError(error);
+    Q_ASSERT(result.size() == 1);
+    result.dataTransferObjects().first().write(object);
 
-        delete object;
-        return QSharedPointer<QObject>();
-    }
-
-    QSharedPointer<QObject> obj = setupSharedObject(object, id);
+    QSharedPointer<QObject> obj = setupSharedObject(object, primaryKey);
     object->blockSignals(false);
     emit objectInstanceCreated(obj);
     return obj;
 }
 
-QSharedPointer<QObject> QpDaoBase::createObject()
+QSharedPointer<QObject> QpDataAccessObjectBase::createObject()
 {
     QObject *object = createInstance();
     // Block signals, so that no signals are emitted for partly-initialized objects
     object->blockSignals(true);
 
-    if (!data->storage->sqlDataAccessObjectHelper()->insertObject(data->metaObject, object)) {
-        setLastError(data->storage->lastError());
+    QpDatasourceResult result(this);
+    data->storage->datasource()->insertObject(&result, object);
+
+    if (result.lastError().isValid()) {
         delete object;
         return QSharedPointer<QObject>();
     }
+
+    Q_ASSERT(result.size() == 1);
+    result.dataTransferObjects().first().write(object);
 
     QSharedPointer<QObject> obj = setupSharedObject(object, Qp::Private::primaryKey(object));
     object->blockSignals(false);
@@ -258,46 +305,59 @@ QSharedPointer<QObject> QpDaoBase::createObject()
     return obj;
 }
 
-Qp::UpdateResult QpDaoBase::updateObject(QSharedPointer<QObject> object)
+Qp::UpdateResult QpDataAccessObjectBase::updateObject(QSharedPointer<QObject> object)
 {
     QObject *obj = object.data();
-    int localRevision = data->storage->revisionInObject(obj);
-    int remoteRevision = data->storage->revisionInDatabase(obj);
+    int localRevision = Qp::Private::revisionInObject(obj);
+    int remoteRevision = revisionInDatabase(object);
 
-    if (localRevision < remoteRevision)
-        return Qp::UpdateConflict;
+    if (localRevision < remoteRevision) {
+        Qp::SynchronizeResult syncResult = sync(object, RebaseMode);
+        if(syncResult == Qp::Updated)
+            return updateObject(object);
+        else if(syncResult == Qp::RebaseConflict)
+            return Qp::UpdateConflict;
+        else
+            return Qp::UpdateError;
+    }
 
     Q_ASSERT(localRevision == remoteRevision);
 
-    if (!data->storage->sqlDataAccessObjectHelper()->updateObject(data->metaObject, object.data())) {
-        setLastError(data->storage->lastError());
+    QpDatasourceResult result(this);
+    data->storage->datasource()->updateObject(&result, obj);
+    if (result.lastError().isValid())
         return Qp::UpdateError;
-    }
+
+    if (result.isEmpty() && Qp::Private::isDeleted(object))
+        return Qp::UpdateSuccess;
 
     emit objectUpdated(object);
+    result.dataTransferObjects().first().write(obj);
+
     return Qp::UpdateSuccess;
 }
 
-bool QpDaoBase::removeObject(QSharedPointer<QObject> object)
+bool QpDataAccessObjectBase::removeObject(QSharedPointer<QObject> object)
 {
-    if (!data->storage->sqlDataAccessObjectHelper()->removeObject(data->metaObject, object.data())) {
-        setLastError(data->storage->lastError());
-        return false;
-    }
-
     // We have to unlink all related objects, because otherwise the
     // object will still be referenced by all strong relations.
     // If I ever want to delete this line (again), I will have a look at the
     // libdBase2::Material::amount, which does not show the right value,
     // after removing storage contents, and reconsider deleting this line.
     unlinkRelations(object);
-
     data->cache.remove(data->storage->primaryKey(object));
+
+    QpDatasourceResult result(this);
+    data->storage->datasource()->removeObject(&result, object.data());
+
+    if (result.lastError().isValid())
+        return false;
+
     emit objectRemoved(object);
     return true;
 }
 
-bool QpDaoBase::markAsDeleted(QSharedPointer<QObject> object)
+bool QpDataAccessObjectBase::markAsDeleted(QSharedPointer<QObject> object)
 {
     Qp::Private::markAsDeleted(object.data());
     Qp::UpdateResult result = updateObject(object);
@@ -311,7 +371,7 @@ bool QpDaoBase::markAsDeleted(QSharedPointer<QObject> object)
     return true;
 }
 
-void QpDaoBase::unlinkRelations(QSharedPointer<QObject> object) const
+void QpDataAccessObjectBase::unlinkRelations(QSharedPointer<QObject> object) const
 {
 #ifdef __clang__
     _Pragma("clang diagnostic push");
@@ -327,16 +387,16 @@ void QpDaoBase::unlinkRelations(QSharedPointer<QObject> object) const
 #endif
 }
 
-QSharedPointer<QObject> QpDaoBase::setupSharedObject(QObject *object, int primaryKey) const
+QSharedPointer<QObject> QpDataAccessObjectBase::setupSharedObject(QObject *object, int primaryKey) const
 {
     data->storage->enableStorageFrom(object);
     QSharedPointer<QObject> shared = data->cache.insert(primaryKey, object);
     Qp::Private::enableSharedFromThis(shared);
-    data->propertyDependencies.initSelfDependencies(shared);
+    data->storage->propertyDependenciesHelper()->initSelfDependencies(shared);
     return shared;
 }
 
-bool QpDaoBase::undelete(QSharedPointer<QObject> object)
+bool QpDataAccessObjectBase::undelete(QSharedPointer<QObject> object)
 {
     Qp::Private::undelete(object.data());
     blockSignals(true); // block object updated signal
@@ -349,14 +409,14 @@ bool QpDaoBase::undelete(QSharedPointer<QObject> object)
     return true;
 }
 
-Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode)
+Qp::SynchronizeResult QpDataAccessObjectBase::synchronizeObject(QSharedPointer<QObject> object, SynchronizeMode mode)
 {
     if (mode == IgnoreRevision)
         return sync(object);
 
     QObject *obj = object.data();
-    int localRevision = data->storage->revisionInObject(obj);
-    int remoteRevision = data->storage->revisionInDatabase(obj);
+    int localRevision = Qp::Private::revisionInObject(obj);
+    int remoteRevision = revisionInDatabase(object);
 
     if (localRevision == remoteRevision)
         return Qp::Unchanged;
@@ -366,64 +426,87 @@ Qp::SynchronizeResult QpDaoBase::synchronizeObject(QSharedPointer<QObject> objec
     return sync(object);
 }
 
-bool QpDaoBase::synchronizeAllObjects()
+int QpDataAccessObjectBase::revisionInDatabase(QSharedPointer<QObject> object)
 {
-    if (!data->storage->beginTransaction())
-        return false;
+    QpDatasourceResult result(this);
+    data->storage->datasource()->objectRevision(&result, object.data());
+    if (result.lastError().isValid())
+        return -1;
+    return result.integerResult();
+}
 
-    foreach (QSharedPointer<QObject> object, readAllObjects(-1, -1, QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                                                                   QpSqlCondition::GreaterThan,
-                                                                                   data->lastSynchronizedCreatedId))) {
+bool QpDataAccessObjectBase::synchronizeAllObjects()
+{
+    handleCreatedObjects(readAllObjects(-1, -1, QpCondition::notDeletedAnd(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                                                       QpCondition::GreaterThan,
+                                                                                       data->lastSynchronizedCreatedId))));
+    handleUpdatedObjects(readObjectsUpdatedAfterRevision(data->lastSynchronizedRevision));
+
+    return true;
+}
+
+QpReply *QpDataAccessObjectBase::synchronizeAllObjectsAsync()
+{
+    QpReply *reply = new QpReply(this);
+    QpReply *r1 = readAllObjectsAsync(-1, -1, QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                                          QpCondition::GreaterThan,
+                                                          data->lastSynchronizedCreatedId));
+    connect(r1, &QpReply::finished, [this, r1, reply] {
+        handleCreatedObjects(r1->objects());
+        r1->deleteLater();
+
+        QpReply *r2 = readObjectsUpdatedAfterRevisionAsync(data->lastSynchronizedRevision);
+        connect(r2, &QpReply::finished, [this, r2, reply] {
+            handleUpdatedObjects(r2->objects());
+            r2->deleteLater();
+
+            reply->finish();
+        });
+    });
+
+    return reply;
+}
+
+void QpDataAccessObjectBase::handleCreatedObjects(const QList<QSharedPointer<QObject> > &objects)
+{
+    foreach (QSharedPointer<QObject> object, objects) {
         data->lastSynchronizedCreatedId = qMax(data->lastSynchronizedCreatedId, Qp::Private::primaryKey(object.data()));
         emit objectCreated(object);
     }
+}
 
-    foreach (QSharedPointer<QObject> object, readObjectsUpdatedAfterRevision(data->lastSynchronizedRevision)) {
-        data->lastSynchronizedRevision = qMax(data->lastSynchronizedRevision, data->storage->revisionInObject(object.data()));
-
-        QList<QpMetaProperty> rs = QpMetaObject::forObject(object).relationProperties();
-        for (int i = 0, c = rs.size(); i < c; ++i) {
-            QpMetaProperty relation = rs.at(i);
-            QpRelationResolver::readRelationFromDatabase(relation, object.data());
-        }
+void QpDataAccessObjectBase::handleUpdatedObjects(const QList<QSharedPointer<QObject> > &objects)
+{
+    foreach (QSharedPointer<QObject> object, objects) {
+        QObject *obj = object.data();
+        data->lastSynchronizedRevision = qMax(data->lastSynchronizedRevision, Qp::Private::revisionInObject(obj));
 
         emit objectSynchronized(object);
 
-        if (Qp::Private::isDeleted(object.data()))
+        if (Qp::Private::isDeleted(obj))
             emit objectMarkedAsDeleted(object);
         else
             emit objectUpdated(object);
     }
+}
 
-    if (!data->storage->commitOrRollbackTransaction()
-        || lastError().isValid())
+bool QpDataAccessObjectBase::incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName)
+{
+    QpDatasourceResult result(this);
+    data->storage->datasource()->incrementNumericColumn(&result, object.data(), fieldName);
+    if (result.lastError().isValid())
         return false;
 
     return true;
-}
-
-bool QpDaoBase::incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName)
-{
-    if (!data->storage->sqlDataAccessObjectHelper()->incrementNumericColumn(object.data(), fieldName)) {
-        setLastError(data->storage->lastError());
-        return false;
-    }
-
-    return true;
-}
-
-int QpDaoBase::latestRevision() const
-{
-    return data->storage->sqlDataAccessObjectHelper()->latestRevision(data->metaObject);
 }
 
 #ifndef QP_NO_TIMESTAMPS
-QList<QSharedPointer<QObject> > QpDaoBase::createdSince(const QDateTime &time)
+QList<QSharedPointer<QObject> > QpDataAccessObjectBase::createdSince(const QDateTime &time)
 {
     return createdSince(time.toString("yyyyMMddHHmmss.zzz").toDouble());
 }
 
-QList<QSharedPointer<QObject> > QpDaoBase::createdSince(double time)
+QList<QSharedPointer<QObject> > QpDataAccessObjectBase::createdSince(double time)
 {
     return readAllObjects(-1,-1, QString::fromLatin1("%1.%2 >= %3 ORDER BY %1.%2 ASC")
                           .arg(data->metaObject.tableName())
@@ -431,12 +514,12 @@ QList<QSharedPointer<QObject> > QpDaoBase::createdSince(double time)
                           .arg(QString::number(time, 'f', 4)));
 }
 
-QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(const QDateTime &time)
+QList<QSharedPointer<QObject> > QpDataAccessObjectBase::updatedSince(const QDateTime &time)
 {
     return updatedSince(time.toString("yyyyMMddHHmmss.zzz").toDouble());
 }
 
-QList<QSharedPointer<QObject> > QpDaoBase::updatedSince(double time)
+QList<QSharedPointer<QObject> > QpDataAccessObjectBase::updatedSince(double time)
 {
     return readAllObjects(-1,-1, QString::fromLatin1("%1.%2 >= %3 ORDER BY %1.%2 ASC")
                           .arg(data->metaObject.tableName())

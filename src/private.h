@@ -2,28 +2,28 @@
 #define QPERSISTENCE_PRIVATE_H
 
 #include "dataaccessobject.h"
-#include "relationresolver.h"
 #include "conversion.h"
 
 namespace Qp {
 
 namespace Private {
 
-QObject *GlobalGuard();
 void enableSharedFromThis(QSharedPointer<QObject> object);
 QSharedPointer<QObject> sharedFrom(const QObject *object);
 
 int primaryKey(const QObject *object);
+int primaryKey(QSharedPointer<QObject> object);
+QList<int> primaryKeys(const QList<QSharedPointer<QObject> > &objects);
 void setPrimaryKey(QObject *object, int key);
+int revisionInObject(const QObject *object);
 
-bool isDeleted(QObject *object);
+bool isDeleted(const QObject *object);
+bool isDeleted(QSharedPointer<QObject> object);
 void markAsDeleted(QObject *object);
 void undelete(QObject *object);
 
 template<class T> QList<QSharedPointer<T> > makeListStrong(const QList<QWeakPointer<T> >& list, bool *ok = 0);
 template<class T> QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list);
-template<class T> QSharedPointer<T> resolveToOneRelation(const QString &name, const QObject *object);
-template<class T> QList<QSharedPointer<T> > resolveToManyRelation(const QString &name, const QObject *object);
 
 /*
  * Implementation:
@@ -48,18 +48,6 @@ QList<QWeakPointer<T> > makeListWeak(const QList<QSharedPointer<T> >& list)
     QList<QWeakPointer<T> > result;
     foreach (QSharedPointer<T> s, list) result.append(s.toWeakRef());
     return result;
-}
-
-template<class T>
-QSharedPointer<T> resolveToOneRelation(const QString &name, const QObject *object)
-{
-    return qSharedPointerCast<T>(QpRelationResolver::resolveToOneRelation(name, object));
-}
-
-template<class T>
-QList<QSharedPointer<T> > resolveToManyRelation(const QString &name, const QObject *object)
-{
-    return Qp::castList<T>(QpRelationResolver::resolveToOneRelation(name, object));
 }
 
 } // namespace Private

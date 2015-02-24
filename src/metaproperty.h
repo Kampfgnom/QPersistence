@@ -9,6 +9,7 @@ END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 struct QMetaObject;
 class QpMetaObject;
+class QpRelationBase;
 
 class QpMetaPropertyData;
 class QpMetaProperty
@@ -62,12 +63,17 @@ public:
     QpMetaObject reverseMetaObject() const;
     QString reverseRelationName() const;
     QpMetaProperty reverseRelation() const;
+    QString internalRelationObjectPropertyName() const;
+    QpRelationBase *internalRelationObject(const QObject *object) const;
 
     QString tableName() const;
 
     void remove(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const;
     void add(QSharedPointer<QObject> object, QSharedPointer<QObject> related) const;
-    QList<QSharedPointer<QObject > > read(QSharedPointer<QObject> object) const;
+    QList<QSharedPointer<QObject> > read(const QObject *object) const;
+    QList<QSharedPointer<QObject> > read(QSharedPointer<QObject> object) const;
+    QSharedPointer<QObject> readOne(const QObject *object) const;
+    QSharedPointer<QObject> readOne(QSharedPointer<QObject> object) const;
 
     bool isRelated(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const;
 

@@ -12,6 +12,7 @@ public:
 
 private slots:
     void initDatabase();
+    void cleanupTestCase();
 
     void testCreateUser();
     void testGrandAll();
@@ -22,7 +23,7 @@ private slots:
     void testDeleteUser();
 
 private:
-    QpUserManagement m_userManagement;
+    QpUserManagement *m_userManagement;
 #endif
 };
 

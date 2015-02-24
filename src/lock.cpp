@@ -1,12 +1,18 @@
 #include "lock.h"
 
+#ifdef QP_NO_LOCKS
+QpLock::QpLock()
+{
+}
+#endif
+
 #ifndef QP_NO_LOCKS
 
 #include "databaseschema.h"
 #include "error.h"
 #include "qpersistence.h"
 #include "sqlbackend.h"
-#include "sqlcondition.h"
+#include "condition.h"
 #include "sqlquery.h"
 #include "storage.h"
 #include "transactionshelper.h"
@@ -64,7 +70,7 @@ QpLock QpLockData::insertLock(QpStorage *storage, QSharedPointer<QObject> object
 
     query.prepareInsert();
 
-    if (!query.exec() || query.lastError().isValid()) {
+    if (!query.exec()) {
         QpLock lock = QpLock(QpError(query.lastError()));
         storage->setLastError(lock.error());
         return lock;
@@ -82,12 +88,12 @@ QpLock QpLockData::insertLock(QpStorage *storage, QSharedPointer<QObject> object
     query.clear();
     query.setTable(metaObject.tableName());
     query.addField(QpDatabaseSchema::COLUMN_LOCK, lock.data->id);
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                           QpSqlCondition::EqualTo,
+    query.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpCondition::EqualTo,
                                            Qp::Private::primaryKey(object.data())));
     query.prepareUpdate();
 
-    if (!query.exec() || query.lastError().isValid()) {
+    if (!query.exec()) {
         lock = QpLock(QpError(query.lastError()));
         storage->setLastError(lock.error());
         return lock;
@@ -105,14 +111,13 @@ QpLock QpLockData::selectLock(QpStorage *storage, int id, QSharedPointer<QObject
     foreach (QString field, storage->additionalLockInformationFields().keys()) {
         query.addField(field);
     }
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                           QpSqlCondition::EqualTo,
+    query.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpCondition::EqualTo,
                                            id));
     query.prepareSelect();
 
     if (!query.exec()
-        || !query.first()
-        || query.lastError().isValid()) {
+        || !query.first()) {
         QpLock lock = QpLock(QpError(query.lastError()));
         storage->setLastError(lock.error());
         return lock;
@@ -140,14 +145,13 @@ int QpLockData::selectLockId(QpStorage *storage, QSharedPointer<QObject> object,
     QpSqlQuery query(storage->database());
     query.setTable(metaObject.tableName());
     query.addField(QpDatabaseSchema::COLUMN_LOCK);
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                           QpSqlCondition::EqualTo,
+    query.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpCondition::EqualTo,
                                            Qp::Private::primaryKey(object.data())));
     query.setForUpdate(forUpdate);
     query.prepareSelect();
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
+    if (!query.exec()) {
         storage->setLastError(QpError(query.lastError()));
         return -1;
     }
@@ -165,31 +169,25 @@ void QpLockData::removeLock(QpStorage *storage, int id, QSharedPointer<QObject> 
     QpSqlQuery query(storage->database());
     query.clear();
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
-    query.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                           QpSqlCondition::EqualTo,
+    query.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                           QpCondition::EqualTo,
                                            id));
     query.prepareDelete();
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
+    if (!query.exec()) {
         storage->setLastError(QpError(query.lastError()));
         return;
     }
 }
-#endif
 
 
 /**********************************************************
  *  QpLock
  */
 QpLock::QpLock()
-#ifndef QP_NO_LOCKS
     : data(new QpLockData)
-#endif
 {
 }
-
-#ifndef QP_NO_LOCKS
 
 bool QpLock::isLocked(QSharedPointer<QObject> object)
 {

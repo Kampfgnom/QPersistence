@@ -1,12 +1,16 @@
 #include "storage.h"
 
-#include "sqlbackend.h"
+#include "datasource.h"
+#include "datasourceresult.h"
 #include "error.h"
+#include "propertydependencieshelper.h"
+#include "sqlbackend.h"
 #include "sqlquery.h"
 #include "transactionshelper.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QSqlError>
+#include <QThread>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 static const char *PROPERTY_STORAGE = "_Qp_storage";
@@ -20,53 +24,59 @@ class QpStorageData : public QSharedData
 public:
     QpStorageData() :
         QSharedData(),
-        locksEnabled(false)
+        locksEnabled(false),
+        datasource(nullptr),
+        asynchronousDatasource(nullptr),
+        datasourceThread(nullptr)
     {
     }
 
-    QpSqlDataAccessObjectHelper *sqlDataAccessObjectHelper;
     QSqlDatabase database;
 
     QpError lastError;
     bool locksEnabled;
     QHash<QSharedPointer<QObject>, QpLock> localLocks;
     QHash<QString, QVariant::Type> additionalLockFields;
-    QHash<QString, QpDaoBase *> dataAccessObjects;
+    QHash<QString, QpDataAccessObjectBase *> dataAccessObjects;
     QList<QpAbstractErrorHandler *> errorHandlers;
-    QpTransactionsHelper transactions;
+    QpTransactionsHelper *transactionsHelper;
+    QpPropertyDependenciesHelper *propertyDependenciesHelper;
+    QpDatasource *datasource;
+    QpDatasource *asynchronousDatasource;
+    QThread *datasourceThread;
 
     static QpStorage *defaultStorage;
 };
-
-QpStorage *QpStorageData::defaultStorage(nullptr);
 
 
 /******************************************************************************
  * QpStorage
  */
-QpStorage *QpStorage::defaultStorage()
-{
-    if (!QpStorageData::defaultStorage)
-        QpStorageData::defaultStorage = new QpStorage(Qp::Private::GlobalGuard());
-
-    return QpStorageData::defaultStorage;
-}
-
 QpStorage::QpStorage(QObject *parent) :
     QObject(parent),
     data(new QpStorageData)
 {
-    data->sqlDataAccessObjectHelper = new QpSqlDataAccessObjectHelper(this);
-    data->transactions = QpTransactionsHelper::forStorage(this);
+    data->transactionsHelper = new QpTransactionsHelper(this);
+    data->propertyDependenciesHelper = new QpPropertyDependenciesHelper(this);
+
+    qRegisterMetaType<QpDataTransferObjectsById>();
+    qRegisterMetaType<QpMetaObject>();
+    qRegisterMetaType<QpCondition>();
+    qRegisterMetaType<QList<QpDatasource::OrderField>>();
+    qRegisterMetaType<QSqlDatabase>();
+    qRegisterMetaType<QpDatasourceResult *>();
+    qRegisterMetaType<QpError>();
 }
 
 QpStorage::~QpStorage()
 {
+    delete data->transactionsHelper;
+    delete data->propertyDependenciesHelper;
 }
 
-QpSqlDataAccessObjectHelper *QpStorage::sqlDataAccessObjectHelper() const
+QpPropertyDependenciesHelper *QpStorage::propertyDependenciesHelper() const
 {
-    return data->sqlDataAccessObjectHelper;
+    return data->propertyDependenciesHelper;
 }
 
 void QpStorage::enableStorageFrom(QObject *object)
@@ -84,12 +94,7 @@ QpStorage *QpStorage::forObject(QSharedPointer<QObject> object)
     return object->property(PROPERTY_STORAGE).value<QpStorage *>();
 }
 
-int QpStorage::revisionInDatabase(QObject *object)
-{
-    return sqlDataAccessObjectHelper()->objectRevision(object);
-}
-
-void QpStorage::registerDataAccessObject(QpDaoBase *dao, const QMetaObject *objectInClassHierarchy)
+void QpStorage::registerDataAccessObject(QpDataAccessObjectBase *dao, const QMetaObject *objectInClassHierarchy)
 {
     do {
         QString className = QpMetaObject::removeNamespaces(objectInClassHierarchy->className());
@@ -140,19 +145,29 @@ QpError QpStorage::lastError() const
     return data->lastError;
 }
 
+void QpStorage::setLastError(const QSqlQuery &query)
+{
+    setLastError(QpError(query.lastError()));
+}
+
 #ifdef __clang__
-_Pragma("clang diagnostic push")
-_Pragma("clang diagnostic ignored \"-Wmissing-noreturn\"")
+_Pragma("clang diagnostic push");
+_Pragma("clang diagnostic ignored \"-Wmissing-noreturn\"");
 #endif
-void QpStorage::setLastError(QpError error)
+void QpStorage::setLastError(const QpError &error)
 {
     data->lastError = error;
+    if (!error.isValid())
+        return;
+
+    qDebug() << error;
+
     foreach (QpAbstractErrorHandler *handler, data->errorHandlers) {
         handler->handleError(error);
     }
 }
 #ifdef __clang__
-_Pragma("clang diagnostic pop")
+_Pragma("clang diagnostic pop");
 #endif
 
 void QpStorage::addErrorHandler(QpAbstractErrorHandler *handler)
@@ -169,24 +184,59 @@ void QpStorage::clearErrorHandlers()
 
 bool QpStorage::beginTransaction()
 {
-    return data->transactions.begin();
+    return data->transactionsHelper->begin();
 }
 
 bool QpStorage::commitOrRollbackTransaction()
 {
-    return data->transactions.commitOrRollback();
+    return data->transactionsHelper->commitOrRollback();
 }
 
 bool QpStorage::rollbackTransaction()
 {
-    return data->transactions.rollback();
+    return data->transactionsHelper->rollback();
 }
 
 void QpStorage::resetAllLastKnownSynchronizations()
 {
-    foreach(QpDaoBase *dao, data->dataAccessObjects.values()) {
+    foreach (QpDataAccessObjectBase *dao, data->dataAccessObjects.values()) {
         dao->resetLastKnownSynchronization();
     }
+}
+
+QpDatasource *QpStorage::datasource() const
+{
+    Q_ASSERT_X(data->datasource, Q_FUNC_INFO, "you have to set a datasource");
+    return data->datasource;
+}
+
+QpDatasource *QpStorage::asynchronousDatasource() const
+{
+    if(data->asynchronousDatasource)
+        return data->asynchronousDatasource;
+
+    Q_ASSERT(data->datasource->features() & QpDatasource::Asynchronous);
+    data->datasourceThread = new QThread(const_cast<QpStorage *>(this));
+    data->datasourceThread->setObjectName("DatasourceThread");
+    data->asynchronousDatasource = datasource()->cloneForThread(data->datasourceThread);
+    data->datasourceThread->start();
+    return data->asynchronousDatasource;
+}
+
+void QpStorage::setDatasource(QpDatasource *datasource)
+{
+    if(data->datasource)
+        data->datasource->deleteLater();
+
+    if(data->asynchronousDatasource) {
+        data->datasourceThread->quit();
+        data->datasourceThread->deleteLater();
+        data->asynchronousDatasource->deleteLater();
+        data->datasourceThread = nullptr;
+        data->asynchronousDatasource = nullptr;
+    }
+
+    data->datasource = datasource;
 }
 
 void QpStorage::setSqlDebugEnabled(bool enable)
@@ -194,23 +244,23 @@ void QpStorage::setSqlDebugEnabled(bool enable)
     QpSqlQuery::setDebugEnabled(enable);
 }
 
-QList<QpDaoBase *> QpStorage::dataAccessObjects()
+QList<QpDataAccessObjectBase *> QpStorage::dataAccessObjects()
 {
     return data->dataAccessObjects.values();
 }
 
-QpDaoBase *QpStorage::dataAccessObject(const QMetaObject metaObject) const
+QpDataAccessObjectBase *QpStorage::dataAccessObject(const QMetaObject metaObject) const
 {
     return dataAccessObject(metaObject.className());
 }
 
-QpDaoBase *QpStorage::dataAccessObject(const QString &className) const
+QpDataAccessObjectBase *QpStorage::dataAccessObject(const QString &className) const
 {
     Q_ASSERT(data->dataAccessObjects.contains(className));
     return data->dataAccessObjects.value(className);
 }
 
-QpDaoBase *QpStorage::dataAccessObject(int userType) const
+QpDataAccessObjectBase *QpStorage::dataAccessObject(int userType) const
 {
     return dataAccessObject(Qp::Private::classNameForUserType(userType));
 }
@@ -227,8 +277,7 @@ bool QpStorage::unlockAllLocks()
     query.setTable(QpDatabaseSchema::TABLENAME_LOCKS);
     query.prepareDelete();
 
-    if (!query.exec()
-        || query.lastError().isValid()) {
+    if (!query.exec()) {
         setLastError(query.lastError());
         return false;
     }
@@ -252,33 +301,26 @@ void QpStorage::enableLocks()
 }
 #endif
 
-int QpStorage::revisionInObject(QObject *object)
-{
-    return object->property(QpDatabaseSchema::COLUMN_NAME_REVISION).toInt();
-}
-
-QpDaoBase *QpStorage::dataAccessObject(QSharedPointer<QObject> object) const
+QpDataAccessObjectBase *QpStorage::dataAccessObject(QSharedPointer<QObject> object) const
 {
     return dataAccessObject(*object->metaObject());
 }
 
 bool QpStorage::incrementNumericColumn(QSharedPointer<QObject> object, const QString &fieldName)
 {
-    QpDaoBase *dao = dataAccessObject(object);
+    QpDataAccessObjectBase *dao = dataAccessObject(object);
     if (!dao->incrementNumericColumn(object, fieldName))
         return false;
 
-    return dao->synchronizeObject(object, QpDaoBase::IgnoreRevision) == Qp::Updated;
+    return dao->synchronizeObject(object, QpDataAccessObjectBase::IgnoreRevision) == Qp::Updated;
 }
 
 Qp::UpdateResult QpStorage::update(QSharedPointer<QObject> object)
 {
-    Qp::UpdateResult result = dataAccessObject(object)->updateObject(object);
-    Q_ASSERT(result == Qp::UpdateSuccess);
-    return result;
+    return dataAccessObject(object)->updateObject(object);
 }
 
-Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<QObject> object, QpDaoBase::SynchronizeMode mode)
+Qp::SynchronizeResult QpStorage::synchronize(QSharedPointer<QObject> object, QpDataAccessObjectBase::SynchronizeMode mode)
 {
     return dataAccessObject(object)->synchronizeObject(object, mode);
 }
@@ -321,30 +363,9 @@ double QpStorage::databaseTimeInternal()
     return query.value(0).toDouble();
 }
 
-double QpStorage::creationTime(QObject *object)
-{
-    double time = creationTimeInInObject(object);
-    _Pragma("GCC diagnostic push")
-    _Pragma("GCC diagnostic ignored \"-Wused-but-marked-unused\"")
-    if (qFuzzyCompare(0.0, time))
-        return creationTimeInDatabase(object);
-    _Pragma("GCC diagnostic pop")
-    return time;
-}
-
-double QpStorage::creationTimeInDatabase(QObject *object)
-{
-    return sqlDataAccessObjectHelper()->readCreationTime(object);
-}
-
 double QpStorage::creationTimeInInObject(QObject *object)
 {
     return object->property(QpDatabaseSchema::COLUMN_NAME_CREATION_TIME).toDouble();
-}
-
-double QpStorage::updateTimeInDatabase(QObject *object)
-{
-    return sqlDataAccessObjectHelper()->readUpdateTime(object);
 }
 
 double QpStorage::updateTimeInObject(QObject *object)

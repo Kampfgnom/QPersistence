@@ -18,25 +18,25 @@ public:
     int fetchCount;
     mutable QHash<QSharedPointer<QObject>, int> rows;
     QList<QSharedPointer<QObject> > objects;
-    QpDaoBase *dao;
+    QpDataAccessObjectBase *dao;
     bool objectsFromDao;
-    QpSqlCondition condition;
+    QpCondition condition;
 };
 
 
 /******************************************************************************
  * QpObjectListModelBase
  */
-QpObjectListModelBase::QpObjectListModelBase(QpDaoBase *dao, QObject *parent) :
+QpObjectListModelBase::QpObjectListModelBase(QpDataAccessObjectBase *dao, QObject *parent) :
     QAbstractListModel(parent),
     d(new QpObjectListModelBaseData)
 {
     d->dao = dao;
-    connect(dao, &QpDaoBase::objectCreated, this, &QpObjectListModelBase::objectInserted);
-    connect(dao, &QpDaoBase::objectRemoved, this, &QpObjectListModelBase::objectRemoved);
-    connect(dao, &QpDaoBase::objectUpdated, this, &QpObjectListModelBase::objectUpdated);
-    connect(dao, &QpDaoBase::objectMarkedAsDeleted, this, &QpObjectListModelBase::objectMarkedAsDeleted);
-    connect(dao, &QpDaoBase::objectUndeleted, this, &QpObjectListModelBase::objectUndeleted);
+    connect(dao, &QpDataAccessObjectBase::objectCreated, this, &QpObjectListModelBase::objectInserted);
+    connect(dao, &QpDataAccessObjectBase::objectRemoved, this, &QpObjectListModelBase::objectRemoved);
+    connect(dao, &QpDataAccessObjectBase::objectUpdated, this, &QpObjectListModelBase::objectUpdated);
+    connect(dao, &QpDataAccessObjectBase::objectMarkedAsDeleted, this, &QpObjectListModelBase::objectMarkedAsDeleted);
+    connect(dao, &QpDataAccessObjectBase::objectUndeleted, this, &QpObjectListModelBase::objectUndeleted);
 }
 
 QpObjectListModelBase::~QpObjectListModelBase()
@@ -56,12 +56,12 @@ void QpObjectListModelBase::setFetchCount(int fetchCount)
         d->fetchCount = fetchCount;
 }
 
-QpDaoBase *QpObjectListModelBase::dataAccessObject() const
+QpDataAccessObjectBase *QpObjectListModelBase::dataAccessObject() const
 {
     return d->dao;
 }
 
-void QpObjectListModelBase::setCondition(const QpSqlCondition &condition)
+void QpObjectListModelBase::setCondition(const QpCondition &condition)
 {
     beginResetModel();
     d->condition = condition;
@@ -91,7 +91,7 @@ bool QpObjectListModelBase::canFetchMore(const QModelIndex &) const
     if (!d->objectsFromDao)
         return false;
 
-    return (d->objects.size() < d->dao->count(d->condition));
+    return (d->objects.size() < d->dao->count(QpCondition::notDeletedAnd(d->condition)));
 }
 
 void QpObjectListModelBase::fetchMore(const QModelIndex &parent)
@@ -102,12 +102,12 @@ void QpObjectListModelBase::fetchMore(const QModelIndex &parent)
         return;
 
     int begin = d->objects.size();
-    int remainder = d->dao->count(d->condition) - begin;
+    int remainder = d->dao->count(QpCondition::notDeletedAnd(d->condition)) - begin;
     int itemsToFetch = qMin(d->fetchCount, remainder);
 
     beginInsertRows(QModelIndex(), begin, begin+itemsToFetch-1);
 
-    d->objects.append(d->dao->readAllObjects(begin, itemsToFetch, d->condition));
+    d->objects.append(d->dao->readAllObjects(begin, itemsToFetch, QpCondition::notDeletedAnd(d->condition)));
     for (int i = begin; i < begin + itemsToFetch; ++i) {
         d->rows.insert(d->objects.at(i), i);
     }
@@ -221,7 +221,7 @@ void QpObjectListModelBase::objectMarkedAsDeleted(QSharedPointer<QObject> object
 {
     objectUpdated(object);
 
-    if (Qp::isDeleted(object))
+    if (Qp::Private::isDeleted(object.data()))
         objectRemoved(object);
 }
 
@@ -230,8 +230,8 @@ void QpObjectListModelBase::objectUndeleted(QSharedPointer<QObject> object)
     if (!d->objectsFromDao || d->rows.contains(object))
         return;
 
-    int index = d->dao->count(d->condition
-                              && QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, QpSqlCondition::LessThan, Qp::primaryKey(object)));
+    int index = d->dao->count(QpCondition::notDeletedAnd(d->condition)
+                              && QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY, QpCondition::LessThan, Qp::Private::primaryKey(object.data())));
 
     beginInsertRows(QModelIndex(), index, index);
 

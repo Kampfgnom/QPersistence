@@ -2,12 +2,12 @@
 
 #include "metaobject.h"
 #include "qpersistence.h"
+#include "relations.h"
 
 BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QMetaClassInfo>
 #include <QRegularExpression>
 #include <QStringList>
-#include <QDebug>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
 static const char* TOMANYRELATIONREGEXP("QList\\<(QSharedPointer|QWeakPointer)\\<(.+)\\> \\>");
@@ -201,10 +201,6 @@ QMetaMethod QpMetaProperty::recalculateMethod(QSharedPointer<QObject> object) co
     methodName[0] = methodName.at(0).toTitleCase();
     methodName.prepend("recalculate");
 
-    for(int i = 0, c = metaObject->methodCount(); i < c; ++i) {
-        qDebug() << metaObject->method(i).name();
-    }
-
     QByteArray signature = QMetaObject::normalizedSignature(methodName.toLatin1());
     int index = metaObject->indexOfMethod(signature);
     Q_ASSERT_X(index >= 0,
@@ -364,6 +360,16 @@ QpMetaProperty QpMetaProperty::reverseRelation() const
     return reverseMetaObject().metaProperty(reverseRelationName());
 }
 
+QString QpMetaProperty::internalRelationObjectPropertyName() const
+{
+    return name().append("_internal");
+}
+
+QpRelationBase *QpMetaProperty::internalRelationObject(const QObject *object) const
+{
+    return object->property(internalRelationObjectPropertyName().toLatin1()).value<QpRelationBase *>();
+}
+
 QString QpMetaProperty::tableName() const
 {
     if (!isRelationProperty())
@@ -469,22 +475,42 @@ void QpMetaProperty::add(QSharedPointer<QObject> object, QSharedPointer<QObject>
     }
 }
 
-QList<QSharedPointer<QObject> > QpMetaProperty::read(QSharedPointer<QObject> object) const
+QSharedPointer<QObject> QpMetaProperty::readOne(const QObject *object) const
+{
+    QList<QSharedPointer<QObject> > os = read(object);
+    if(os.isEmpty())
+        return QSharedPointer<QObject>();
+
+    Q_ASSERT(os.size() == 1);
+    return os.first();
+}
+
+QSharedPointer<QObject> QpMetaProperty::readOne(QSharedPointer<QObject> object) const
+{
+    return readOne(object.data());
+}
+
+QList<QSharedPointer<QObject> > QpMetaProperty::read(const QObject *object) const
 {
     switch (cardinality()) {
     case QpMetaProperty::OneToOneCardinality:
     case QpMetaProperty::ManyToOneCardinality:
-        return { Qp::Private::objectCast(data->metaProperty.read(object.data())) };
+        return { Qp::Private::objectCast(data->metaProperty.read(object)) };
 
     case QpMetaProperty::OneToManyCardinality:
     case QpMetaProperty::ManyToManyCardinality:
-        return Qp::Private::objectListCast(data->metaProperty.read(object.data()));
+        return Qp::Private::objectListCast(data->metaProperty.read(object));
 
     case QpMetaProperty::UnknownCardinality:
         return {};
     }
 
     return {};
+}
+
+QList<QSharedPointer<QObject> > QpMetaProperty::read(QSharedPointer<QObject> object) const
+{
+    return read(object.data());
 }
 
 bool QpMetaProperty::isRelated(QSharedPointer<QObject> left, QSharedPointer<QObject> right) const

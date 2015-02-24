@@ -104,8 +104,8 @@ QVariantList OneToManyRelationTest::childFKs(QSharedPointer<TestNameSpace::Paren
     QpSqlQuery select(Qp::database());
     select.setTable(m_childToParentRelation.tableName());
     select.addField(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY);
-    select.setWhereCondition(QpSqlCondition(m_childToParentRelation.columnName(),
-                                            QpSqlCondition::EqualTo,
+    select.setWhereCondition(QpCondition(m_childToParentRelation.columnName(),
+                                            QpCondition::EqualTo,
                                             Qp::primaryKey(parent)));
     select.prepareSelect();
 
@@ -125,8 +125,8 @@ QVariant OneToManyRelationTest::parentFK(QSharedPointer<TestNameSpace::ChildObje
     QpSqlQuery select(Qp::database());
     select.setTable(m_childToParentRelation.tableName());
     select.addField(m_childToParentRelation.columnName());
-    select.setWhereCondition(QpSqlCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
-                                            QpSqlCondition::EqualTo,
+    select.setWhereCondition(QpCondition(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY,
+                                            QpCondition::EqualTo,
                                             Qp::primaryKey(child)));
     select.prepareSelect();
 
@@ -345,154 +345,3 @@ void OneToManyRelationTest::testDatabaseFKChangeFromChild()
     }
 }
 
-#ifndef QP_NO_TIMESTAMPS
-void OneToManyRelationTest::testUpdateTimesFromParent()
-{
-    QSKIP("This test does not work anymore");
-
-    static const int CHILDCOUNT = 3;
-    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
-    QList<QSharedPointer<TestNameSpace::ChildObject>> children;
-    for(int i = 0; i < CHILDCOUNT; ++i) {
-        QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
-        parent->addChildObjectsOneToMany(child);
-        children.append(child);
-    }
-    Qp::update(parent);
-
-    QDateTime timeParent = Qp::updateTimeInDatabase(parent);
-    QDateTime timeChildren = Qp::updateTimeInDatabase(parent->childObjectsOneToMany().first());
-    QCOMPARE(timeParent, timeChildren);
-
-    foreach(QSharedPointer<TestNameSpace::ChildObject> child, parent->childObjectsOneToMany()) {
-        QDateTime timeChild = Qp::updateTimeInDatabase(child);
-        QCOMPARE(timeParent, timeChild);
-    }
-
-    qDebug() << "Sleeping 1 second...";
-    QTest::qSleep(1010);
-    Qp::update(parent);
-
-    // verify only parent time is changed, when no relation changes
-    timeParent = Qp::updateTimeInDatabase(parent);
-    foreach(QSharedPointer<TestNameSpace::ChildObject> child, parent->childObjectsOneToMany()) {
-        QDateTime timeChild = Qp::updateTimeInDatabase(child);
-        QCOMPARE(timeParent.addSecs(-1), timeChild);
-    }
-
-    qDebug() << "Sleeping 1 second...";
-    QTest::qSleep(1010);
-
-    // change one child's parent
-    QSharedPointer<TestNameSpace::ParentObject> parent2 = Qp::create<TestNameSpace::ParentObject>();
-    QSharedPointer<TestNameSpace::ChildObject> changedChild = parent->childObjectsOneToMany().first();
-    parent2->addChildObjectsOneToMany(changedChild);
-    Qp::update(parent2);
-
-    {
-        // verify both parent's times changed
-        QDateTime newTimeParent1 = Qp::updateTimeInDatabase(parent);
-        QDateTime newTimeParent2 = Qp::updateTimeInDatabase(parent2);
-        QCOMPARE(newTimeParent1, timeParent.addSecs(1));
-        QCOMPARE(newTimeParent1, newTimeParent2);
-
-        // verify only the changed child's time changed
-        QCOMPARE(newTimeParent1, Qp::updateTimeInDatabase(changedChild));
-
-        foreach(QSharedPointer<TestNameSpace::ChildObject> child, parent->childObjectsOneToMany()) {
-            QDateTime timeChild = Qp::updateTimeInDatabase(child);
-            QCOMPARE(timeChild, timeChildren);
-        }
-    }
-}
-
-void OneToManyRelationTest::testUpdateTimesFromChild()
-{
-    QSKIP("This test does not work anymore");
-
-    static const int CHILDCOUNT = 3;
-    QSharedPointer<TestNameSpace::ParentObject> parent = Qp::create<TestNameSpace::ParentObject>();
-    QList<QSharedPointer<TestNameSpace::ChildObject>> children;
-    for(int i = 0; i < CHILDCOUNT; ++i) {
-        QSharedPointer<TestNameSpace::ChildObject> child = Qp::create<TestNameSpace::ChildObject>();
-        parent->addChildObjectsOneToMany(child);
-        children.append(child);
-        Qp::update(child);
-    }
-
-    QDateTime timeParent = Qp::updateTimeInDatabase(parent);
-    QDateTime timeChildren = Qp::updateTimeInDatabase(parent->childObjectsOneToMany().first());
-    QCOMPARE(timeParent, timeChildren);
-
-    foreach(QSharedPointer<TestNameSpace::ChildObject> child, parent->childObjectsOneToMany()) {
-        QDateTime timeChild = Qp::updateTimeInDatabase(child);
-        QCOMPARE(timeParent, timeChild);
-    }
-
-    qDebug() << "Sleeping 1 second...";
-    QTest::qSleep(1010);
-    Qp::update(parent->childObjectsOneToMany().first());
-
-    // verify child updatetime changes
-    QDateTime timeFirstChild = Qp::updateTimeInDatabase(parent->childObjectsOneToMany().first());
-    QCOMPARE(timeFirstChild, timeChildren.addSecs(1));
-
-    // verify parent time does not change
-    QCOMPARE(timeParent, Qp::updateTimeInDatabase(parent));
-
-    // verify other children's time does not change
-    foreach(QSharedPointer<TestNameSpace::ChildObject> child, parent->childObjectsOneToMany()) {
-        if(child == parent->childObjectsOneToMany().first())
-            continue;
-
-        QDateTime timeChild = Qp::updateTimeInDatabase(child);
-        QCOMPARE(timeFirstChild.addSecs(-1), timeChild);
-    }
-
-    // Create another parent
-    QSharedPointer<TestNameSpace::ParentObject> parent2 = Qp::create<TestNameSpace::ParentObject>();
-    parent2->addChildObjectsOneToMany(Qp::create<TestNameSpace::ChildObject>());
-    parent2->addChildObjectsOneToMany(Qp::create<TestNameSpace::ChildObject>());
-    QDateTime timeParent2 = Qp::updateTimeInDatabase(parent2);
-
-
-
-
-
-
-    qDebug() << "Sleeping 1 second...";
-    QTest::qSleep(1010);
-
-    // change one child's parent
-    QSharedPointer<TestNameSpace::ChildObject> changedChild = parent->childObjectsOneToMany().first();
-    parent2->addChildObjectsOneToMany(changedChild);
-    Qp::update(changedChild);
-
-    {
-        // verify both parent's times changed
-        QDateTime newTimeParent1 = Qp::updateTimeInDatabase(parent);
-        QDateTime newTimeParent2 = Qp::updateTimeInDatabase(parent2);
-        QCOMPARE(newTimeParent1, timeFirstChild.addSecs(1));
-        QCOMPARE(newTimeParent1, newTimeParent2);
-
-        // verify the changed child's time changed
-        QCOMPARE(newTimeParent1, Qp::updateTimeInDatabase(changedChild));
-
-        // Verify other children times are unchanged
-        foreach(QSharedPointer<TestNameSpace::ChildObject> child, parent->childObjectsOneToMany()) {
-            Q_ASSERT(child != changedChild);
-
-            QDateTime timeChild = Qp::updateTimeInDatabase(child);
-            QCOMPARE(timeChild, timeChildren);
-        }
-
-        foreach(QSharedPointer<TestNameSpace::ChildObject> child, parent2->childObjectsOneToMany()) {
-            if(child == changedChild)
-                continue;
-
-            QDateTime timeChild = Qp::updateTimeInDatabase(child);
-            QCOMPARE(timeChild, timeParent2);
-        }
-    }
-}
-#endif
