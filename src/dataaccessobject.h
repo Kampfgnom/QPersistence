@@ -9,6 +9,7 @@ BEGIN_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 #include <QtSql/QSqlDatabase>
 END_CLANG_DIAGNOSTIC_IGNORE_WARNINGS
 
+#include <functional>
 
 #include "conversion.h"
 #include "metaobject.h"
