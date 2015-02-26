@@ -727,7 +727,7 @@ void QpLegacySqlDatasourceData::readToManyRelation(QHash<int, QpDataTransferObje
     while (query.next()) {
         int primaryKey = query.value(pkIndex).toInt();
         int foreignKey = query.value(fkIndex).toInt();
-        Q_ASSERT(dataTransferObjects.contains(primaryKey));
+        Q_ASSUME(dataTransferObjects.contains(primaryKey));
 
         dataTransferObjects[primaryKey].toManyRelationFKs[relationPropertyIndex] << foreignKey;
     }
@@ -750,7 +750,7 @@ QpDatasource *QpLegacySqlDatasource::cloneForThread(QThread *thread) const
 {
     QpLegacySqlDatasource *clone = new QpLegacySqlDatasource();
     clone->moveToThread(thread);
-    Q_ASSERT(QMetaObject::invokeMethod(clone, "cloneDatabase", Qt::AutoConnection, Q_ARG(QSqlDatabase, data->database)));
+    Q_ASSUME(QMetaObject::invokeMethod(clone, "cloneDatabase", Qt::AutoConnection, Q_ARG(QSqlDatabase, data->database)));
     return clone;
 }
 
@@ -785,12 +785,12 @@ void QpLegacySqlDatasource::count(QpDatasourceResult *result, const QpMetaObject
     query.prepare(q);
 
     if (!query.exec() || !query.first()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
+        Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
-    Q_ASSERT(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, query.value(0).toInt())));
-    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, query.value(0).toInt())));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::latestRevision(QpDatasourceResult *result, const QpMetaObject &metaObject) const
@@ -804,12 +804,12 @@ void QpLegacySqlDatasource::latestRevision(QpDatasourceResult *result, const QpM
                     .arg(data->database.databaseName())
                     .arg(QString::fromLatin1(QpDatabaseSchema::TABLE_NAME_TEMPLATE_HISTORY).arg(metaObject.tableName())))
         || !query.first()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
+        Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
-    Q_ASSERT(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, query.value(0).toInt() - 1)));
-    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, query.value(0).toInt() - 1)));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::maxPrimaryKey(QpDatasourceResult *result, const QpMetaObject &metaObject) const
@@ -821,12 +821,12 @@ void QpLegacySqlDatasource::maxPrimaryKey(QpDatasourceResult *result, const QpMe
                     .arg(QpDatabaseSchema::COLUMN_NAME_PRIMARY_KEY)
                     .arg(QpSqlQuery::escapeField(metaObject.tableName())))
         || !query.first()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
+        Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
-    Q_ASSERT(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, query.value(0).toInt() - 1)));
-    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, query.value(0).toInt() - 1)));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::objectByPrimaryKey(QpDatasourceResult *result, const QpMetaObject &metaObject, int primaryKey) const
@@ -836,12 +836,12 @@ void QpLegacySqlDatasource::objectByPrimaryKey(QpDatasourceResult *result, const
                                                                                               QpCondition::EqualTo,
                                                                                               primaryKey), {}, error);
     if (error.isValid()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
+        Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
         return;
     }
 
-    Q_ASSERT(QMetaObject::invokeMethod(result, "setDataTransferObjects", Qt::AutoConnection, Q_ARG(QpDataTransferObjectsById, dtos)));
-    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "setDataTransferObjects", Qt::AutoConnection, Q_ARG(QpDataTransferObjectsById, dtos)));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::objects(QpDatasourceResult *result,
@@ -854,12 +854,12 @@ void QpLegacySqlDatasource::objects(QpDatasourceResult *result,
     QpError error;
     QHash<int, QpDataTransferObject> dtos = data->readObjects(metaObject, skip, limit, condition, orders, error);
     if (error.isValid()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
+        Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
         return;
     }
 
-    Q_ASSERT(QMetaObject::invokeMethod(result, "setDataTransferObjects", Qt::AutoConnection, Q_ARG(QpDataTransferObjectsById, dtos)));
-    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "setDataTransferObjects", Qt::AutoConnection, Q_ARG(QpDataTransferObjectsById, dtos)));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::objectsUpdatedAfterRevision(QpDatasourceResult *result, const QpMetaObject &metaObject, int revision) const
@@ -875,12 +875,12 @@ void QpLegacySqlDatasource::objectsUpdatedAfterRevision(QpDatasourceResult *resu
                                                               .arg(QpDatabaseSchema::COLUMN_NAME_ACTION),
                                                               {{qualifiedRevisionField, QpDatasource::Ascending}}, error);
     if (error.isValid()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
+        Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
         return;
     }
 
-    Q_ASSERT(QMetaObject::invokeMethod(result, "setDataTransferObjects", Qt::AutoConnection, Q_ARG(QpDataTransferObjectsById, dtos)));
-    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "setDataTransferObjects", Qt::AutoConnection, Q_ARG(QpDataTransferObjectsById, dtos)));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::objectRevision(QpDatasourceResult *result, const QObject *object) const
@@ -888,12 +888,12 @@ void QpLegacySqlDatasource::objectRevision(QpDatasourceResult *result, const QOb
     QpError error;
     int revision = data->objectRevision(object, error);
     if (error.isValid()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
+        Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, error)));
         return;
     }
 
-    Q_ASSERT(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, revision)));
-    Q_ASSERT(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "setIntegerResult", Qt::AutoConnection, Q_ARG(int, revision)));
+    Q_ASSUME(QMetaObject::invokeMethod(result, "finish", Qt::AutoConnection));
 }
 
 void QpLegacySqlDatasource::insertObject(QpDatasourceResult *result, const QObject *object) const
@@ -912,7 +912,7 @@ void QpLegacySqlDatasource::insertObject(QpDatasourceResult *result, const QObje
     // Insert the object itself
     query.prepareInsert();
     if (!query.exec()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
+        Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
@@ -941,7 +941,7 @@ void QpLegacySqlDatasource::updateObject(QpDatasourceResult *result, const QObje
     // Insert the object itself
     query.prepareUpdate();
     if (!query.exec()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
+        Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
@@ -949,7 +949,7 @@ void QpLegacySqlDatasource::updateObject(QpDatasourceResult *result, const QObje
     QpError error;
     data->adjustRelationsInDatabase(object, error);
     if (error.isValid()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
+        Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
         return;
     }
 
@@ -968,7 +968,7 @@ void QpLegacySqlDatasource::removeObject(QpDatasourceResult *result, const QObje
     query.prepareDelete();
 
     if (!query.exec()) {
-        Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
+        Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
     }
 }
 
@@ -994,7 +994,7 @@ void QpLegacySqlDatasource::incrementNumericColumn(QpDatasourceResult *result, c
             break;
 
         if (tryCount >= TRY_COUNT_MAX || query.lastError().nativeErrorCode() != QLatin1String("1213")) {
-            Q_ASSERT(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
+            Q_ASSUME(QMetaObject::invokeMethod(result, "setLastError", Qt::AutoConnection, Q_ARG(QpError, QpError(query))));
             return;
         }
 
@@ -1010,5 +1010,5 @@ void QpLegacySqlDatasource::incrementNumericColumn(QpDatasourceResult *result, c
 void QpLegacySqlDatasource::cloneDatabase(const QSqlDatabase &database)
 {
     data->database = QSqlDatabase::cloneDatabase(database, database.connectionName().append(QThread::currentThread()->objectName()));
-    Q_ASSERT(data->database.open());
+    Q_ASSUME(data->database.open());
 }
