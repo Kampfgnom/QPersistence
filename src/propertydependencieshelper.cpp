@@ -78,6 +78,7 @@ QSet<QMetaMethod> QpPropertyDependenciesData::changeDependencies(QObject *object
 {
     QSet<QMetaMethod> result;
     foreach (QString dependecy, property.dependencies()) {
+        Q_ASSERT_X(!dependecy.isEmpty(), Q_FUNC_INFO, "Empty dependency. Did you miss a trailing comma?");
         QMetaMethod recalculateMethod = changeDependency(object, other, property, dependecy, relationName, changeAction);
         if (recalculateMethod.isValid())
             result.insert(recalculateMethod);
@@ -116,13 +117,21 @@ QMetaMethod QpPropertyDependenciesData::changeDependency(QObject *object,
 
     QByteArray signature = QMetaObject::normalizedSignature(methodName.toLatin1());
     int index = object->metaObject()->indexOfMethod(signature);
-    Q_ASSERT_X(index >= 0,
+    QMetaMethod recalculateMethodOrNotifySignal;
+    if(index > 0) {
+        recalculateMethodOrNotifySignal = object->metaObject()->method(index);
+    }
+    else {
+        recalculateMethodOrNotifySignal = object->metaObject()->property(property.metaProperty().propertyIndex()).notifySignal();
+    }
+
+    Q_ASSERT_X(recalculateMethodOrNotifySignal.isValid(),
                Q_FUNC_INFO,
-               QString::fromLatin1("No such method '%1::%2'")
+               QString::fromLatin1("No method or signal for dependency. Add either a recalculate method '%1::%2' or a notify signal for property '%3'.")
                .arg(object->metaObject()->className())
                .arg(QString::fromLatin1(signature))
+               .arg(property.name())
                .toLatin1());
-    QMetaMethod recalculateMethod = object->metaObject()->method(index);
 
     methodName = dependencySignalName;
     signature = QMetaObject::normalizedSignature(methodName.toLatin1());
@@ -137,15 +146,20 @@ QMetaMethod QpPropertyDependenciesData::changeDependency(QObject *object,
 
     switch (changeAction) {
     case QpPropertyDependenciesData::ConnectAction:
-        object->connect(other.data(), changeSignal, object, recalculateMethod,
-                        static_cast<Qt::ConnectionType>(Qt::AutoConnection | Qt::UniqueConnection));
+        Q_ASSERT_X(recalculateMethodOrNotifySignal.parameterCount() == 0,
+                   Q_FUNC_INFO,
+                   QString::fromLatin1("The notify signal %1 has parameters, "
+                                       "and cannot not be used as a changed signal of a dependent property.\n"
+                                       "Either implement a recalculation-method which emits the signal, or make the it parameter-less.")
+                   .arg(QString::fromUtf8(recalculateMethodOrNotifySignal.methodSignature())).toLatin1());
+        QObject::connect(other.data(), changeSignal, object, recalculateMethodOrNotifySignal);
         break;
     case QpPropertyDependenciesData::DisconnectAction:
-        object->disconnect(other.data(), changeSignal, object, recalculateMethod);
+        QObject::disconnect(other.data(), changeSignal, object, recalculateMethodOrNotifySignal);
         break;
     }
 
-    return recalculateMethod;
+    return recalculateMethodOrNotifySignal;
 }
 
 QpPropertyDependenciesHelper::QpPropertyDependenciesHelper(QpStorage *storage) :
