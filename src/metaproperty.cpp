@@ -23,10 +23,12 @@ class QpMetaPropertyData : public QSharedData
 public:
     QpMetaPropertyData() :
         QSharedData(),
+        mutex(new QMutex(QMutex::Recursive)),
         cardinality(QpMetaProperty::UnknownCardinality)
     {
     }
 
+    QMutex *mutex;
     QpMetaProperty::Cardinality cardinality;
     QString typeName;
     QMetaProperty metaProperty;
@@ -114,6 +116,10 @@ QString QpMetaProperty::shortName(const QString &name) const
 
 void QpMetaProperty::parseAttributes() const
 {
+    QMutexLocker m(data->mutex); Q_UNUSED(m);
+    if(!data->attributes.isEmpty())
+        return;
+
     QString classInfoName = QString(QPERSISTENCE_PROPERTYMETADATA).append(":").append(name());
     QString classInfoRawValue = data->metaObject.classInformation(classInfoName.toLatin1(), QString());
 
@@ -211,8 +217,7 @@ QMetaMethod QpMetaProperty::recalculateMethod(QSharedPointer<QObject> object) co
 
 QHash<QString, QString> QpMetaProperty::attributes() const
 {
-    if (data->attributes.isEmpty())
-        parseAttributes();
+    parseAttributes();
 
     return data->attributes;
 }
@@ -275,6 +280,7 @@ bool QpMetaProperty::hasAnnotation(const QString &name) const
 
 QpMetaProperty::Cardinality QpMetaProperty::cardinality() const
 {
+    QMutexLocker m(data->mutex); Q_UNUSED(m);
     if (data->cardinality != UnknownCardinality)
         return data->cardinality;
 
@@ -326,10 +332,7 @@ QpMetaObject QpMetaProperty::reverseMetaObject() const
 
 QString QpMetaProperty::reverseRelationName() const
 {
-    if (data->attributes.isEmpty())
-        parseAttributes();
-
-    QString reverse = data->attributes.value(QPERSISTENCE_PROPERTYMETADATA_REVERSERELATION);
+    QString reverse = attributes().value(QPERSISTENCE_PROPERTYMETADATA_REVERSERELATION);
     if (!reverse.isEmpty())
         return reverse;
 
