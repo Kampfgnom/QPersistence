@@ -20,17 +20,19 @@ class QpMetaObjectData : public QSharedData
 public:
     QpMetaObjectData() :
         QSharedData(),
+        mutex(new QMutex(QMutex::Recursive)),
         valid(false)
     {
     }
 
+    QMutex *mutex;
     bool valid;
     QMetaObject metaObject;
-    mutable QList<QpMetaProperty> metaProperties;
-    mutable QList<QpMetaProperty> simpleProperties;
-    mutable QList<QpMetaProperty> relationProperties;
-    mutable QList<QpMetaProperty> calculatedProperties;
-    mutable QHash<QString, QpMetaProperty> metaPropertiesByName;
+    QList<QpMetaProperty> metaProperties;
+    QList<QpMetaProperty> simpleProperties;
+    QList<QpMetaProperty> relationProperties;
+    QList<QpMetaProperty> calculatedProperties;
+    QHash<QString, QpMetaProperty> metaPropertiesByName;
 
     static QHash<QString, QpMetaObject> metaObjectForName;
 
@@ -182,6 +184,7 @@ QMetaMethod QpMetaObject::findMethod(QString signature) const
 
 void QpMetaObject::initProperties() const
 {
+    QMutexLocker m(data->mutex); Q_UNUSED(m);
     int count = data->metaObject.propertyCount();
     for (int i = 1; i < count; ++i) {
         QMetaProperty p = data->metaObject.property(i);
